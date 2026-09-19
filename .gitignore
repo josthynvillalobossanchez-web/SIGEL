@@ -51,3 +51,6 @@ docker-compose.override.yml
 
 # Archivos sensibles
 secrets/
+
+# Carpeta de trabajo local (respaldos, borradores, material del curso)
+docs/_trabajo/

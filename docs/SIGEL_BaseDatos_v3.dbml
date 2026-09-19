@@ -1,0 +1,818 @@
+// =====================================================================
+// SIGEL - Sistema Integral de Gestion Laboral
+// Municipalidad de Palmares
+//
+// MODELO DE BASE DE DATOS - VERSION 3
+// Incorpora las decisiones confirmadas con la Jefatura de Informatica
+// (reunion del 8 de setiembre de 2026), sobre la version 2.
+//
+// Cambios de esta version, marcados en el codigo como [V3-n]:
+//   1  regimenVacaciones pasa de enum a TABLA, para que la regla de
+//      calculo se pueda cambiar sin tocar codigo
+//   2  Tope de acumulacion de vacaciones: maximo 2 periodos. Lo que
+//      exceda vence, y el sistema avisa antes de que se pierda
+//   3  tipoIncapacidad pasa de enum a TABLA (escalable)
+//   4  profesion pasa de texto libre a TABLA (escalable, compartida
+//      entre funcionario y candidato)
+//   5  tipoNombramiento: se reduce a los 3 casos reales de la Muni
+//   6  funcionario: se agrega direccion y el correo personal pasa a
+//      obligatorio (canal de respaldo para notificaciones)
+//   7  solicitud: se puede cancelar solo mientras la jefatura no la
+//      haya leido
+//   8  diaNoLaborable: se marca cuales feriados se repiten cada anio
+//   9  Autoservicio del funcionario delimitado, con aviso a RRHH
+//  10  Contratacion desde Talent Pool: crea funcionario, pregunta por
+//      la cuenta de usuario y adjunta el CV al expediente
+//
+// Lo que se decidio dejar como TEXTO LIBRE, a proposito, para no
+// inflar la base de datos: motivo de salida, entidad emisora de la
+// incapacidad e institucion de la capacitacion. Ninguno se usa como
+// filtro de busqueda: solo se muestran en pantalla.
+//
+// Criterio de diseno (sin cambios):
+//   Una tabla catalogo solo se justifica si alguien le va a agregar
+//   filas Y el sistema sigue funcionando sin tocar el codigo.
+//   Todo lo demas va como enum, porque igual hay que programar su
+//   comportamiento.
+//
+// Convenciones (Documento de Especificacion, secciones 8 y 9):
+//   - Nombres en espanol, camelCase.
+//   - UUID como identificador publico en todas las entidades (char(36)).
+//   - Las tablas muchos a muchos tambien llevan UUID propio.
+//   - Los archivos NO se guardan en MySQL: se guarda la ruta que
+//     apunta al servidor de archivos de la Municipalidad.
+//   - Baja logica, nunca DELETE fisico sobre informacion con historial.
+//
+// MANTENIMIENTO (Informatica = 2 personas):
+//   Las 8 tablas catalogo simples comparten exactamente la misma forma
+//   (id, nombre, descripcion, activo): departamento, puesto,
+//   tipoDocumento, habilidad, profesion, tipoIncapacidad,
+//   regimenVacaciones y rol. Se administran TODAS desde una sola
+//   pantalla generica de "Catalogos" parametrizada por cual catalogo
+//   se esta editando. Agregar un catalogo nuevo en el futuro = una
+//   tabla + una linea de configuracion, sin pantalla nueva.
+//
+// Total: 30 tablas activas, 12 enums.
+//
+// Pegar en https://dbdiagram.io/d
+// =====================================================================
+
+Project sigel {
+  database_type: 'MySQL'
+  Note: 'SIGEL - Municipalidad de Palmares. Modelo v3: 30 tablas, alineado con el analisis funcional (Fases 1, 2 y 3) y con las decisiones confirmadas por la Jefatura de Informatica.'
+}
+
+
+// =====================================================================
+// ENUMERACIONES
+// Se quedan como enum unicamente las que tienen comportamiento
+// programado: agregar un valor nuevo obliga igual a programar que hace
+// el sistema con el. Volverlas tabla daria una flexibilidad falsa.
+// =====================================================================
+
+Enum estadoUsuario {
+  activo
+  inactivo
+  bloqueado
+}
+
+Enum estadoFuncionario {
+  activo
+  inactivo
+}
+
+// [V3-5] Se reduce a los 3 casos reales de la Municipalidad.
+// Se descartan jornal y otro: no aplican.
+// Queda como enum y no como tabla porque son 3 valores estables y cada
+// uno puede implicar reglas propias de nombramiento.
+Enum tipoNombramiento {
+  propiedad [note: 'Plaza en propiedad (fijo)']
+  interino [note: 'Nombramiento interino']
+  contratacionServicios [note: '[V3-5] Contratacion por periodos cortos, mas cercana a un servicio externo que a una plaza. NOMBRE EXACTO PENDIENTE de confirmar con RRHH.']
+}
+
+Enum estadoSolicitud {
+  borrador
+  pendiente
+  aprobada
+  rechazada
+  cancelada
+}
+
+Enum estadoDocumentoGenerado {
+  noAplica [note: 'El tipo de tramite no genera documento']
+  pendiente [note: 'Corresponde generarlo y aun no se ha generado']
+  generado [note: 'PDF generado y asociado al expediente']
+  fallido [note: 'La generacion fallo: RRHH decide si lo sube manualmente']
+}
+
+// [V3-2] Se agrega vencimiento. Sin este valor el saldo dejaria de
+// cuadrar cuando se pierden dias por exceder los 2 periodos: el saldo
+// es la suma de los movimientos, asi que la perdida tiene que quedar
+// registrada como un movimiento negativo y no como un borrado.
+Enum tipoMovimientoVacaciones {
+  saldoInicial
+  acumulacion
+  consumo
+  ajuste [note: 'Correccion manual de RRHH. Cubre tambien los casos de salida del funcionario, que se liquidan fuera de SIGEL.']
+  vencimiento [note: '[V3-2] Dias perdidos por exceder el tope de 2 periodos acumulados. Siempre negativo.']
+}
+
+Enum modalidadCapacitacion {
+  presencial
+  virtual
+  mixta
+}
+
+Enum estadoCandidato {
+  activo
+  inactivo
+  contratado
+  descartado
+}
+
+Enum nivelEducativo {
+  primaria
+  secundaria
+  tecnico
+  universitaria
+  posgrado
+  curso [note: 'Otros cursos y capacitaciones del candidato']
+}
+
+Enum categoriaHabilidad {
+  tecnica
+  blanda
+  idioma
+  herramienta
+}
+
+Enum nivelHabilidad {
+  basico
+  intermedio
+  avanzado
+}
+
+Enum accionBitacora {
+  crear
+  modificar
+  eliminar [note: 'Incluye la baja logica, por ejemplo dar de baja un documento (Ficha 42)']
+  aprobar
+  rechazar
+  cancelar [note: 'Cancelar una solicitud es un evento propio del ciclo de vida']
+  consultar [note: 'Visualizacion de expediente o documento. Excepcion confirmada a T-4 (Fichas 15 y 20)']
+  descargar
+  iniciarSesion [note: 'Solo los ingresos EXITOSOS. Los intentos fallidos y los accesos denegados NO se registran (decision confirmada).']
+  cerrarSesion
+}
+
+
+// =====================================================================
+// 1. SEGURIDAD  (7 tablas)
+// HU 01 a HU 12 | RF-21
+// =====================================================================
+
+Table usuario {
+  id char(36) [pk, note: 'UUID']
+  funcionarioId char(36) [unique, ref: - funcionario.id, note: 'Nulo en cuentas administrativas sin expediente. Al contratar a un candidato el sistema pregunta si se le crea cuenta o no (Ficha 41).']
+  correo varchar(150) [not null, unique, note: 'Credencial de ingreso: correo institucional (@munipalmares.go.cr) o, si no tiene, el personal. Se elimino nombreUsuario (16/09/2026).']
+  contrasenaHash varchar(255) [not null, note: 'Argon2id con salt unico. Nunca texto plano ni cifrado reversible.']
+  estado estadoUsuario [not null, default: 'activo']
+  debeCambiarContrasena boolean [not null, default: true]
+
+  intentosFallidos smallint [not null, default: 0, note: 'Se reinicia en cada ingreso exitoso. NO se registra en bitacora (decision confirmada).']
+  bloqueadoHasta datetime [note: 'Nulo = sin bloqueo. Bloqueo temporal de 3 minutos tras 3 intentos fallidos. No altera el estado de la cuenta.']
+
+  ultimoAcceso datetime
+  fechaCreacion datetime [not null, default: `now()`]
+  fechaActualizacion datetime
+  Note: 'La cuenta se conserva aunque el funcionario salga de la Municipalidad: pasa a inactivo por si se le vuelve a contratar y para no romper la auditoria. Al crearla se notifica por correo al usuario para que ingrese a cambiar su contrasena (Ficha 2).'
+}
+
+Table tokenRecuperacionContrasena {
+  id char(36) [pk, note: 'UUID']
+  usuarioId char(36) [not null, ref: > usuario.id]
+  codigoHash varchar(255) [not null, note: 'El codigo enviado por correo se guarda hasheado, nunca en claro']
+  fechaCreacion datetime [not null, default: `now()`]
+  fechaExpiracion datetime [not null, note: 'Vigencia corta. Vencido no se puede usar.']
+  fechaUso datetime [note: 'Nulo mientras no se haya usado. Un codigo se usa una sola vez.']
+  indexes {
+    (usuarioId, fechaExpiracion) [name: 'idxTokenRecuperacionUsuario']
+  }
+  Note: 'Los codigos vencidos o usados se pueden purgar sin afectar historial: este flujo no se registra en bitacora (Ficha 1).'
+}
+
+Table rol {
+  id char(36) [pk, note: 'UUID']
+  nombre varchar(60) [not null, unique, note: 'Roles de sistema: superAdministrador, administrador, aprobador, solicitante, consulta (solo lectura, Auditoria Interna). RRHH usa el rol administrador.']
+  descripcion varchar(255)
+  esSistema boolean [not null, default: false, note: 'Los roles de sistema no se pueden eliminar']
+  activo boolean [not null, default: true]
+  Note: 'HU 03. Catalogo administrable desde la pantalla generica de Catalogos.'
+}
+
+Table permiso {
+  id char(36) [pk, note: 'UUID']
+  clave varchar(80) [not null, unique, note: 'funcionarios.ver, funcionarios.crear, vacaciones.aprobar, documentos.descargar, perfilPropio.editar...']
+  modulo varchar(40) [not null, note: 'Solo para agrupar la pantalla de administracion']
+  descripcion varchar(255)
+  activo boolean [not null, default: true]
+  indexes {
+    modulo [name: 'idxPermisoModulo']
+  }
+  Note: 'Permisos granulares. Aqui viven tambien los permisos que habilitan el autoservicio del funcionario sobre su propia informacion (T-5, ver nota de funcionario). HU 04, HU 06.'
+}
+
+Table rolPermiso {
+  id char(36) [pk, note: 'UUID']
+  rolId char(36) [not null, ref: > rol.id]
+  permisoId char(36) [not null, ref: > permiso.id]
+  indexes {
+    (rolId, permisoId) [unique, name: 'uqRolPermiso']
+  }
+  Note: 'Muchos a muchos con UUID propio.'
+}
+
+Table usuarioRol {
+  id char(36) [pk, note: 'UUID']
+  usuarioId char(36) [not null, ref: > usuario.id]
+  rolId char(36) [not null, ref: > rol.id]
+  fechaAsignacion datetime [not null, default: `now()`]
+  asignadoPorId char(36) [ref: > usuario.id]
+  indexes {
+    (usuarioId, rolId) [unique, name: 'uqUsuarioRol']
+  }
+  Note: 'Muchos a muchos con UUID propio. HU 05.'
+}
+
+Table usuarioPermiso {
+  id char(36) [pk, note: 'UUID']
+  usuarioId char(36) [not null, ref: > usuario.id]
+  permisoId char(36) [not null, ref: > permiso.id]
+  otorgado boolean [not null, default: true, note: 'true = se concede aunque el rol no lo de. false = se revoca aunque el rol si lo de.']
+  fechaAsignacion datetime [not null, default: `now()`]
+  asignadoPorId char(36) [ref: > usuario.id, note: 'Quien creo la excepcion']
+  observacion varchar(255) [note: 'Motivo de la excepcion, util para auditoria']
+  indexes {
+    (usuarioId, permisoId) [unique, name: 'uqUsuarioPermiso']
+  }
+  Note: 'Excepcion individual sobre los permisos que otorgan los roles. Permiso efectivo = permisos de sus roles, sobrescritos por lo que diga esta tabla. HU 12, Ficha 10.'
+}
+
+
+// =====================================================================
+// 2. FUNCIONARIOS  (4 tablas: 3 anteriores + profesion)
+// HU 13 a HU 21 | RF-01 a RF-04
+// =====================================================================
+
+Table departamento {
+  id char(36) [pk, note: 'UUID']
+  nombre varchar(120) [not null, unique]
+  descripcion varchar(255)
+  activo boolean [not null, default: true]
+  Note: 'Catalogo administrable. La Municipalidad carga los datos iniciales.'
+}
+
+Table puesto {
+  id char(36) [pk, note: 'UUID']
+  nombre varchar(120) [not null, unique]
+  descripcion varchar(255)
+  activo boolean [not null, default: true]
+  Note: 'Catalogo administrable. Independiente del departamento: el mismo puesto existe en varios. La Municipalidad carga los datos iniciales.'
+}
+
+// [V3-4] Tabla nueva. Antes era texto libre en funcionario y en
+// candidato. Como el Talent Pool se filtra por carrera (HU 39 CA02),
+// el texto libre hacia el filtro poco confiable: "Ing. Sistemas" y
+// "Ingenieria en Sistemas" quedaban como dos cosas distintas.
+// Mismo razonamiento por el que habilidad ya era tabla.
+Table profesion {
+  id char(36) [pk, note: 'UUID']
+  nombre varchar(150) [not null, unique]
+  descripcion varchar(255)
+  activo boolean [not null, default: true]
+  Note: '[V3-4] Catalogo compartido por funcionarios y candidatos. Administrable desde la pantalla generica de Catalogos. RRHH le va agregando profesiones con el uso.'
+}
+
+Table funcionario {
+  id char(36) [pk, note: 'UUID']
+  cedula varchar(20) [not null, unique, note: 'HU 13 CA05: impide funcionarios duplicados']
+  nombre varchar(80) [not null]
+  primerApellido varchar(80) [not null]
+  segundoApellido varchar(80)
+  fechaNacimiento date
+
+  // ----- Datos de contacto: editables por el propio funcionario -----
+  // [V3-9] El funcionario puede mantener sus datos generales y de
+  // contacto. Cada cambio que haga notifica a RRHH (T-2).
+  telefonoPersonal varchar(30) [note: '[V3-9] Editable por el propio funcionario']
+  correoPersonal varchar(150) [not null, note: '[V3-6] OBLIGATORIO. Es el canal de respaldo: si no hay correo institucional registrado, las notificaciones se envian aqui. Editable por el propio funcionario.']
+  correoInstitucional varchar(150) [unique, note: 'Canal preferente de notificacion cuando existe. Editable por el propio funcionario.']
+  direccion varchar(255) [note: '[V3-6] Campo nuevo. Editable por el propio funcionario.']
+  profesionId char(36) [ref: > profesion.id, note: '[V3-4] Antes texto libre. Editable por el propio funcionario.']
+  fotoRuta varchar(500) [note: 'Ruta al servidor de archivos de la Municipalidad, no el binario. Maximo 25 MB. Editable por el propio funcionario. HU 20, Ficha 16.']
+
+  // ----- Datos laborales: SOLO RRHH -----
+  // [V3-9] Ningun funcionario puede modificar su propia informacion
+  // laboral, aunque tenga el permiso de autoservicio.
+  numeroEmpleado varchar(30) [note: 'PENDIENTE de confirmar con RRHH si la Municipalidad lo maneja. Solo RRHH.']
+  puestoId char(36) [ref: > puesto.id, note: '[V3-9] Solo RRHH']
+  departamentoId char(36) [ref: > departamento.id, note: '[V3-9] Solo RRHH']
+  jefaturaId char(36) [ref: > funcionario.id, note: '[V3-9] Solo RRHH. Jefatura inmediata: define quien aprueba sus solicitudes (T-1). NULO = tope de la jerarquia: esa persona aprueba sus propias solicitudes (confirmado). Si cambia, las solicitudes pendientes pasan a la nueva jefatura.']
+  tipoNombramiento tipoNombramiento [not null, default: 'propiedad', note: '[V3-9] Solo RRHH']
+  regimenVacacionesId char(36) [not null, ref: > regimenVacaciones.id, note: '[V3-1] Antes enum. Solo RRHH.']
+  estado estadoFuncionario [not null, default: 'activo', note: '[V3-9] Solo RRHH']
+  fechaIngreso date [not null, note: '[V3-9] Solo RRHH. Base del calculo de antiguedad para vacaciones.']
+  fechaSalida date [note: 'Nulo mientras trabaje. Deja de acumular vacaciones desde esta fecha (RN-08). La liquidacion se maneja fuera de SIGEL.']
+  motivoSalida varchar(150) [note: 'Texto libre a proposito: solo se muestra en pantalla, no se usa como filtro de busqueda.']
+
+  fechaRegistro datetime [not null, default: `now()`]
+  fechaActualizacion datetime
+  indexes {
+    cedula [name: 'idxFuncionarioCedula']
+    (primerApellido, nombre) [name: 'idxFuncionarioNombre']
+    correoInstitucional [name: 'idxFuncionarioCorreo']
+    (estado, departamentoId) [name: 'idxFuncionarioEstadoDepto']
+    jefaturaId [name: 'idxFuncionarioJefatura']
+    profesionId [name: 'idxFuncionarioProfesion']
+  }
+  Note: '[V3-9] AUTOSERVICIO: el funcionario puede editar sus datos generales, de contacto, su fotografia, sus documentos y sus capacitaciones, siempre sobre su propio registro (funcionarioId = usuario.funcionarioId). Toda edicion suya notifica a RRHH (clave perfilActualizadoPorFuncionario) ademas de quedar en bitacora con datos anteriores y nuevos. Los datos laborales (puesto, departamento, jefatura, nombramiento, regimen, estado, fechas) son exclusivos de RRHH.'
+}
+
+
+// =====================================================================
+// 3. EXPEDIENTE Y DOCUMENTOS  (2 tablas)
+// HU 19, HU 22 a HU 26 | RF-DOC-01 a RF-DOC-06
+// El expediente NO es una tabla: es el conjunto de documentos
+// de un funcionario.
+// =====================================================================
+
+Table tipoDocumento {
+  id char(36) [pk, note: 'UUID']
+  nombre varchar(120) [not null, unique, note: 'cedula, curriculum, tituloUniversitario, hojaDelincuencia, accionPersonal, amonestacion, constanciaVacaciones...']
+  descripcion varchar(255)
+  generadoPorSistema boolean [not null, default: false, note: 'Ficha 18: los tipos generados por SIGEL solo se pueden renombrar. Crearlos o eliminarlos exige desarrollo, porque cada uno depende de una plantilla programada.']
+  activo boolean [not null, default: true]
+  Note: 'Catalogo administrable: agregar un tipo documental manual NO requiere tocar codigo. HU 23, Ficha 18, Diagrama 3b-2.'
+}
+
+Table documento {
+  id char(36) [pk, note: 'UUID']
+  funcionarioId char(36) [not null, ref: > funcionario.id]
+  tipoDocumentoId char(36) [not null, ref: > tipoDocumento.id]
+  titulo varchar(180) [not null]
+  descripcion varchar(500)
+
+  nombreArchivo varchar(255) [not null, note: 'Nombre original, solo informativo']
+  rutaArchivo varchar(500) [not null, unique, note: 'Ruta al servidor de archivos de la Municipalidad. El binario NO va en MySQL.']
+  tipoMime varchar(100) [not null, note: 'Validado en backend: application/pdf, image/jpeg, image/png']
+  tamanoBytes bigint [not null, note: 'Maximo 26214400 = 25 MB']
+
+  generadoPorSistema boolean [not null, default: false, note: 'true = PDF producido por SIGEL al cerrar un proceso, o CV copiado desde el Talent Pool al contratar (Ficha 41)']
+  fechaDocumento date
+  fechaRegistro datetime [not null, default: `now()`]
+  usuarioRegistroId char(36) [ref: > usuario.id, note: 'RRHH o el propio funcionario. Nulo si lo genero el sistema.']
+  vigente boolean [not null, default: true, note: 'Baja logica. Ficha 42: ocultar un documento subido por error sin eliminar el archivo ni el registro. No existe borrado fisico.']
+  usuarioBajaId char(36) [ref: > usuario.id, note: 'Quien lo dio de baja. Si coincide con el usuario del funcionario dueno del expediente, la baja la hizo el propio funcionario (permiso documentos.darDeBajaPropio): se le oculta por completo a el y RRHH lo ve como dado de baja por el funcionario. La fecha sale de bitacoraCambio.']
+  motivoBaja varchar(255) [note: 'Motivo corto, opcional (archivo equivocado, documento duplicado...)']
+  indexes {
+    (funcionarioId, tipoDocumentoId) [name: 'idxDocumentoFuncionarioTipo']
+    (funcionarioId, vigente) [name: 'idxDocumentoVigente']
+  }
+  Note: 'La descarga y la visualizacion siempre pasan por el backend, que valida permisos (proteccion contra IDOR) y las registra en bitacora: excepcion confirmada a T-4 (Ficha 20).'
+}
+
+
+// =====================================================================
+// 4. SOLICITUDES  (3 tablas)
+// Vacaciones, permiso con goce, sin goce, licencia, capacitacion con
+// afectacion de jornada y horas extra usan el MISMO flujo.
+// HU 27 a HU 37 | RF-07 a RF-12, RN-01, RN-02, RN-03
+// =====================================================================
+
+Table tipoSolicitud {
+  id char(36) [pk, note: 'UUID']
+  nombre varchar(60) [not null, unique, note: 'vacaciones, permisoConGoce, permisoSinGoce, licencia, capacitacion, horaExtra']
+  descripcion varchar(255)
+  afectaDisponibilidad boolean [not null, default: true, note: 'Se pinta en el calendario inteligente']
+  descuentaVacaciones boolean [not null, default: false]
+  requiereJustificante boolean [not null, default: false]
+  seMideEnHoras boolean [not null, default: false, note: 'true = el tramite se registra en horas (hora extra). false = en dias completos.']
+  tipoDocumentoGeneradoId char(36) [ref: > tipoDocumento.id, note: 'Tipo del PDF que SIGEL genera al cerrar el proceso. Nulo = este tramite no genera documento.']
+  colorCalendario varchar(9)
+  activo boolean [not null, default: true]
+  Note: 'Aqui esta la escalabilidad real del modulo: crear un tramite nuevo (por ejemplo licencia por estudio) es agregar una fila y marcar sus casillas, sin tocar codigo. Un solo proceso separado por una tabla de tipos, no seis modulos distintos.'
+}
+
+Table solicitud {
+  id char(36) [pk, note: 'UUID']
+  consecutivo varchar(30) [not null, unique]
+  tipoSolicitudId char(36) [not null, ref: > tipoSolicitud.id]
+  funcionarioId char(36) [not null, ref: > funcionario.id, note: 'Funcionario AFECTADO por el tramite']
+  usuarioSolicitanteId char(36) [not null, ref: > usuario.id, note: 'Usuario que EJECUTO la accion. Si difiere del funcionario es un tramite en nombre de tercero. RN-03, HU 30, HU 33.']
+  aprobadorId char(36) [ref: > usuario.id, note: 'Jefatura inmediata del funcionario afectado (T-1). Si al funcionario le cambian de jefatura mientras la solicitud esta pendiente, este campo se actualiza a la nueva jefatura (confirmado). Cuando el funcionario esta en el tope de la jerarquia, coincide con el solicitante: se autoaprueba.']
+  estado estadoSolicitud [not null, default: 'pendiente']
+
+  // [V3-7] Ficha 23: el solicitante puede cancelar su solicitud
+  // UNICAMENTE mientras la jefatura no la haya abierto. Una vez leida,
+  // ya no puede cancelarla: debe hablarlo con su jefatura.
+  // Cuesta una sola columna, sin tablas ni historial adicional.
+  leidaPorAprobador boolean [not null, default: false, note: '[V3-7] Se marca cuando el aprobador abre la solicitud. Mientras sea false el solicitante puede cancelarla; despues ya no.']
+
+  fechaSolicitud datetime [not null, default: `now()`]
+  fechaInicio date [not null]
+  fechaFin date [not null]
+  horaInicio time [note: 'Solo para horas extra']
+  horaFin time
+  cantidadDias decimal(5,2) [note: 'Dias habiles, descontando diaNoLaborable. REGLA VIGENTE: solo dias enteros; el decimal se conserva por si mas adelante se habilitan medios dias.']
+  cantidadHoras decimal(6,2) [note: 'Solo para horas extra']
+  motivo varchar(500)
+
+  fechaResolucion datetime
+  usuarioResolucionId char(36) [ref: > usuario.id, note: 'Quien aprobo, rechazo o cancelo']
+  motivoRechazo varchar(500) [note: 'Obligatorio al rechazar. RN-02, HU 29 CA03.']
+
+  justificanteDocumentoId char(36) [ref: > documento.id, note: 'Adjunto del solicitante']
+  documentoGeneradoId char(36) [ref: > documento.id, note: 'PDF que SIGEL asocia al expediente al cerrar el proceso. HU 26, RF-DOC-05.']
+  estadoDocumentoGenerado estadoDocumentoGenerado [not null, default: 'noAplica', note: 'Alimenta la bandeja de casos por atender de RRHH cuando la generacion del PDF falla (Diagrama 3c)']
+
+  indexes {
+    (funcionarioId, fechaInicio) [name: 'idxSolicitudFuncionario']
+    (aprobadorId, estado) [name: 'idxSolicitudBandeja']
+    (fechaInicio, fechaFin) [name: 'idxSolicitudCalendario']
+    estadoDocumentoGenerado [name: 'idxSolicitudDocumentoPendiente']
+  }
+  Note: 'Una sola tabla para los seis tipos de tramite. HORAS EXTRA (criterio del equipo, a validar con RRHH): las registra el propio funcionario o RRHH en su nombre, las aprueba la jefatura inmediata igual que cualquier otra solicitud, y solo cuentan como autorizadas una vez aprobadas. El estado vive aqui; quien lo cambio y cuando queda en bitacoraCambio.'
+}
+
+Table diaNoLaborable {
+  id char(36) [pk, note: 'UUID']
+  fecha date [not null, unique]
+  nombre varchar(120) [not null, note: 'Feriado de ley o asueto municipal']
+  // [V3-8] Los feriados de ley se repiten todos los anios; los asuetos
+  // municipales no. Marcarlos permite que el sistema proponga
+  // automaticamente el calendario del anio siguiente y que RRHH solo
+  // agregue o quite lo que cambie.
+  recurrenteAnual boolean [not null, default: true, note: '[V3-8] true = feriado de ley que se repite cada anio. false = asueto puntual de ese anio.']
+  activo boolean [not null, default: true]
+  indexes {
+    fecha [name: 'idxDiaNoLaborableFecha']
+  }
+  Note: 'Necesario para calcular dias habiles y para el calendario. RRHH puede agregar, editar o quitar cualquier fecha.'
+}
+
+
+// =====================================================================
+// 5. VACACIONES  (3 tablas: 2 anteriores + regimenVacaciones)
+// HU 27 | RF-10, RN-07
+// =====================================================================
+
+// [V3-1] Tabla nueva: antes era un enum de dos valores.
+// Se vuelve tabla porque la regla de vacaciones puede cambiar por
+// normativa, y el requisito es que ese cambio NO obligue a tocar
+// codigo (HU 27 CA04).
+Table regimenVacaciones {
+  id char(36) [pk, note: 'UUID']
+  nombre varchar(60) [not null, unique, note: 'general, anterior']
+  descripcion varchar(255) [note: 'general: 15 dias los primeros 6 anios, 20 despues. anterior: 30 dias para trabajadores antiguos.']
+  // [V3-2] El tope de acumulacion tambien es parametrico: si manana la
+  // norma pasa a 1 o a 3 periodos, se cambia aqui.
+  periodosMaximosAcumulables smallint [not null, default: 2, note: '[V3-2] Norma vigente: 2 periodos. Lo que exceda vence y queda inutilizable.']
+  diasAvisoAntesDeVencer smallint [not null, default: 60, note: '[V3-2] Con cuanta anticipacion se avisa al funcionario y a RRHH que va a perder dias.']
+  activo boolean [not null, default: true]
+  Note: '[V3-1] Catalogo administrable. Un funcionario pertenece a un regimen, y cada regimen tiene sus tramos en reglaVacaciones y su propio tope de acumulacion.'
+}
+
+Table reglaVacaciones {
+  id char(36) [pk, note: 'UUID']
+  regimenVacacionesId char(36) [not null, ref: > regimenVacaciones.id, note: '[V3-1] Antes enum']
+  aniosMinimos smallint [not null]
+  aniosMaximos smallint [note: 'Nulo = sin limite superior']
+  diasPorPeriodo decimal(5,2) [not null]
+  vigenteDesde date [not null]
+  activo boolean [not null, default: true]
+  indexes {
+    (regimenVacacionesId, aniosMinimos) [unique, name: 'uqReglaVacaciones']
+  }
+  Note: 'Tramos del regimen: 15 dias hasta 6 anios, 20 desde los 6 anios, 30 para el regimen anterior. Cambiar estos valores NO requiere modificar codigo (HU 27 CA04), por eso es tabla y no constante.'
+}
+
+Table movimientoVacaciones {
+  id char(36) [pk, note: 'UUID']
+  funcionarioId char(36) [not null, ref: > funcionario.id]
+  tipo tipoMovimientoVacaciones [not null]
+  cantidadDias decimal(6,2) [not null, note: 'Positivo suma, negativo resta']
+  fechaMovimiento date [not null]
+  periodo varchar(20) [note: 'Periodo al que pertenecen los dias, por ejemplo 2025-2026. Es lo que permite saber cuantos periodos lleva acumulados.']
+
+  // [V3-2] Norma confirmada: no se pueden acumular mas de 2 periodos.
+  // Guardar la fecha de vencimiento en la fila de acumulacion hace que
+  // encontrar a quien esta por perder dias sea una sola consulta, sin
+  // recalcular la historia completa de cada funcionario.
+  fechaVencimiento date [note: '[V3-2] Solo en movimientos de acumulacion y saldo inicial: fecha en que esos dias se pierden si no se usan. Nulo en consumos, ajustes y vencimientos.']
+
+  solicitudId char(36) [ref: > solicitud.id, note: 'Presente cuando el movimiento viene de una solicitud aprobada']
+  usuarioRegistroId char(36) [ref: > usuario.id, note: 'Nulo cuando lo genera el sistema (acumulacion automatica o vencimiento)']
+  observacion varchar(500)
+  fechaRegistro datetime [not null, default: `now()`]
+  indexes {
+    (funcionarioId, fechaMovimiento) [name: 'idxMovimientoFuncionario']
+    (funcionarioId, fechaVencimiento) [name: 'idxMovimientoVencimiento']
+  }
+  Note: '[V3-2] El saldo disponible es la SUMA de los movimientos, nunca un campo que se sobreescribe. Cuando dias acumulados superan el tope de periodos del regimen, el sistema registra un movimiento de tipo vencimiento (negativo) en lugar de borrar nada, y antes de eso envia el aviso de vacaciones por vencer (clave vacacionesPorVencer) al funcionario y a RRHH. RRHH carga el saldo inicial con tipo saldoInicial y puede corregir con tipo ajuste.'
+}
+
+
+// =====================================================================
+// 6. INCAPACIDADES Y CAPACITACIONES  (3 tablas: 2 + tipoIncapacidad)
+// RF-13, RF-14, RF-15 | HU 34, HU 35
+// =====================================================================
+
+// [V3-3] Tabla nueva: antes era un enum de cuatro valores.
+// Se vuelve tabla porque RRHH necesita poder agregar tipos nuevos sin
+// depender de Informatica.
+Table tipoIncapacidad {
+  id char(36) [pk, note: 'UUID']
+  nombre varchar(120) [not null, unique, note: 'enfermedad, maternidad, riesgo de trabajo, cuido de familiar...']
+  descripcion varchar(255)
+  activo boolean [not null, default: true]
+  Note: '[V3-3] Catalogo administrable desde la pantalla generica de Catalogos. Ningun tipo afecta el calculo de vacaciones: las incapacidades NO interrumpen ni descuentan la acumulacion (confirmado).'
+}
+
+Table incapacidad {
+  id char(36) [pk, note: 'UUID']
+  funcionarioId char(36) [not null, ref: > funcionario.id, note: 'Funcionario afectado']
+  usuarioRegistroId char(36) [not null, ref: > usuario.id, note: 'Quien registro. Puede ser RRHH en nombre del funcionario.']
+  tipoIncapacidadId char(36) [not null, ref: > tipoIncapacidad.id, note: '[V3-3] Antes enum']
+  entidadEmisora varchar(120) [note: 'CCSS, INS, medico privado. Texto libre a proposito: solo se muestra, no se usa como filtro.']
+  numeroBoleta varchar(50)
+  fechaInicio date [not null]
+  fechaFin date [not null]
+  cantidadDias decimal(5,2) [not null]
+  observacion varchar(500)
+  documentoId char(36) [not null, ref: > documento.id, note: 'Justificante medico OBLIGATORIO, asociado al expediente']
+  fechaRegistro datetime [not null, default: `now()`]
+  indexes {
+    (funcionarioId, fechaInicio) [name: 'idxIncapacidadFuncionario']
+  }
+  Note: 'Tabla propia y no una solicitud, porque no tiene flujo de aprobacion: se registra y se notifica a la jefatura y a RRHH (Ficha 26, Diagrama 6). Por eso no lleva campo estado. NO afecta la acumulacion de vacaciones (confirmado).'
+}
+
+Table capacitacion {
+  id char(36) [pk, note: 'UUID']
+  funcionarioId char(36) [not null, ref: > funcionario.id]
+  nombre varchar(200) [not null]
+  institucion varchar(180) [note: 'Texto libre a proposito: no se usa como filtro de busqueda.']
+  modalidad modalidadCapacitacion
+  fechaInicio date
+  fechaFin date
+  cantidadHoras decimal(6,2)
+  afectaJornada boolean [not null, default: false, note: 'Si es true debe existir la solicitud de aprobacion asociada (Ficha 27, Diagrama 5)']
+  solicitudId char(36) [ref: > solicitud.id, note: 'Solo cuando requirio aprobacion por ausencia laboral']
+  documentoId char(36) [ref: > documento.id, note: 'Certificado o constancia. Opcional: si no se obtiene, el registro permanece sin documento. HU 34 CA05.']
+  usuarioRegistroId char(36) [ref: > usuario.id, note: 'RRHH o el propio funcionario: las capacitaciones son parte de lo que el funcionario puede mantener por autoservicio (V3-9)']
+  observacion varchar(500)
+  fechaRegistro datetime [not null, default: `now()`]
+  indexes {
+    funcionarioId [name: 'idxCapacitacionFuncionario']
+  }
+  Note: 'Un registro por funcionario capacitado. El alcance es registro documental y efecto sobre la disponibilidad, NO una plataforma de cursos.'
+}
+
+
+// =====================================================================
+// 7. TALENT POOL  (6 tablas)
+// HU 38 a HU 41 | RF-16 a RF-20, RN-04, RN-05
+// Modulo independiente del expediente de funcionarios (HU 38 CA06).
+// =====================================================================
+
+Table consentimiento {
+  id char(36) [pk, note: 'UUID']
+  version varchar(20) [not null, unique]
+  titulo varchar(180) [not null]
+  texto text [not null, note: 'Texto oficial de la Municipalidad. PENDIENTE: lo define Joseph.']
+  vigenteDesde date [not null]
+  activo boolean [not null, default: true]
+  Note: 'Versionado, para poder demostrar que texto acepto cada candidato y cuando. RN-05. Aceptarlo es un paso obligatorio del registro (Ficha 32, Diagrama 8).'
+}
+
+Table candidato {
+  id char(36) [pk, note: 'UUID']
+  cedula varchar(20) [not null, unique, note: 'RN-04: identificador logico. Si ya existe se actualiza, no se duplica.']
+  nombre varchar(80) [not null]
+  primerApellido varchar(80) [not null]
+  segundoApellido varchar(80)
+  correo varchar(150)
+  telefono varchar(30)
+  fechaNacimiento date
+
+  // [V3-4] Se cataloga la profesion para que el filtro de HU 39 sea
+  // confiable, pero el formulario es publico y el candidato podria no
+  // encontrar la suya: por eso queda el campo de texto de respaldo.
+  profesionId char(36) [ref: > profesion.id, note: '[V3-4] Profesion seleccionada del catalogo. Es lo que hace confiable el filtro por carrera.']
+  profesionTexto varchar(150) [note: '[V3-4] Solo si el candidato no encuentra su profesion en la lista. RRHH revisa estos casos y, si corresponde, agrega la profesion al catalogo y reasigna.']
+
+  descripcion text [note: 'Perfil o resumen profesional']
+  estado estadoCandidato [not null, default: 'activo', note: 'Los inactivos no salen en la busqueda normal (HU 41 CA03). Pasar a contratado dispara la Ficha 41.']
+
+  cvNombreArchivo varchar(255)
+  cvRutaArchivo varchar(500) [note: 'Ruta al servidor de archivos. Al contratar, este CV se copia como documento del expediente del nuevo funcionario (V3-10).']
+
+  funcionarioId char(36) [unique, ref: - funcionario.id, note: 'Nulo mientras no se le contrate. Un candidato solo puede convertirse en un funcionario.']
+
+  consentimientoId char(36) [not null, ref: > consentimiento.id]
+  fechaConsentimiento datetime [not null]
+  ipConsentimiento varchar(45)
+
+  fechaRegistro datetime [not null, default: `now()`]
+  fechaActualizacion datetime
+  usuarioActualizacionId char(36) [ref: > usuario.id, note: 'Nulo cuando la actualizacion la hace el propio candidato desde el formulario publico']
+  indexes {
+    cedula [name: 'idxCandidatoCedula']
+    (primerApellido, nombre) [name: 'idxCandidatoNombre']
+    correo [name: 'idxCandidatoCorreo']
+    estado [name: 'idxCandidatoEstado']
+    profesionId [name: 'idxCandidatoProfesion']
+  }
+  Note: '[V3-10] CONTRATACION: al pasar el estado a contratado, con doble confirmacion, el sistema crea el funcionario con los datos personales prellenados, PREGUNTA si se le crea cuenta de usuario, y copia el CV al expediente como documento inicial. Los datos laborales los completa RRHH. La actualizacion del perfil es un upsert por cedula sin verificacion de identidad: RIESGO DE SEGURIDAD CONOCIDO Y ACEPTADO (Ficha 33). Solo RRHH tiene acceso de lectura.'
+}
+
+// ---------------------------------------------------------------------
+// tokenCandidato: RETIRADA DEL MODELO ACTIVO (decision confirmada).
+// Modelaba un enlace temporal por correo para verificar la identidad
+// del candidato antes de dejarlo actualizar su perfil. El flujo
+// confirmado es el contrario: upsert libre solo con la cedula, como
+// riesgo aceptado. Se deja comentada porque es exactamente la forma
+// que tendria la mitigacion si algun dia deciden cerrar ese riesgo.
+//
+// Table tokenCandidato {
+//   id char(36) [pk]
+//   candidatoId char(36) [not null, ref: > candidato.id]
+//   tokenHash varchar(255) [not null, unique]
+//   fechaExpiracion datetime [not null]
+//   fechaUso datetime
+// }
+// ---------------------------------------------------------------------
+
+Table formacionCandidato {
+  id char(36) [pk, note: 'UUID']
+  candidatoId char(36) [not null, ref: > candidato.id]
+  nivel nivelEducativo [not null]
+  institucion varchar(180) [note: 'Texto libre: no se usa como filtro.']
+  titulo varchar(180)
+  areaEstudio varchar(150)
+  anioFinalizacion smallint
+  concluido boolean [not null, default: true]
+  indexes {
+    (candidatoId, nivel) [name: 'idxFormacionCandidato']
+  }
+  Note: 'Sustituye los campos formacionPrimaria, formacionSecundaria, formacionUniversitaria y otrosCursos. Es lo que hace posible filtrar por formacion en HU 39.'
+}
+
+Table habilidad {
+  id char(36) [pk, note: 'UUID']
+  nombre varchar(120) [not null, unique]
+  descripcion varchar(255)
+  categoria categoriaHabilidad [not null]
+  activo boolean [not null, default: true]
+  Note: 'Catalogo administrable: RRHH le va agregando habilidades con el uso. Evita texto libre y hace confiable el filtro.'
+}
+
+Table candidatoHabilidad {
+  id char(36) [pk, note: 'UUID']
+  candidatoId char(36) [not null, ref: > candidato.id]
+  habilidadId char(36) [not null, ref: > habilidad.id]
+  nivel nivelHabilidad
+  indexes {
+    (candidatoId, habilidadId) [unique, name: 'uqCandidatoHabilidad']
+  }
+  Note: 'Muchos a muchos con UUID propio.'
+}
+
+Table experienciaCandidato {
+  id char(36) [pk, note: 'UUID']
+  candidatoId char(36) [not null, ref: > candidato.id]
+  empresa varchar(180) [not null]
+  puesto varchar(150) [not null, note: 'Texto libre: es el puesto que tuvo fuera de la Municipalidad, no un puesto del catalogo interno.']
+  fechaInicio date
+  fechaFin date
+  esActual boolean [not null, default: false]
+  descripcion varchar(500)
+  Note: 'HU 38 CA02 y HU 39 CA02 piden filtrar por experiencia, asi que no puede ir como texto libre en el perfil.'
+}
+
+
+// =====================================================================
+// 8. NOTIFICACIONES Y AUDITORIA  (2 tablas)
+// HU 42 a HU 46 | RF-14, RF-23, RF-24
+// =====================================================================
+
+Table notificacion {
+  id char(36) [pk, note: 'UUID']
+
+  // Debe venir usuarioDestinoId O funcionarioDestinoId (se valida en
+  // backend). Un funcionario sin cuenta igual recibe los avisos
+  // importantes por correo.
+  usuarioDestinoId char(36) [ref: > usuario.id, note: 'Destinatario con cuenta: la ve en su bandeja. HU 42 CA05: cada quien ve solo las suyas.']
+  funcionarioDestinoId char(36) [ref: > funcionario.id, note: 'Destinatario SIN cuenta de usuario: solo se le envia por correo, no tiene bandeja que consultar.']
+  correoDestino varchar(150) [note: '[V3-6] Correo al que se envio realmente. Regla: se usa el correo institucional; si el funcionario no tiene uno registrado, se usa su correo personal, que es obligatorio.']
+
+  clave varchar(80) [not null, note: 'solicitudCreada, solicitudAprobada, solicitudRechazada, solicitudCancelada, incapacidadRegistrada, cuentaCreada, documentoGeneradoFallido, vacacionesPorVencer [V3-2], perfilActualizadoPorFuncionario [V3-9]']
+  titulo varchar(200) [not null]
+  mensaje varchar(1000) [not null]
+  entidad varchar(60) [note: 'Entidad que la origino, por ejemplo solicitud']
+  registroId char(36) [note: 'UUID del registro que la origino']
+  enviadaPorCorreo boolean [not null, default: false, note: 'Solo los asuntos importantes van por correo, para no saturar a los funcionarios']
+  leida boolean [not null, default: false, note: 'Solo leida / no leida. No se guarda la fecha exacta de lectura.']
+
+  fechaCreacion datetime [not null, default: `now()`]
+  indexes {
+    (usuarioDestinoId, leida) [name: 'idxNotificacionBandeja']
+    funcionarioDestinoId [name: 'idxNotificacionFuncionario']
+    (clave, registroId) [name: 'idxNotificacionEvento']
+  }
+  Note: 'Servicio centralizado: ningun modulo implementa su propio sistema de avisos. El indice por clave y registro evita reenviar dos veces el mismo aviso, por ejemplo el de vacaciones por vencer, sin necesidad de una tabla de control aparte.'
+}
+
+Table bitacoraCambio {
+  id char(36) [pk, note: 'UUID']
+  usuarioId char(36) [ref: > usuario.id, note: 'Quien ejecuto. Nulo en acciones anonimas como el registro externo del Talent Pool.']
+  funcionarioAfectadoId char(36) [ref: > funcionario.id, note: 'HU 45 CA08: cuando RRHH actua en nombre de un funcionario (RN-03)']
+  entidad varchar(60) [not null, note: 'funcionario, documento, solicitud, usuario, candidato, expediente...']
+  registroAfectadoId char(36) [not null, note: 'UUID del registro. NO es FK: la bitacora debe sobrevivir aunque el registro cambie o se de de baja. HU 45 CA09.']
+  accion accionBitacora [not null]
+  fechaHora datetime [not null, default: `now()`]
+  direccionIp varchar(45)
+  datosAnteriores json [note: 'HU 45 CA07']
+  datosNuevos json [note: 'HU 45 CA07']
+  descripcion varchar(1000)
+  indexes {
+    fechaHora [name: 'idxBitacoraFecha']
+    (usuarioId, fechaHora) [name: 'idxBitacoraUsuario']
+    (entidad, registroAfectadoId) [name: 'idxBitacoraRegistro']
+  }
+  Note: 'Registro inmutable: la aplicacion nunca hace UPDATE ni DELETE sobre esta tabla, ni siquiera el super administrador. Por T-4 las consultas de solo lectura NO se registran, con la excepcion confirmada de expediente y documentos. NO se registran: los intentos de login fallidos, los accesos denegados ni la recuperacion de contrasena (decisiones confirmadas).'
+}
+
+
+// =====================================================================
+// AGRUPACION VISUAL
+// =====================================================================
+
+// Seguridad: usuarios, roles y permisos granulares
+TableGroup seguridad {
+  usuario
+  tokenRecuperacionContrasena
+  rol
+  permiso
+  rolPermiso
+  usuarioRol
+  usuarioPermiso
+}
+
+// Funcionarios y su relacion laboral
+TableGroup funcionarios {
+  funcionario
+  departamento
+  puesto
+  profesion
+}
+
+// Expediente laboral digital
+TableGroup expediente {
+  tipoDocumento
+  documento
+}
+
+// Vacaciones, permisos, licencias, horas extra
+TableGroup solicitudes {
+  tipoSolicitud
+  solicitud
+  diaNoLaborable
+  regimenVacaciones
+  reglaVacaciones
+  movimientoVacaciones
+}
+
+// Incapacidades y capacitaciones
+TableGroup procesos {
+  tipoIncapacidad
+  incapacidad
+  capacitacion
+}
+
+// Talent Pool
+TableGroup talentPool {
+  consentimiento
+  candidato
+  formacionCandidato
+  habilidad
+  candidatoHabilidad
+  experienciaCandidato
+}
+
+// Notificaciones y auditoria
+TableGroup transversales {
+  notificacion
+  bitacoraCambio
+}

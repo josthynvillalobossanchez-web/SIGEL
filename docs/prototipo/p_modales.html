@@ -1,0 +1,376 @@
+<!-- ============ Ver usuario (solo lectura) ============ -->
+<div class="velo" id="mdVerUsuario" role="dialog" aria-modal="true" aria-labelledby="tVerUsuario">
+  <div class="modal modal-ancho">
+    <div class="modal-cab">
+      <h2 id="tVerUsuario">
+        <span class="ic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21v-1a6 6 0 0 1 6-6h4a6 6 0 0 1 6 6v1"/></svg></span>
+        <span id="vuNombre">Ana Lucía Vargas Chaves</span>
+      </h2>
+      <p>Cuenta de acceso al sistema. Para modificarla use el botón de editar.</p>
+    </div>
+    <div class="modal-cuerpo">
+      <div class="info-bloque" style="margin-bottom:0;border:0">
+        <dl class="info-rejilla" style="padding:0">
+          <div class="dato"><dt>Correo de ingreso</dt><dd id="vuCorreo">avargas@munipalmares.go.cr</dd></div>
+          <div class="dato"><dt>Funcionario asociado</dt><dd id="vuFuncionario">Ana Lucía Vargas Chaves</dd></div>
+          <div class="dato"><dt>Estado</dt><dd id="vuEstado"><span class="chip chip-exito">● Activa</span></dd></div>
+          <div class="dato"><dt>Último acceso</dt><dd class="num" id="vuAcceso">10/09/2026 07:42</dd></div>
+          <div class="dato" style="grid-column:1/-1"><dt>Roles</dt>
+            <dd><div class="pills" id="vuRoles"><span class="chip-rol sistema">Administrador</span></div></dd></div>
+        </dl>
+      </div>
+    </div>
+    <div class="modal-pie">
+      <button class="btn btn-secundario" data-cerrar>Cerrar</button>
+      <button class="btn btn-primario" id="btnEditarDesdeVer">Editar usuario</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ Ficha resumida del funcionario (Ficha 13) ============ -->
+<div class="velo" id="mdResumen" role="dialog" aria-modal="true" aria-labelledby="tResumen">
+  <div class="modal modal-ancho">
+    <div class="modal-cab">
+      <div class="resumen-cab" style="margin-bottom:0">
+        <div class="foto" aria-hidden="true">MR</div>
+        <div>
+          <h2 id="tResumen">María José Rodríguez Alfaro</h2>
+          <p class="ced">Cédula 2-0678-0432</p>
+          <div class="ficha-chips" style="margin-top:8px"><span class="chip chip-exito">● Activa</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-cuerpo">
+      <dl class="resumen-datos" style="border-top:0;padding-top:0">
+        <div class="dato"><dt>Puesto</dt><dd>Asistente de Recursos Humanos</dd></div>
+        <div class="dato"><dt>Departamento</dt><dd>Recursos Humanos</dd></div>
+        <div class="dato"><dt>Jefatura inmediata</dt><dd>Ana Lucía Vargas Chaves</dd></div>
+        <div class="dato"><dt>Teléfono</dt><dd class="num">8712 4408</dd></div>
+        <div class="dato"><dt>Correo</dt><dd>mrodriguez@munipalmares.go.cr</dd></div>
+        <div class="dato"><dt>Fecha de ingreso</dt><dd class="num">03/02/2020</dd></div>
+      </dl>
+    </div>
+    <div class="modal-pie">
+      <button class="btn btn-secundario" data-cerrar>Cerrar</button>
+      <button class="btn btn-primario" data-ir-pagina="pgExpediente" data-cerrar>Ver expediente</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ Crear / editar usuario (Fichas 2 y 5) — por pasos ============ -->
+<div class="velo" id="mdUsuario" role="dialog" aria-modal="true" aria-labelledby="tUsuario">
+  <div class="modal modal-ancho">
+    <div class="modal-cab">
+      <h2 id="tUsuario"><span class="ic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M19 8v6M22 11h-6"/></svg></span>Crear usuario</h2>
+      <p id="subUsuario">La contraseña inicial es temporal: el sistema obliga a cambiarla en el primer ingreso y avisa por correo.</p>
+      <div class="pasos" style="margin:16px 0 0" role="tablist" aria-label="Pasos de la cuenta">
+        <button class="paso" role="tab" aria-current="step" data-paso-us="1">
+          <span class="n">1</span><span>Cuenta<span class="sub">Funcionario y correo</span></span>
+        </button>
+        <button class="paso" role="tab" data-paso-us="2">
+          <span class="n">2</span><span>Roles<span class="sub">Qué podrá hacer</span></span>
+        </button>
+      </div>
+    </div>
+
+    <div class="modal-cuerpo">
+      <div data-panel-us="1">
+        <div class="campo">
+          <label for="usFuncionario">Funcionario asociado</label>
+          <select id="usFuncionario">
+            <option>— Cuenta administrativa, sin expediente —</option>
+            <option>María José Rodríguez Alfaro · 2-0678-0432</option>
+            <option>Laura Quesada Ureña · 2-0745-0219</option>
+            <option>Carlos Solís Méndez · 2-0431-0177</option>
+          </select>
+          <span class="ayuda">Si la cuenta no corresponde a un funcionario con expediente, déjela como administrativa.</span>
+        </div>
+        <div class="campo">
+          <label for="usCorreo">Correo de ingreso <span class="obligatorio">*</span></label>
+          <input id="usCorreo" type="email" placeholder="nombre@munipalmares.go.cr">
+          <span class="ayuda">Es el identificador con el que la persona inicia sesión. No se puede repetir.</span>
+        </div>
+        <div class="campo" id="campoPassTemp">
+          <label for="usPass">Contraseña temporal <span class="obligatorio">*</span></label>
+          <div class="pass-envoltura">
+            <input id="usPass" type="text" value="Palmares.2026" style="font-family:ui-monospace,monospace">
+            <button class="ver-pass" type="button" data-ver="usPass" aria-label="Mostrar contraseña" title="Mostrar contraseña">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>
+            </button>
+          </div>
+          <span class="ayuda">Se le enviará por correo junto con el aviso de cambiarla.</span>
+        </div>
+      </div>
+
+      <div data-panel-us="2" hidden>
+        <div class="campo">
+          <label>Roles <span class="obligatorio">*</span></label>
+          <label class="check"><input type="checkbox"><span class="txt"><b>Súper Administrador</b><span>Control total, incluida la bitácora de auditoría</span></span></label>
+          <label class="check"><input type="checkbox"><span class="txt"><b>Administrador</b><span>Recursos Humanos: funcionarios, expedientes y trámites</span></span></label>
+          <label class="check"><input type="checkbox"><span class="txt"><b>Aprobador</b><span>Resuelve las solicitudes de su equipo</span></span></label>
+          <label class="check"><input type="checkbox" checked><span class="txt"><b>Solicitante</b><span>Sus propios trámites y su propio expediente</span></span></label>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-pie">
+      <button class="btn btn-secundario" data-cerrar>Cancelar</button>
+      <button class="btn btn-secundario" id="btnUsAtras" hidden>Anterior</button>
+      <button class="btn btn-primario" id="btnUsAdelante">Siguiente</button>
+      <button class="btn btn-primario" id="btnUsGuardar" hidden>Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ Permisos individuales (Ficha 10) ============ -->
+<div class="velo" id="mdPermisos" role="dialog" aria-modal="true" aria-labelledby="tPermisos">
+  <div class="modal modal-ancho">
+    <div class="modal-cab">
+      <h2 id="tPermisos"><span class="ic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2 4 6v6c0 5 3.4 8.7 8 10 4.6-1.3 8-5 8-10V6z"/><path d="m9 12 2 2 4-4"/></svg></span>Permisos individuales</h2>
+      <p>Excepciones sobre lo que ya otorgan los roles de <b>Ana Lucía Vargas Chaves</b>: sirven para conceder algo puntual o para quitarlo, aunque el rol lo dé.</p>
+    </div>
+    <div class="modal-cuerpo">
+      <div class="mensaje mensaje-advert">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/><path d="M12 9v4M12 17h.01"/></svg>
+        <p>Úselo solo como excepción. Si varias personas necesitan lo mismo, conviene crear un rol.</p>
+      </div>
+      <div class="campo">
+        <label for="pmPermiso">Permiso</label>
+        <select id="pmPermiso">
+          <option>bitacora.ver — Consultar la bitácora de auditoría</option>
+          <option>documentos.darDeBaja — Ocultar un documento sin eliminarlo</option>
+          <option>tiposDocumento.editar — Administrar el catálogo</option>
+        </select>
+      </div>
+      <div class="campo">
+        <label>Efecto</label>
+        <label class="check"><input type="radio" name="efecto" checked><span class="txt"><b>Otorgar</b><span>Se concede aunque ningún rol suyo lo incluya</span></span></label>
+        <label class="check"><input type="radio" name="efecto"><span class="txt"><b>Revocar</b><span>Se quita aunque su rol sí lo otorgue</span></span></label>
+      </div>
+      <div class="campo">
+        <label for="pmMotivo">Motivo de la excepción</label>
+        <textarea id="pmMotivo" rows="3" placeholder="Queda registrado en la bitácora junto con quién la creó."></textarea>
+      </div>
+    </div>
+    <div class="modal-pie">
+      <button class="btn btn-secundario" data-cerrar>Cancelar</button>
+      <button class="btn btn-primario" data-cerrar>Guardar excepción</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ Cambiar estado de cuenta (Ficha 7) ============ -->
+<div class="velo" id="mdEstado" role="dialog" aria-modal="true" aria-labelledby="tEstado">
+  <div class="modal">
+    <div class="modal-cab">
+      <h2 id="tEstado"><span class="ic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg></span>Cambiar estado de la cuenta</h2>
+      <p>La cuenta y todo su historial se conservan. Una cuenta que no esté activa simplemente no puede iniciar sesión.</p>
+    </div>
+    <div class="modal-cuerpo">
+      <p class="modal-doc" style="margin-top:0">Ana Lucía Vargas Chaves · avargas@munipalmares.go.cr</p>
+      <label class="check"><input type="radio" name="estadoCta" checked><span class="txt"><b>Activa</b><span>Puede ingresar con normalidad</span></span></label>
+      <label class="check"><input type="radio" name="estadoCta"><span class="txt"><b>Inactiva</b><span>La persona dejó de trabajar en la Municipalidad</span></span></label>
+      <label class="check"><input type="radio" name="estadoCta"><span class="txt"><b>Bloqueada</b><span>Suspensión del acceso que decide Recursos Humanos, por ejemplo durante una investigación o una licencia larga. Se levanta volviendo a marcar Activa.</span></span></label>
+      <div class="mensaje mensaje-info" style="margin:12px 0 0">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+        <p>No confundir con el bloqueo de tres minutos por intentos fallidos: ese es automático, temporal y no cambia el estado de la cuenta.</p>
+      </div>
+    </div>
+    <div class="modal-pie">
+      <button class="btn btn-secundario" data-cerrar>Cancelar</button>
+      <button class="btn btn-primario" data-cerrar>Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ Subir documento (Ficha 19) ============ -->
+<div class="velo" id="mdSubir" role="dialog" aria-modal="true" aria-labelledby="tSubir">
+  <div class="modal modal-ancho">
+    <div class="modal-cab">
+      <h2 id="tSubir"><span class="ic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M17 8l-5-5-5 5M12 3v12"/></svg></span>Subir documento al expediente</h2>
+      <p>Se aceptan PDF, JPG y PNG, hasta 25 MB. El archivo se guarda con un nombre interno seguro, fuera de cualquier carpeta pública.</p>
+    </div>
+    <div class="modal-cuerpo">
+      <div class="campo">
+        <label for="dcTipo">Tipo de documento <span class="obligatorio">*</span></label>
+        <select id="dcTipo">
+          <option>Seleccione…</option>
+          <option>Cédula de identidad</option>
+          <option>Título universitario</option>
+          <option>Hoja de delincuencia</option>
+          <option>Acción de personal</option>
+        </select>
+      </div>
+      <div class="campo">
+        <label for="dcTitulo">Título <span class="obligatorio">*</span></label>
+        <input id="dcTitulo" type="text" placeholder="Título universitario — Administración">
+      </div>
+      <div class="campo">
+        <label for="dcDesc">Descripción</label>
+        <textarea id="dcDesc" rows="3"></textarea>
+      </div>
+      <div class="campo">
+        <label>Archivo <span class="obligatorio">*</span></label>
+        <div class="zona-archivo" id="zonaArchivo" role="button" tabindex="0">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="color:var(--texto-sec)"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M17 8l-5-5-5 5M12 3v12"/></svg>
+          <p class="tit">Arrastre el archivo o haga clic para elegirlo</p>
+          <p class="lim">PDF, JPG o PNG · máximo 25 MB</p>
+        </div>
+        <div class="archivo-elegido" id="archivoElegido" hidden style="margin-top:10px">
+          <div class="doc-ico pdf">PDF</div>
+          <div style="min-width:0"><span class="nom">titulo_universitario.pdf</span>
+          <span class="peso">3,8 MB</span></div>
+          <button class="icono-btn peligro" style="margin-left:auto" id="quitarArchivo" aria-label="Quitar archivo" title="Quitar archivo">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+          </button>
+        </div>
+      </div>
+    </div>
+    <div class="modal-pie">
+      <button class="btn btn-secundario" data-cerrar>Cancelar</button>
+      <button class="btn btn-primario" data-cerrar>Subir documento</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ Crear rol (Ficha 3) ============ -->
+<div class="velo" id="mdRol" role="dialog" aria-modal="true" aria-labelledby="tRol">
+  <div class="modal">
+    <div class="modal-cab">
+      <h2 id="tRol"><span class="ic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2 4 6v6c0 5 3.4 8.7 8 10 4.6-1.3 8-5 8-10V6z"/></svg></span>Crear rol</h2>
+      <p>Después de crearlo podrá marcarle los permisos que corresponda.</p>
+    </div>
+    <div class="modal-cuerpo">
+      <div class="campo"><label for="rlNombre">Nombre <span class="obligatorio">*</span></label>
+        <input id="rlNombre" type="text" placeholder="Ej.: Control Interno"></div>
+      <div class="campo"><label for="rlDesc">Descripción</label>
+        <textarea id="rlDesc" rows="3" placeholder="Para qué sirve este rol y quién debería tenerlo."></textarea></div>
+    </div>
+    <div class="modal-pie">
+      <button class="btn btn-secundario" data-cerrar>Cancelar</button>
+      <button class="btn btn-primario" data-cerrar>Crear rol</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ Crear permiso (Ficha 4) — módulo y acción desde catálogo ============ -->
+<div class="velo" id="mdPermiso" role="dialog" aria-modal="true" aria-labelledby="tPermiso">
+  <div class="modal">
+    <div class="modal-cab">
+      <h2 id="tPermiso"><span class="ic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M4.2 4.2l2.8 2.8M17 17l2.8 2.8M1 12h4M19 12h4M4.2 19.8 7 17M17 7l2.8-2.8"/></svg></span>Crear permiso</h2>
+      <p>El módulo y la acción se eligen de los valores que el sistema ya reconoce, para que la clave siempre exista en el código.</p>
+    </div>
+    <div class="modal-cuerpo">
+      <div class="campo-fila">
+        <div class="campo"><label for="pwModulo">Módulo <span class="obligatorio">*</span></label>
+          <select id="pwModulo">
+            <option value="">Seleccione…</option>
+            <option>funcionarios</option><option>expediente</option><option>documentos</option>
+            <option>tiposDocumento</option><option>usuarios</option><option>roles</option>
+            <option>permisos</option><option>perfilPropio</option><option>bitacora</option>
+          </select></div>
+        <div class="campo"><label for="pwAccion">Acción <span class="obligatorio">*</span></label>
+          <select id="pwAccion">
+            <option value="">Seleccione…</option>
+            <option>ver</option><option>crear</option><option>editar</option>
+            <option>descargar</option><option>darDeBaja</option><option>cambiarEstado</option>
+            <option>aprobar</option><option>rechazar</option>
+          </select></div>
+      </div>
+      <div class="campo">
+        <label>Clave que se generará</label>
+        <p><span class="clave" id="clavePreview">módulo.acción</span></p>
+        <span class="ayuda">Si esta combinación ya existe, el sistema la rechaza.</span>
+      </div>
+      <div class="campo"><label for="pwDesc">Descripción <span class="obligatorio">*</span></label>
+        <input id="pwDesc" type="text" placeholder="Aprobar o rechazar solicitudes de vacaciones"></div>
+    </div>
+    <div class="modal-pie">
+      <button class="btn btn-secundario" data-cerrar>Cancelar</button>
+      <button class="btn btn-primario" data-cerrar>Crear permiso</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ Tipo de documento (Ficha 18) ============ -->
+<div class="velo" id="mdTipoDoc" role="dialog" aria-modal="true" aria-labelledby="tTipoDoc">
+  <div class="modal">
+    <div class="modal-cab"><h2 id="tTipoDoc"><span class="ic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg></span>Tipo de documento</h2></div>
+    <div class="modal-cuerpo">
+      <div class="campo"><label for="tdNombre">Nombre <span class="obligatorio">*</span></label>
+        <input id="tdNombre" type="text" placeholder="Constancia de estudios"></div>
+      <div class="campo"><label for="tdDesc">Descripción</label>
+        <textarea id="tdDesc" rows="3"></textarea></div>
+      <div class="mensaje mensaje-info" style="margin-top:4px">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+        <p>Los tipos que genera SIGEL no se crean desde aquí: nacen junto con el proceso que los produce, y solo se les puede cambiar el nombre.</p>
+      </div>
+    </div>
+    <div class="modal-pie">
+      <button class="btn btn-secundario" data-cerrar>Cancelar</button>
+      <button class="btn btn-primario" data-cerrar>Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ Cambiar mi contraseña con código (Ficha 8 + Ficha 1) ============ -->
+<div class="velo" id="mdCambiarPass" role="dialog" aria-modal="true" aria-labelledby="tPass">
+  <div class="modal">
+    <div class="modal-cab">
+      <h2 id="tPass"><span class="ic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></span>Cambiar mi contraseña</h2>
+      <p id="subPass">Por seguridad, primero le enviamos un código de verificación al correo de su cuenta.</p>
+    </div>
+    <div class="modal-cuerpo">
+      <!-- paso 1 -->
+      <div id="cpPaso1">
+        <p class="modal-doc" style="margin-top:0">Se enviará a <b id="cpCorreo">avargas@munipalmares.go.cr</b></p>
+      </div>
+      <!-- paso 2 -->
+      <div id="cpPaso2" hidden>
+        <div class="mensaje mensaje-exito">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.1V12a10 10 0 1 1-5.9-9.1"/><path d="m9 11 3 3L22 4"/></svg>
+          <p>Código enviado. Revise su correo e ingréselo aquí.</p>
+        </div>
+        <div class="campo"><label for="cpCodigo">Código de verificación</label>
+          <input id="cpCodigo" type="text" inputmode="numeric" placeholder="6 dígitos" style="font-variant-numeric:tabular-nums;letter-spacing:.3em"></div>
+        <div class="campo"><label for="cpNueva">Contraseña nueva</label>
+          <div class="pass-envoltura">
+            <input id="cpNueva" type="password">
+            <button class="ver-pass" type="button" data-ver="cpNueva" aria-label="Mostrar contraseña" title="Mostrar contraseña">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>
+            </button>
+          </div>
+          <span class="ayuda">Mínimo 8 caracteres, con al menos una letra y un número.</span></div>
+        <div class="campo"><label for="cpRepetir">Repita la contraseña nueva</label>
+          <div class="pass-envoltura">
+            <input id="cpRepetir" type="password">
+            <button class="ver-pass" type="button" data-ver="cpRepetir" aria-label="Mostrar contraseña" title="Mostrar contraseña">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>
+            </button>
+          </div></div>
+      </div>
+    </div>
+    <div class="modal-pie">
+      <button class="btn btn-secundario" data-cerrar>Cancelar</button>
+      <button class="btn btn-primario" id="btnCpEnviar">Enviar código</button>
+      <button class="btn btn-primario" id="btnCpGuardar" hidden data-cerrar>Guardar contraseña</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ Dar de baja documento (Ficha 42) ============ -->
+<div class="velo" id="velo" role="dialog" aria-modal="true" aria-labelledby="tituloModal">
+  <div class="modal">
+    <div class="modal-cab">
+      <h2 id="tituloModal"><span class="ic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/></svg></span>Dar de baja este documento</h2>
+      <p>Dejará de aparecer en el expediente, pero el archivo y su registro se conservan. La acción queda en la bitácora.</p>
+    </div>
+    <div class="modal-cuerpo">
+      <p class="modal-doc" style="margin-top:0" id="modalDoc">Documento</p>
+    </div>
+    <div class="modal-pie">
+      <button class="btn btn-secundario" id="btnCancelar" data-cerrar>Cancelar</button>
+      <button class="btn btn-peligro" id="btnConfirmar" data-cerrar>Dar de baja</button>
+    </div>
+  </div>
+</div>

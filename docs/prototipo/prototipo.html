@@ -1,0 +1,2695 @@
+<title>Prototipo SIGEL</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Public+Sans:ital,wght@0,400;0,600;0,700;0,800;1,400&display=swap">
+
+<style>
+
+/* ============================================================
+   SIGEL · Tokens  (sigel-tokens.css)
+   ============================================================ */
+:root{
+  --navy-900:#1F3140; --navy-800:#274152; --navy-700:#2F4E63;
+  --olive-600:#667306; --olive-700:#4F5905; --olive-800:#3D4504;
+  --cyan-300:#6BCCF2;  --red-700:#BE0811;
+
+  --info-bg:#E3F2FD;   --info-fg:#1565C0;
+  --exito-bg:#E8F2E9;  --exito-fg:#2B762E;
+  --advert-bg:#FDF3E2; --advert-fg:#965900;
+  --error-bg:#FCE9E7;  --error-fg:#B3261E;
+  --neutro-bg:#EEF2F7; --neutro-fg:#5F6B75;
+
+  --superficie:#F7F8FA; --card:#FFFFFF;
+  --borde:#DDE3EA; --borde-fuerte:#C3CCD6;
+  --texto:var(--navy-900); --texto-sec:#5F6B75; --texto-desh:#8B96A0;
+
+  --accion:var(--olive-600); --accion-hover:var(--olive-700); --accion-txt:#FFFFFF;
+  --accion-tinte:#F1F3E3; --accion-sobre-claro:var(--olive-800);
+  --barra:var(--navy-900); --barra-txt:#FFFFFF; --barra-sec:#B9C6D1;
+
+  --fuente:"Public Sans",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;
+  --radio-lg:8px; --radio-md:6px; --radio-full:999px;
+  --sombra-sm:0 1px 2px rgba(31,49,64,.06),0 1px 3px rgba(31,49,64,.08);
+  --sombra-md:0 2px 4px rgba(31,49,64,.06),0 4px 12px rgba(31,49,64,.08);
+  --sombra-lg:0 8px 24px rgba(31,49,64,.14);
+  --foco:var(--cyan-300); --foco-borde:var(--navy-900);
+  --avatar-bg:var(--navy-700);
+  --h-barra:54px; --h-franja:36px;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --superficie:#17191C; --card:#1F2226;
+    --borde:#34393E; --borde-fuerte:#454C53;
+    --texto:#E9EBEE; --texto-sec:#A9B0B7; --texto-desh:#717981;
+
+    --info-bg:#1B2831;   --info-fg:#8ECBF5;
+    --exito-bg:#1C2A20;  --exito-fg:#7FC98A;
+    --advert-bg:#2E2618; --advert-fg:#E0A44A;
+    --error-bg:#33211F;  --error-fg:#F2938C;
+    --neutro-bg:#262A2F; --neutro-fg:#A9B0B7;
+
+    --accion:#D4A03A; --accion-hover:#DFAE47; --accion-txt:#17191C;
+    --accion-tinte:#2B2517; --accion-sobre-claro:#DFAE47;
+    --barra:#0F1113; --barra-txt:#E9EBEE; --barra-sec:#8D959C;
+    --avatar-bg:#343B42;
+    --sombra-sm:0 1px 2px rgba(0,0,0,.45); --sombra-md:0 4px 12px rgba(0,0,0,.5);
+    --sombra-lg:0 8px 24px rgba(0,0,0,.6);
+    --foco-borde:#E9EBEE; --foco:#D4A03A;
+  }
+}
+
+:root[data-theme="dark"]{
+    --superficie:#17191C; --card:#1F2226;
+  --borde:#34393E; --borde-fuerte:#454C53;
+  --texto:#E9EBEE; --texto-sec:#A9B0B7; --texto-desh:#717981;
+
+  --info-bg:#1B2831;   --info-fg:#8ECBF5;
+  --exito-bg:#1C2A20;  --exito-fg:#7FC98A;
+  --advert-bg:#2E2618; --advert-fg:#E0A44A;
+  --error-bg:#33211F;  --error-fg:#F2938C;
+  --neutro-bg:#262A2F; --neutro-fg:#A9B0B7;
+
+  --accion:#D4A03A; --accion-hover:#DFAE47; --accion-txt:#17191C;
+  --accion-tinte:#2B2517; --accion-sobre-claro:#DFAE47;
+  --barra:#0F1113; --barra-txt:#E9EBEE; --barra-sec:#8D959C;
+  --avatar-bg:#343B42;
+  --sombra-sm:0 1px 2px rgba(0,0,0,.45); --sombra-md:0 4px 12px rgba(0,0,0,.5);
+  --sombra-lg:0 8px 24px rgba(0,0,0,.6);
+  --foco-borde:#E9EBEE; --foco:#D4A03A;
+}
+
+/* ============================================================
+   Base
+   ============================================================ */
+*,*::before,*::after{box-sizing:border-box}
+[hidden]{display:none!important}
+.sr{position:absolute;width:1px;height:1px;padding:0;margin:-1px;
+  overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
+body{margin:0;font-family:var(--fuente);font-size:16px;line-height:1.5;
+  color:var(--texto);background:var(--superficie);-webkit-font-smoothing:antialiased}
+h1,h2,h3{margin:0;text-wrap:balance}
+p{margin:0}
+button{font:inherit;color:inherit}
+:where(a,button,input,select,textarea,[tabindex]):focus-visible{
+  outline:2px solid var(--foco-borde);outline-offset:0;
+  box-shadow:0 0 0 4px var(--foco);border-radius:var(--radio-md)}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{
+  animation-duration:.01ms!important;transition-duration:.01ms!important}}
+
+/* ============================================================
+   Barra superior
+   ============================================================ */
+.topbar{position:sticky;top:0;z-index:40;display:flex;align-items:center;gap:16px;
+  min-height:var(--h-barra);
+  background:var(--barra);color:var(--barra-txt);border-bottom:1px solid rgba(255,255,255,.08)}
+.marca{display:flex;align-items:center;gap:11px;padding:0 4px 0 18px;flex-shrink:0}
+.marca img{height:30px;width:auto;display:block}
+.marca-txt b{display:block;font-size:17px;font-weight:800;letter-spacing:.12em;line-height:1}
+.marca-txt small{display:block;font-size:10.5px;font-weight:600;letter-spacing:.03em;
+  color:var(--barra-sec);margin-top:3px}
+.topbar-fin{margin-left:auto;display:flex;align-items:center;gap:8px;padding:0 16px 0 0}
+.tb-btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;
+  background:transparent;border:1px solid rgba(255,255,255,.22);color:var(--barra-txt);
+  border-radius:var(--radio-md);padding:7px 11px;font-size:14px;cursor:pointer;
+  transition:background .15s,border-color .15s}
+.tb-btn:hover{background:rgba(255,255,255,.1);border-color:rgba(255,255,255,.4)}
+.tb-btn .punto{width:7px;height:7px;border-radius:50%;background:var(--cyan-300)}
+.usuario{display:flex;align-items:center;gap:10px;padding-left:12px;
+  border-left:1px solid rgba(255,255,255,.16)}
+.usuario-inicial{width:34px;height:34px;border-radius:50%;background:var(--avatar-bg);
+  color:#fff;display:grid;place-items:center;font-weight:700;font-size:14px;flex-shrink:0}
+.usuario-txt{line-height:1.25}
+.usuario-txt b{font-size:14px;font-weight:600;display:block}
+.usuario-txt span{font-size:12px;color:var(--barra-sec)}
+.menu-btn{display:none;background:transparent;border:0;color:var(--barra-txt);
+  padding:12px 14px;cursor:pointer}
+.menu-btn svg{display:block}
+
+/* ============================================================
+   Estructura
+   ============================================================ */
+.layout{display:grid;grid-template-columns:248px minmax(0,1fr);
+  min-height:calc(100vh - var(--h-barra) - var(--h-franja));align-items:start}
+.lateral{position:sticky;top:calc(var(--h-barra) + var(--h-franja));align-self:start;
+  height:calc(100vh - var(--h-barra) - var(--h-franja));
+  background:var(--card);border-right:1px solid var(--borde);
+  padding:20px 12px;display:flex;flex-direction:column;gap:22px;overflow-y:auto}
+.nav-grupo{display:flex;flex-direction:column;gap:2px}
+.nav-titulo{font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;
+  color:var(--texto-sec);padding:0 12px 6px}
+.nav-item{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:var(--radio-md);
+  color:var(--texto);text-decoration:none;font-size:15px;border-left:3px solid transparent;
+  background:transparent;border-top:0;border-right:0;border-bottom:0;width:100%;
+  text-align:left;cursor:pointer;transition:background .15s}
+.nav-item:hover{background:var(--neutro-bg)}
+.nav-item .ico{width:18px;height:18px;flex-shrink:0;color:var(--texto-sec)}
+.nav-item[aria-current="page"]{background:var(--accion-tinte);border-left-color:var(--accion);
+  color:var(--accion-sobre-claro);font-weight:600}
+.nav-item[aria-current="page"] .ico{color:var(--accion-sobre-claro)}
+.nav-insignia{margin-left:auto;background:var(--info-bg);color:var(--info-fg);
+  font-size:11px;font-weight:700;padding:2px 7px;border-radius:var(--radio-full)}
+
+.contenido{padding:20px 28px 28px;min-width:0}
+.migas{display:flex;flex-wrap:wrap;align-items:center;gap:6px;font-size:13px;
+  color:var(--texto-sec);margin-bottom:10px}
+.migas a{color:var(--texto-sec);text-decoration:none;border-bottom:1px solid transparent}
+.migas a:hover{color:var(--accion-sobre-claro);border-bottom-color:currentColor}
+.migas span[aria-current]{color:var(--texto);font-weight:600}
+
+/* ============================================================
+   Componentes
+   ============================================================ */
+.card{background:var(--card);border:1px solid var(--borde);border-radius:var(--radio-lg)}
+
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;
+  border-radius:var(--radio-md);padding:10px 16px;font-size:15px;font-weight:600;
+  cursor:pointer;border:1px solid transparent;transition:background .15s,border-color .15s;
+  white-space:nowrap}
+.btn-primario{background:var(--accion);color:var(--accion-txt)}
+.btn-primario:hover{background:var(--accion-hover)}
+.btn-secundario{background:var(--card);color:var(--texto);border-color:var(--borde-fuerte)}
+.btn-secundario:hover{background:var(--neutro-bg)}
+.btn-texto{background:transparent;border:0;color:var(--texto-sec);padding:7px 9px;
+  font-weight:500;font-size:14px;border-radius:var(--radio-md);cursor:pointer}
+.btn-texto:hover{background:var(--neutro-bg);color:var(--texto)}
+.btn-peligro{background:transparent;color:var(--error-fg);border-color:var(--error-fg)}
+.btn-peligro:hover{background:var(--error-bg)}
+
+.chip{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;
+  padding:3px 10px;border-radius:var(--radio-full);white-space:nowrap}
+.chip-exito{background:var(--exito-bg);color:var(--exito-fg)}
+.chip-neutro{background:var(--neutro-bg);color:var(--neutro-fg)}
+.chip-info{background:var(--info-bg);color:var(--info-fg)}
+.chip-advert{background:var(--advert-bg);color:var(--advert-fg)}
+
+/* Cabecera del funcionario */
+.ficha{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:20px;
+  padding:20px;align-items:start;margin-bottom:20px}
+.foto{width:88px;height:88px;border-radius:var(--radio-lg);object-fit:cover;
+  background:var(--neutro-bg);display:grid;place-items:center;font-size:28px;font-weight:800;
+  color:var(--texto-sec);flex-shrink:0}
+.ficha-id h1{font-size:26px;font-weight:800;letter-spacing:-.015em;line-height:1.2}
+.ficha-cedula{font-size:14px;color:var(--texto-sec);font-variant-numeric:tabular-nums;
+  margin-top:2px}
+.ficha-chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+.ficha-datos{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));
+  gap:14px 24px;margin-top:16px;padding-top:16px;border-top:1px solid var(--borde);
+  grid-column:1/-1}
+.dato dt{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;
+  color:var(--texto-sec);margin:0 0 3px}
+.dato dd{margin:0;font-size:15px;font-weight:600;overflow-wrap:anywhere}
+.dato dd.num{font-variant-numeric:tabular-nums}
+.ficha-acciones{display:flex;flex-direction:column;gap:8px}
+
+/* Pestañas */
+.tabs{display:flex;gap:2px;border-bottom:1px solid var(--borde);margin-bottom:16px;
+  overflow-x:auto;scrollbar-width:thin}
+.tab{background:transparent;border:0;border-bottom:3px solid transparent;padding:9px 16px;
+  font-size:15px;font-weight:600;color:var(--texto-sec);cursor:pointer;white-space:nowrap;
+  border-radius:var(--radio-md) var(--radio-md) 0 0;transition:color .15s,background .15s}
+.tab:hover{color:var(--texto);background:var(--neutro-bg)}
+.tab[aria-selected="true"]{color:var(--accion-sobre-claro);border-bottom-color:var(--accion)}
+.tab .cuenta{font-variant-numeric:tabular-nums;font-weight:700;opacity:.75;margin-left:5px}
+
+/* Aviso de auditoría */
+.aviso{display:flex;gap:12px;align-items:flex-start;background:var(--info-bg);
+  color:var(--info-fg);border-radius:var(--radio-lg);padding:10px 14px;font-size:14px;
+  margin-bottom:14px;line-height:1.45}
+.aviso svg{flex-shrink:0;margin-top:2px}
+.aviso b{font-weight:700}
+
+/* Barra de herramientas */
+.herramientas{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:12px}
+.buscador{position:relative;flex:1 1 260px;min-width:0}
+.buscador svg{position:absolute;left:12px;top:50%;transform:translateY(-50%);
+  color:var(--texto-sec);pointer-events:none}
+.buscador input{width:100%;padding:10px 12px 10px 38px;font-size:15px;font-family:inherit;
+  color:var(--texto);background:var(--card);border:1px solid var(--borde-fuerte);
+  border-radius:var(--radio-md)}
+.buscador input::placeholder{color:var(--texto-desh)}
+.filtros{display:flex;gap:6px;flex-wrap:wrap}
+.filtro{background:var(--card);border:1px solid var(--borde-fuerte);color:var(--texto-sec);
+  border-radius:var(--radio-full);padding:6px 14px;font-size:14px;cursor:pointer;
+  transition:background .15s,color .15s,border-color .15s}
+.filtro:hover{background:var(--neutro-bg);color:var(--texto)}
+.filtro[aria-pressed="true"]{background:var(--accion-tinte);border-color:var(--accion);
+  color:var(--accion-sobre-claro);font-weight:600}
+
+/* Tabla de documentos */
+.tabla-envoltura{overflow-x:auto;border:1px solid var(--borde);border-radius:var(--radio-lg);
+  background:var(--card)}
+table{width:100%;border-collapse:collapse;font-size:15px;min-width:640px}
+thead th{text-align:left;font-size:11px;font-weight:700;letter-spacing:.08em;
+  text-transform:uppercase;color:var(--texto-sec);padding:10px 16px;
+  border-bottom:1px solid var(--borde);white-space:nowrap;background:var(--card)}
+tbody td{padding:11px 16px;border-bottom:1px solid var(--borde);vertical-align:middle}
+tbody tr:last-child td{border-bottom:0}
+tbody tr{transition:background .12s}
+tbody tr:hover{background:var(--neutro-bg)}
+tbody tr[data-vigente="no"]{color:var(--texto-desh)}
+tbody tr[data-vigente="no"] .doc-nombre{text-decoration:line-through;
+  text-decoration-color:var(--texto-desh)}
+.doc{display:flex;gap:12px;align-items:flex-start;min-width:0}
+.doc-ico{width:34px;height:34px;border-radius:var(--radio-md);display:grid;place-items:center;
+  background:var(--neutro-bg);color:var(--neutro-fg);flex-shrink:0;font-size:10px;
+  font-weight:800;letter-spacing:.02em}
+.doc-ico.pdf{background:var(--error-bg);color:var(--error-fg)}
+.doc-ico.img{background:var(--info-bg);color:var(--info-fg)}
+.doc-nombre{font-weight:600;display:block;overflow-wrap:anywhere}
+.doc-meta{font-size:13px;color:var(--texto-sec);margin-top:2px;font-variant-numeric:tabular-nums}
+.num{font-variant-numeric:tabular-nums;white-space:nowrap}
+.acciones{text-align:right;white-space:nowrap}
+.acciones .icono-btn+.icono-btn{margin-left:2px}
+.icono-btn{background:transparent;border:0;color:var(--texto-sec);padding:7px;
+  border-radius:var(--radio-md);cursor:pointer;display:inline-grid;place-items:center;
+  vertical-align:middle;transition:background .15s,color .15s}
+.icono-btn:hover{background:var(--neutro-bg);color:var(--texto)}
+.icono-btn.peligro:hover{background:var(--error-bg);color:var(--error-fg)}
+
+/* Estado vacío */
+.vacio{display:grid;place-items:center;text-align:center;gap:10px;padding:40px 24px;
+  border:1px dashed var(--borde-fuerte);border-radius:var(--radio-lg);background:var(--card)}
+.vacio h3{font-size:18px;font-weight:700}
+.vacio p{color:var(--texto-sec);font-size:15px;max-width:44ch}
+
+/* Modal */
+.velo{position:fixed;inset:0;background:rgba(19,30,39,.55);display:none;place-items:center;
+  padding:20px;z-index:60}
+.velo[data-abierto="si"]{display:grid}
+.modal{background:var(--card);border-radius:var(--radio-lg);box-shadow:var(--sombra-lg);
+  max-width:460px;width:100%;padding:24px}
+.modal h2{font-size:20px;font-weight:700;margin-bottom:8px}
+.modal p{color:var(--texto-sec);font-size:15px;line-height:1.55}
+.modal-doc{background:var(--neutro-bg);border-radius:var(--radio-md);padding:10px 14px;
+  margin:14px 0;font-size:14px;font-weight:600}
+.modal-acciones{display:flex;gap:10px;justify-content:flex-end;margin-top:20px}
+
+/* Aviso de prototipo */
+.pie-proto{margin-top:18px;font-size:13px;color:var(--texto-sec);display:flex;gap:8px;
+  align-items:flex-start;line-height:1.5}
+.pie-proto .marca-proto{background:var(--advert-bg);color:var(--advert-fg);font-weight:700;
+  font-size:11px;letter-spacing:.06em;text-transform:uppercase;padding:2px 8px;
+  border-radius:var(--radio-full);flex-shrink:0}
+
+/* ============================================================
+   Adaptable
+   ============================================================ */
+@media (max-width:1023px){
+  .menu-btn{display:block}
+  .layout{grid-template-columns:minmax(0,1fr)}
+  .lateral{position:fixed;top:calc(var(--h-barra) + var(--h-franja));left:0;width:272px;z-index:50;
+    height:calc(100dvh - var(--h-barra) - var(--h-franja));transform:translateX(-100%);
+    transition:transform .2s ease;box-shadow:var(--sombra-lg);padding-bottom:32px}
+  .lateral[data-abierto="si"]{transform:translateX(0)}
+  .velo-nav{position:fixed;top:calc(var(--h-barra) + var(--h-franja));right:0;bottom:0;left:0;
+    background:rgba(19,30,39,.45);z-index:45;display:none}
+  .velo-nav[data-abierto="si"]{display:block}
+  .usuario-txt{display:none}
+  .contenido{padding:16px 16px 24px}
+  .usuario{padding-left:8px}
+}
+@media (max-width:719px){
+  .ficha{grid-template-columns:auto minmax(0,1fr);gap:16px;padding:16px}
+  .ficha-acciones{grid-column:1/-1;flex-direction:row;flex-wrap:wrap}
+  .ficha-acciones .btn{flex:1 1 auto}
+  .ficha-id h1{font-size:22px}
+  .foto{width:64px;height:64px;font-size:22px}
+  :root{--h-barra:50px; --h-franja:32px}
+  .solo-ancho{display:none}
+  .topbar{gap:6px}
+  .marca{padding:0 2px 0 10px;gap:8px}
+  .marca img{height:25px}
+  .marca-txt small{display:none}
+  .marca-txt b{font-size:15px}
+  .tb-btn{padding:6px 8px;font-size:13px}
+  .topbar-fin{gap:3px;padding-right:6px;min-width:0}
+  .usuario{padding-left:5px;border-left:0}
+  .usuario-inicial{width:30px;height:30px;font-size:13px}
+  #btnNotif{display:none}
+
+  /* La tabla se vuelve tarjetas: en móvil el desplazamiento lateral se pierde */
+  table,thead,tbody,tr,td{display:block}
+  table{min-width:0}
+  thead{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+  .tabla-envoltura{border:0;background:transparent;overflow:visible}
+  tbody tr{background:var(--card);border:1px solid var(--borde);border-radius:var(--radio-lg);
+    padding:14px;margin-bottom:12px}
+  tbody tr:hover{background:var(--card)}
+  tbody td{border-bottom:0;padding:0}
+  tbody td+td{margin-top:10px}
+  td[data-etiqueta]::before{content:attr(data-etiqueta);display:block;font-size:11px;
+    font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--texto-sec);
+    margin-bottom:3px}
+  .acciones{text-align:left;padding-top:10px;
+    border-top:1px solid var(--borde);margin-top:12px}
+  .acciones .icono-btn+.icono-btn{margin-left:6px}
+}
+
+/* ============================================================
+   Pantallas de acceso (Fichas 1 y 2)
+   ============================================================ */
+.acceso{min-height:100vh;display:grid;place-items:center;padding:24px 16px;
+  background:var(--superficie)}
+.acceso-caja{width:100%;max-width:420px}
+.acceso-marca{display:flex;flex-direction:column;align-items:center;gap:14px;margin-bottom:24px}
+.acceso-marca img{height:64px;width:auto}
+.acceso-marca .nom{text-align:center}
+.acceso-marca .nom b{display:block;font-size:26px;font-weight:800;letter-spacing:.14em;
+  color:var(--texto)}
+.acceso-marca .nom span{display:block;font-size:13px;color:var(--texto-sec);margin-top:4px}
+.acceso .card{padding:26px 24px}
+.acceso h1{font-size:20px;font-weight:700;margin-bottom:4px}
+.acceso .sub{font-size:14px;color:var(--texto-sec);margin-bottom:20px}
+.acceso-pie{text-align:center;font-size:13px;color:var(--texto-sec);margin-top:18px;
+  line-height:1.6}
+
+/* ============================================================
+   Formularios
+   ============================================================ */
+.campo{display:flex;flex-direction:column;gap:5px;margin-bottom:14px;min-width:0}
+.campo>label{font-size:13px;font-weight:600;color:var(--texto)}
+.campo .ayuda{font-size:12.5px;color:var(--texto-sec)}
+.campo input,.campo select,.campo textarea{width:100%;padding:10px 12px;font-size:15px;
+  font-family:inherit;color:var(--texto);background:var(--card);
+  border:1px solid var(--borde-fuerte);border-radius:var(--radio-md)}
+.campo input::placeholder,.campo textarea::placeholder{color:var(--texto-desh)}
+.campo input:disabled,.campo select:disabled{background:var(--neutro-bg);color:var(--texto-desh)}
+.campo textarea{resize:vertical;min-height:64px}
+.campo.error input,.campo.error select{border-color:var(--error-fg)}
+.campo .msg-error{font-size:12.5px;color:var(--error-fg);display:flex;gap:5px;align-items:center}
+.campo-fila{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:0 16px}
+.obligatorio{color:var(--error-fg)}
+.pass-envoltura{position:relative}
+.pass-envoltura input{padding-right:44px}
+.ver-pass{position:absolute;right:4px;top:50%;transform:translateY(-50%);background:transparent;
+  border:0;color:var(--texto-sec);padding:8px;cursor:pointer;border-radius:var(--radio-md);
+  display:grid;place-items:center}
+.ver-pass:hover{background:var(--neutro-bg)}
+.check{display:flex;gap:10px;align-items:flex-start;font-size:14px;cursor:pointer;
+  padding:7px 10px;border-radius:var(--radio-md);border:1px solid transparent}
+.check:hover{background:var(--neutro-bg)}
+.check input{margin:2px 0 0;width:17px;height:17px;accent-color:var(--accion);flex-shrink:0}
+.check .txt b{display:block;font-weight:600}
+.check .txt span{color:var(--texto-sec);font-size:13px}
+.btn-bloque{width:100%}
+
+/* Mensajes en línea */
+.mensaje{display:flex;gap:10px;align-items:flex-start;border-radius:var(--radio-md);
+  padding:10px 13px;font-size:14px;line-height:1.45;margin-bottom:14px}
+.mensaje svg{flex-shrink:0;margin-top:2px}
+.mensaje-error{background:var(--error-bg);color:var(--error-fg)}
+.mensaje-advert{background:var(--advert-bg);color:var(--advert-fg)}
+.mensaje-exito{background:var(--exito-bg);color:var(--exito-fg)}
+.mensaje-info{background:var(--info-bg);color:var(--info-fg)}
+
+/* ============================================================
+   Encabezado de página
+   ============================================================ */
+.pagina-cab{display:flex;flex-wrap:wrap;gap:12px;align-items:flex-start;
+  justify-content:space-between;margin-bottom:14px}
+.pagina-cab h1{font-size:24px;font-weight:800;letter-spacing:-.015em;line-height:1.2}
+.pagina-cab p{color:var(--texto-sec);font-size:14px;margin-top:3px;max-width:80ch;line-height:1.45}
+.pagina-cab .acc{display:flex;gap:8px;flex-wrap:wrap}
+
+/* ============================================================
+   Tablas de administración
+   ============================================================ */
+.celda-usuario{display:flex;gap:11px;align-items:center;min-width:0}
+.avatar-sm{width:34px;height:34px;border-radius:50%;background:var(--avatar-bg);color:#fff;
+  display:grid;place-items:center;font-weight:700;font-size:13px;flex-shrink:0}
+.celda-usuario .nom{font-weight:600;display:block;overflow-wrap:anywhere}
+.celda-usuario .sec{font-size:13px;color:var(--texto-sec);overflow-wrap:anywhere}
+.pills{display:flex;flex-wrap:wrap;gap:5px}
+.chip-rol{background:var(--neutro-bg);color:var(--texto-sec);font-size:12px;font-weight:600;
+  padding:3px 9px;border-radius:var(--radio-full);white-space:nowrap}
+.chip-rol.sistema{background:var(--accion-tinte);color:var(--accion-sobre-claro)}
+.clave{font-family:ui-monospace,"Cascadia Mono","Segoe UI Mono",Menlo,monospace;
+  font-size:13px;background:var(--neutro-bg);padding:2px 7px;border-radius:var(--radio-md);
+  color:var(--texto)}
+
+/* ============================================================
+   Panel de roles y permisos (Ficha 9)
+   ============================================================ */
+.dos-columnas{display:grid;grid-template-columns:minmax(0,280px) minmax(0,1fr);gap:20px;
+  align-items:start}
+.lista-sel{display:flex;flex-direction:column;gap:4px;padding:8px}
+.item-sel{display:flex;align-items:center;gap:10px;width:100%;text-align:left;padding:10px 12px;
+  border:1px solid transparent;border-radius:var(--radio-md);background:transparent;
+  cursor:pointer;font-size:15px;color:var(--texto);transition:background .15s}
+.item-sel:hover{background:var(--neutro-bg)}
+.item-sel[aria-pressed="true"]{background:var(--accion-tinte);border-color:var(--accion);
+  color:var(--accion-sobre-claro);font-weight:600}
+.item-sel .cnt{margin-left:auto;font-size:12px;color:var(--texto-sec);
+  font-variant-numeric:tabular-nums}
+.item-sel[aria-pressed="true"] .cnt{color:var(--accion-sobre-claro)}
+.grupo-permisos{border-bottom:1px solid var(--borde);padding:13px 20px}
+.grupo-permisos:last-child{border-bottom:0}
+.grupo-permisos h3{font-size:12px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;
+  color:var(--texto-sec);margin-bottom:7px}
+.rejilla-permisos{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:2px}
+
+/* ============================================================
+   Ficha resumida (Ficha 13)
+   ============================================================ */
+.modal-ancho{max-width:560px}
+.resumen-cab{display:flex;gap:16px;align-items:center;margin-bottom:18px}
+.resumen-cab .foto{width:64px;height:64px;font-size:22px}
+.resumen-cab h2{font-size:20px;font-weight:700;line-height:1.25}
+.resumen-cab .ced{font-size:13.5px;color:var(--texto-sec);font-variant-numeric:tabular-nums}
+.resumen-datos{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));
+  gap:14px 20px;padding:16px 0;border-top:1px solid var(--borde);
+  border-bottom:1px solid var(--borde)}
+
+/* ============================================================
+   Paginación (Ficha 14: resultados paginados)
+   ============================================================ */
+.paginacion{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;
+  margin-top:12px;font-size:14px;color:var(--texto-sec)}
+.paginacion .paginas{display:flex;gap:4px}
+.pag-btn{min-width:34px;height:34px;padding:0 9px;border:1px solid var(--borde-fuerte);
+  background:var(--card);color:var(--texto);border-radius:var(--radio-md);cursor:pointer;
+  font-size:14px;font-variant-numeric:tabular-nums}
+.pag-btn:hover:not(:disabled){background:var(--neutro-bg)}
+.pag-btn[aria-current="page"]{background:var(--accion-tinte);border-color:var(--accion);
+  color:var(--accion-sobre-claro);font-weight:700}
+.pag-btn:disabled{color:var(--texto-desh);cursor:not-allowed}
+
+/* ============================================================
+   Zona de carga de archivo (Ficha 19)
+   ============================================================ */
+.zona-archivo{border:1px dashed var(--borde-fuerte);border-radius:var(--radio-lg);
+  padding:18px;text-align:center;background:var(--neutro-bg);cursor:pointer;
+  transition:border-color .15s,background .15s}
+.zona-archivo:hover{border-color:var(--accion);background:var(--accion-tinte)}
+.zona-archivo .tit{font-weight:600;margin-top:8px}
+.zona-archivo .lim{font-size:13px;color:var(--texto-sec);margin-top:3px}
+.archivo-elegido{display:flex;align-items:center;gap:11px;padding:11px 13px;
+  border:1px solid var(--borde);border-radius:var(--radio-md);background:var(--card)}
+.archivo-elegido .nom{font-weight:600;font-size:14px;overflow-wrap:anywhere}
+.archivo-elegido .peso{font-size:12.5px;color:var(--texto-sec);font-variant-numeric:tabular-nums}
+
+/* ============================================================
+   Mi cuenta (Ficha 8)
+   ============================================================ */
+.cuenta-rejilla{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px}
+.bloque{padding:18px 20px}
+.bloque h2{font-size:16px;font-weight:700;margin-bottom:12px}
+.lista-datos{display:flex;flex-direction:column;gap:10px}
+.lista-datos div{display:flex;justify-content:space-between;gap:16px;font-size:14.5px;
+  padding-bottom:10px;border-bottom:1px solid var(--borde)}
+.lista-datos div:last-child{border-bottom:0;padding-bottom:0}
+.lista-datos dt{color:var(--texto-sec)}
+.lista-datos dd{margin:0;font-weight:600;text-align:right;overflow-wrap:anywhere}
+
+/* ============================================================
+   Franja de andamio del prototipo
+   ============================================================ */
+.franja-demo{position:sticky;top:var(--h-barra);z-index:39;height:var(--h-franja);
+  background:var(--advert-bg);color:var(--advert-fg);font-size:12.5px;
+  padding:0 16px;display:flex;gap:10px;align-items:center;justify-content:center;
+  text-align:center;line-height:1.35}
+.franja-demo .btn-texto{padding:2px 7px;font-size:12.5px}
+.franja-demo b{font-weight:700}
+
+@media (max-width:719px){
+  .dos-columnas{grid-template-columns:minmax(0,1fr)}
+  .pagina-cab h1{font-size:22px}
+  .acceso{padding:16px 14px}
+  .acceso-marca img{height:52px}
+  .acceso-marca .nom b{font-size:22px}
+  .lista-datos div{flex-direction:column;gap:2px}
+  .lista-datos dd{text-align:left}
+}
+
+/* ============================================================
+   v2 · Barra lateral plegable en escritorio
+   ============================================================ */
+.layout[data-lateral="oculto"]{grid-template-columns:0 minmax(0,1fr)}
+.layout[data-lateral="oculto"] .lateral{transform:translateX(-100%);
+  border-right-color:transparent;overflow:hidden;padding-left:0;padding-right:0;width:0}
+.lateral{transition:transform .18s ease,width .18s ease}
+.plegar{display:flex;align-items:center;gap:8px;width:100%;justify-content:center;
+  background:transparent;border:1px solid var(--borde);color:var(--texto-sec);
+  border-radius:var(--radio-md);padding:7px;cursor:pointer;font-size:13px;margin-bottom:4px}
+.plegar:hover{background:var(--neutro-bg);color:var(--texto)}
+
+/* Subsecciones dentro de una sección del menú */
+.nav-sub{display:flex;flex-direction:column;gap:2px;margin:2px 0 4px 0;padding-left:14px;
+  border-left:1px solid var(--borde)}
+.nav-sub-item{display:flex;align-items:center;gap:8px;padding:7px 12px;border:0;
+  background:transparent;border-radius:var(--radio-md);color:var(--texto-sec);font-size:14px;
+  text-align:left;width:100%;cursor:pointer}
+.nav-sub-item:hover{background:var(--neutro-bg);color:var(--texto)}
+.nav-sub-item[aria-current="page"]{background:var(--accion-tinte);
+  color:var(--accion-sobre-claro);font-weight:600}
+
+/* ============================================================
+   v2 · Formularios por pasos
+   ============================================================ */
+.pasos{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}
+.paso{display:flex;align-items:center;gap:10px;padding:8px 14px;border-radius:var(--radio-md);
+  border:1px solid var(--borde);background:var(--card);color:var(--texto-sec);cursor:pointer;
+  font-size:14px;font-weight:600;flex:1 1 180px;text-align:left;transition:border-color .15s}
+.paso:hover{border-color:var(--borde-fuerte);color:var(--texto)}
+.paso .n{width:24px;height:24px;border-radius:50%;background:var(--neutro-bg);
+  color:var(--texto-sec);display:grid;place-items:center;font-size:12.5px;font-weight:700;
+  flex-shrink:0;font-variant-numeric:tabular-nums}
+.paso[aria-current="step"]{border-color:var(--accion);background:var(--accion-tinte);
+  color:var(--accion-sobre-claro)}
+.paso[aria-current="step"] .n{background:var(--accion);color:var(--accion-txt)}
+.paso[data-hecho="si"] .n{background:var(--exito-bg);color:var(--exito-fg)}
+.paso .sub{display:block;font-size:12px;font-weight:400;color:var(--texto-sec);margin-top:1px}
+.paso[aria-current="step"] .sub{color:var(--accion-sobre-claro);opacity:.85}
+
+.panel-paso{padding:22px}
+.pie-form{display:flex;gap:10px;align-items:center;justify-content:space-between;
+  padding:13px 22px;border-top:1px solid var(--borde);flex-wrap:wrap}
+.pie-form .der{display:flex;gap:10px;margin-left:auto;flex-wrap:wrap}
+.contador-paso{font-size:13px;color:var(--texto-sec);font-variant-numeric:tabular-nums}
+
+/* Campos que necesitan más ancho */
+.campo.ancho{grid-column:1/-1}
+.campo.doble{grid-column:span 2}
+@media (max-width:719px){.campo.doble{grid-column:1/-1}}
+
+/* ============================================================
+   v2 · Modales con desplazamiento interno
+   ============================================================ */
+.velo[data-abierto="si"]{align-items:start;padding:24px 16px}
+.modal{max-height:calc(100dvh - 48px);display:flex;flex-direction:column;padding:0}
+.modal-cab{padding:22px 24px 0}
+.modal-cuerpo{padding:16px 24px;overflow-y:auto;flex:1 1 auto;min-height:0}
+.modal-pie{padding:16px 24px 20px;border-top:1px solid var(--borde);display:flex;gap:10px;
+  justify-content:flex-end;flex-wrap:wrap;flex-shrink:0}
+.modal h2{font-size:20px;font-weight:700;margin-bottom:6px}
+.modal-cab p{color:var(--texto-sec);font-size:14.5px;line-height:1.5}
+
+/* ============================================================
+   v2 · Filas de tabla que se pueden abrir
+   ============================================================ */
+tbody tr[data-abrible]{cursor:pointer}
+tbody tr[data-abrible]:focus-visible{outline:2px solid var(--foco-borde);outline-offset:-2px}
+
+/* ============================================================
+   v2 · Botón de volver
+   ============================================================ */
+.volver{display:inline-flex;align-items:center;gap:7px;background:transparent;border:0;
+  color:var(--texto-sec);font-size:14px;cursor:pointer;padding:2px 8px 2px 0;
+  border-radius:var(--radio-md);margin-bottom:4px}
+.volver:hover{color:var(--accion-sobre-claro)}
+
+/* Barra de acceso: tema arriba a la derecha */
+.acceso-barra{position:absolute;top:16px;right:16px;display:flex;gap:8px}
+.acceso{position:relative}
+.btn-icono-claro{display:inline-grid;place-items:center;width:38px;height:38px;
+  background:var(--card);border:1px solid var(--borde);color:var(--texto-sec);
+  border-radius:var(--radio-md);cursor:pointer}
+.btn-icono-claro:hover{background:var(--neutro-bg);color:var(--texto)}
+
+/* Corrige la especificidad del logo por tema */
+.acceso-marca img.logo-oscuro{display:none}
+.acceso-marca img.logo-claro{display:block}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]) .acceso-marca img.logo-claro{display:none}
+  :root:not([data-theme="light"]) .acceso-marca img.logo-oscuro{display:block}
+}
+:root[data-theme="dark"] .acceso-marca img.logo-claro{display:none}
+:root[data-theme="dark"] .acceso-marca img.logo-oscuro{display:block}
+
+@media (max-width:719px){
+  .pasos{gap:6px}
+  .paso{flex:1 1 100%;padding:9px 12px}
+  .panel-paso{padding:18px}
+  .pie-form{padding:14px 18px}
+  .modal{max-height:calc(100dvh - 32px)}
+  .velo[data-abierto="si"]{padding:16px 12px}
+}
+.solo-pc{display:flex}
+@media (max-width:1023px){.solo-pc{display:none!important}}
+
+/* ============================================================
+   v3 · Botón flotante para plegar la barra lateral
+   ============================================================ */
+.tirador{position:fixed;top:calc(var(--h-barra) + var(--h-franja) + 18px);left:236px;z-index:46;
+  width:28px;height:28px;border-radius:50%;display:grid;place-items:center;
+  background:var(--card);border:1px solid var(--borde-fuerte);color:var(--texto-sec);
+  cursor:pointer;box-shadow:var(--sombra-sm);transition:left .18s ease,color .15s,background .15s}
+.tirador:hover{background:var(--accion-tinte);color:var(--accion-sobre-claro);
+  border-color:var(--accion)}
+.tirador svg{transition:transform .18s ease}
+.layout[data-lateral="oculto"] ~ .tirador,
+.layout[data-lateral="oculto"] .tirador{left:-2px}
+@media (max-width:1023px){.tirador{display:none}}
+
+/* ============================================================
+   v3 · Tarjeta de perfil
+   ============================================================ */
+.perfil{display:grid;justify-items:center;text-align:center;gap:3px;padding:20px 24px 20px;
+  background:var(--card);border:1px solid var(--borde);border-radius:var(--radio-lg);
+  margin-bottom:16px;position:relative;overflow:hidden}
+.perfil::before{content:"";position:absolute;inset:0 0 auto;height:72px;
+  background:linear-gradient(180deg,var(--accion-tinte),transparent)}
+.perfil-foto{position:relative;width:86px;height:86px;border-radius:50%;
+  background:var(--neutro-bg);color:var(--texto-sec);display:grid;place-items:center;
+  font-size:29px;font-weight:800;border:3px solid var(--card);box-shadow:var(--sombra-md);
+  margin-bottom:9px;overflow:hidden}
+.perfil-foto img{width:100%;height:100%;object-fit:cover}
+.perfil-foto .cambiar{position:absolute;right:-2px;bottom:-2px;width:32px;height:32px;
+  border-radius:50%;background:var(--accion);color:var(--accion-txt);border:2px solid var(--card);
+  display:grid;place-items:center;cursor:pointer}
+.perfil h1{position:relative;font-size:22px;font-weight:800;letter-spacing:-.015em;line-height:1.2}
+.perfil .ident{position:relative;font-size:14px;color:var(--texto-sec);
+  font-variant-numeric:tabular-nums;margin-top:2px}
+.perfil .chips{position:relative;display:flex;flex-wrap:wrap;gap:8px;justify-content:center;
+  margin-top:10px}
+.perfil .acc{position:relative;display:flex;flex-wrap:wrap;gap:8px;justify-content:center;
+  margin-top:14px}
+
+/* Cinta de datos rápidos bajo el perfil */
+.perfil-rapido{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));
+  gap:1px;background:var(--borde);border-top:1px solid var(--borde);margin:18px -24px -20px;
+  width:calc(100% + 48px);position:relative}
+.perfil-rapido div{background:var(--card);padding:11px 12px;text-align:center}
+.perfil-rapido dt{font-size:10.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;
+  color:var(--texto-sec);margin-bottom:3px}
+.perfil-rapido dd{margin:0;font-size:14px;font-weight:600;overflow-wrap:anywhere}
+
+/* ============================================================
+   v3 · Bloques de información dentro de las pestañas
+   ============================================================ */
+.info-bloque{background:var(--card);border:1px solid var(--borde);border-radius:var(--radio-lg);
+  margin-bottom:12px;overflow:hidden}
+.info-bloque > h3{display:flex;align-items:center;gap:9px;font-size:13px;font-weight:700;
+  letter-spacing:.06em;text-transform:uppercase;color:var(--texto-sec);
+  padding:11px 20px;border-bottom:1px solid var(--borde);background:var(--neutro-bg)}
+.info-bloque > h3 svg{color:var(--accion-sobre-claro)}
+.info-rejilla{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+  gap:14px 24px;padding:16px 20px}
+.info-rejilla .dato dt{font-size:11px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;
+  color:var(--texto-sec);margin-bottom:4px}
+.info-rejilla .dato dd{margin:0;font-size:15px;font-weight:600;overflow-wrap:anywhere}
+.info-rejilla .dato dd.vacio-dato{color:var(--texto-desh);font-weight:400;font-style:italic}
+
+/* ============================================================
+   v3 · Modales centrados y con más carácter
+   ============================================================ */
+.velo{place-items:center}
+.velo[data-abierto="si"]{display:grid;align-items:center;padding:24px 16px}
+.modal{box-shadow:0 24px 64px rgba(0,0,0,.28),0 2px 8px rgba(0,0,0,.12);
+  border:1px solid var(--borde);animation:subir .18s ease-out}
+@keyframes subir{from{opacity:0;transform:translateY(10px) scale(.99)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){.modal{animation:none}}
+.modal-cab{padding:22px 24px 16px;border-bottom:1px solid var(--borde);
+  background:linear-gradient(180deg,var(--accion-tinte),transparent)}
+.modal-cab h2{display:flex;align-items:center;gap:10px}
+.modal-cab h2 .ic{width:34px;height:34px;border-radius:var(--radio-md);flex-shrink:0;
+  background:var(--accion-tinte);color:var(--accion-sobre-claro);display:grid;place-items:center}
+.modal-pie{background:var(--neutro-bg)}
+
+/* ============================================================
+   v3 · Formulario por pasos que llena el ancho
+   ============================================================ */
+.form-pasos{max-width:none}
+.panel-paso{padding:20px 26px;min-height:0}
+/* Los tres pasos miden parecido: así la tarjeta no salta al avanzar */
+.form-pasos .panel-paso{min-height:340px}
+.panel-paso .campo-fila{grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:0 24px}
+.paso-titulo{font-size:16.5px;font-weight:700;margin-bottom:3px}
+.paso-desc{font-size:13.5px;color:var(--texto-sec);margin-bottom:14px;max-width:80ch;line-height:1.45}
+.barra-progreso{height:3px;background:var(--borde);border-radius:999px;overflow:hidden;
+  margin-bottom:14px}
+.barra-progreso span{display:block;height:100%;background:var(--accion);
+  transition:width .2s ease;border-radius:999px}
+
+@media (max-width:719px){
+  .perfil{padding:18px 18px 16px}
+  .perfil-foto{width:76px;height:76px;font-size:25px}
+  .perfil h1{font-size:20px}
+  .perfil-rapido{grid-template-columns:repeat(2,1fr);margin:16px -18px -16px;
+    width:calc(100% + 36px)}
+  .info-rejilla{padding:16px;gap:14px}
+  .panel-paso{padding:16px;min-height:0}
+  .form-pasos .panel-paso{min-height:0}
+}
+
+</style>
+
+<!-- ============ ACCESO: iniciar sesión (Ficha 1) ============ -->
+<div class="acceso" id="vLogin">
+  <div class="acceso-barra">
+    <button class="btn-icono-claro btn-tema-acceso" aria-label="Cambiar entre tema claro y oscuro" title="Cambiar tema">
+      <svg class="ico-tema" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
+    </button>
+  </div>
+
+  <div class="acceso-caja">
+    <div class="acceso-marca">
+      <span class="logo-caja">
+        <img class="logo-claro" src="data:image/png;base64,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" alt="Municipalidad de Palmares">
+        <img class="logo-oscuro" src="data:image/png;base64,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" alt="">
+      </span>
+      <div class="nom"><b>SIGEL</b><span>Sistema Integral de Gestión Laboral · Municipalidad de Palmares</span></div>
+    </div>
+
+    <div class="card">
+      <h1>Iniciar sesión</h1>
+      <p class="sub">Ingrese con la cuenta que le asignó Recursos Humanos.</p>
+
+      <div class="mensaje mensaje-error" id="msgLoginError" hidden>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M15 9l-6 6M9 9l6 6"/></svg>
+        <p>Correo o contraseña incorrectos. Le queda <b id="intentosRestantes">1 intento</b> antes de que el acceso se bloquee temporalmente.</p>
+      </div>
+
+      <div class="mensaje mensaje-advert" id="msgBloqueo" hidden>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
+        <p><b>Acceso bloqueado temporalmente.</b> Por tres intentos fallidos seguidos, debe esperar <b id="cuentaRegresiva">3:00</b> minutos antes de volver a intentarlo.</p>
+      </div>
+
+      <div class="campo">
+        <label for="lgUsuario">Correo institucional</label>
+        <input id="lgUsuario" type="email" autocomplete="username" placeholder="nombre@munipalmares.go.cr">
+      </div>
+
+      <div class="campo">
+        <label for="lgPass">Contraseña</label>
+        <div class="pass-envoltura">
+          <input id="lgPass" type="password" autocomplete="current-password" placeholder="••••••••">
+          <button class="ver-pass" type="button" data-ver="lgPass" aria-label="Mostrar contraseña" title="Mostrar contraseña">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>
+          </button>
+        </div>
+      </div>
+
+      <button class="btn btn-primario btn-bloque" id="btnEntrar">Ingresar</button>
+
+      <p style="text-align:center;margin-top:16px">
+        <button class="btn-texto" data-ir="vRecuperar">¿Olvidó su contraseña?</button>
+      </p>
+    </div>
+
+    <p class="acceso-pie">
+      Si no tiene cuenta o no puede ingresar, comuníquese con Recursos Humanos.
+    </p>
+
+    <div class="mensaje mensaje-info" style="margin-top:18px">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+      <p><b>Prototipo:</b> escriba cualquier correo y contraseña para entrar. Con <b>nueva@munipalmares.go.cr</b> verá el cambio obligatorio del primer ingreso; equivocándose tres veces, el bloqueo de tres minutos.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ============ ACCESO: recuperar contraseña (Ficha 1) ============ -->
+<div class="acceso" id="vRecuperar" hidden>
+  <div class="acceso-barra">
+    <button class="btn-icono-claro btn-tema-acceso" aria-label="Cambiar entre tema claro y oscuro" title="Cambiar tema">
+      <svg class="ico-tema" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
+    </button>
+  </div>
+
+  <div class="acceso-caja">
+    <div class="acceso-marca">
+      <span class="logo-caja">
+        <img class="logo-claro" src="data:image/png;base64,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" alt="Municipalidad de Palmares">
+        <img class="logo-oscuro" src="data:image/png;base64,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" alt="">
+      </span>
+      <div class="nom"><b>SIGEL</b><span>Recuperación de contraseña</span></div>
+    </div>
+
+    <!-- Paso 1: pedir el código -->
+    <div class="card" id="recPaso1">
+      <button class="volver" data-ir="vLogin">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+        Volver al inicio de sesión
+      </button>
+      <h1>Recuperar contraseña</h1>
+      <p class="sub">Le enviaremos un código de un solo uso al correo registrado en su cuenta.</p>
+      <div class="campo">
+        <label for="recCorreo">Correo registrado</label>
+        <input id="recCorreo" type="email" autocomplete="email" placeholder="nombre@munipalmares.go.cr">
+        <span class="ayuda">Si no recuerda cuál es, Recursos Humanos puede indicárselo.</span>
+      </div>
+      <button class="btn btn-primario btn-bloque" id="btnEnviarCodigo">Enviar código</button>
+    </div>
+
+    <!-- Paso 2: código + contraseña nueva -->
+    <div class="card" id="recPaso2" hidden>
+      <button class="volver" id="btnVolverPaso1">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+        Volver
+      </button>
+
+      <div class="mensaje mensaje-exito">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.1V12a10 10 0 1 1-5.9-9.1"/><path d="m9 11 3 3L22 4"/></svg>
+        <p>Enviamos un código a <b id="correoEnviado">nombre@munipalmares.go.cr</b>. Revise su correo e ingréselo aquí.</p>
+      </div>
+
+      <h1>Ingrese el código</h1>
+      <p class="sub">El código vence en 15 minutos y solo se puede usar una vez.</p>
+
+      <div class="campo">
+        <label for="recCodigo">Código de recuperación</label>
+        <input id="recCodigo" type="text" inputmode="numeric" placeholder="6 dígitos" style="font-variant-numeric:tabular-nums;letter-spacing:.3em">
+      </div>
+      <div class="campo">
+        <label for="recPass1">Contraseña nueva</label>
+        <div class="pass-envoltura">
+          <input id="recPass1" type="password" autocomplete="new-password">
+          <button class="ver-pass" type="button" data-ver="recPass1" aria-label="Mostrar contraseña" title="Mostrar contraseña">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>
+          </button>
+        </div>
+        <span class="ayuda">Mínimo 8 caracteres, con al menos una letra y un número.</span>
+      </div>
+      <div class="campo">
+        <label for="recPass2">Repita la contraseña nueva</label>
+        <div class="pass-envoltura">
+          <input id="recPass2" type="password" autocomplete="new-password">
+          <button class="ver-pass" type="button" data-ver="recPass2" aria-label="Mostrar contraseña" title="Mostrar contraseña">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>
+          </button>
+        </div>
+      </div>
+      <button class="btn btn-primario btn-bloque" id="btnGuardarPassRec">Guardar contraseña</button>
+      <p style="text-align:center;margin-top:14px">
+        <button class="btn-texto" id="btnOtroCodigo">Enviar otro código</button>
+      </p>
+    </div>
+
+    <!-- Paso 3: confirmación -->
+    <div class="card" id="recPaso3" hidden style="text-align:center">
+      <div style="display:grid;place-items:center;gap:14px;padding:12px 0 6px">
+        <span style="display:grid;place-items:center;width:56px;height:56px;border-radius:50%;
+              background:var(--exito-bg);color:var(--exito-fg)">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m5 13 4 4L19 7"/></svg>
+        </span>
+        <h1>Contraseña actualizada</h1>
+        <p class="sub" style="margin-bottom:6px">Ya puede ingresar a SIGEL con su contraseña nueva.</p>
+      </div>
+      <button class="btn btn-primario btn-bloque" data-ir="vLogin">Ir al inicio de sesión</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ ACCESO: cambio obligatorio en el primer ingreso (Ficha 2) ============ -->
+<div class="acceso" id="vPrimerIngreso" hidden>
+  <div class="acceso-barra">
+    <button class="btn-icono-claro btn-tema-acceso" aria-label="Cambiar entre tema claro y oscuro" title="Cambiar tema">
+      <svg class="ico-tema" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
+    </button>
+  </div>
+
+  <div class="acceso-caja">
+    <div class="acceso-marca">
+      <span class="logo-caja">
+        <img class="logo-claro" src="data:image/png;base64,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" alt="Municipalidad de Palmares">
+        <img class="logo-oscuro" src="data:image/png;base64,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" alt="">
+      </span>
+      <div class="nom"><b>SIGEL</b><span>Primer ingreso</span></div>
+    </div>
+    <div class="card">
+      <button class="volver" data-ir="vLogin">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+        Volver al inicio de sesión
+      </button>
+      <h1>Cambie su contraseña</h1>
+      <p class="sub">Su cuenta se creó con una contraseña temporal. Debe cambiarla antes de continuar.</p>
+
+      <div class="mensaje mensaje-info">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+        <p>Este paso es obligatorio: no se puede usar el sistema con la contraseña temporal.</p>
+      </div>
+
+      <div class="campo">
+        <label for="piActual">Contraseña temporal</label>
+        <div class="pass-envoltura">
+          <input id="piActual" type="password" autocomplete="current-password">
+          <button class="ver-pass" type="button" data-ver="piActual" aria-label="Mostrar contraseña" title="Mostrar contraseña">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>
+          </button>
+        </div>
+      </div>
+      <div class="campo">
+        <label for="piNueva">Contraseña nueva</label>
+        <div class="pass-envoltura">
+          <input id="piNueva" type="password" autocomplete="new-password">
+          <button class="ver-pass" type="button" data-ver="piNueva" aria-label="Mostrar contraseña" title="Mostrar contraseña">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>
+          </button>
+        </div>
+        <span class="ayuda">Mínimo 8 caracteres, con al menos una letra y un número.</span>
+      </div>
+      <div class="campo">
+        <label for="piRepetir">Repita la contraseña nueva</label>
+        <div class="pass-envoltura">
+          <input id="piRepetir" type="password" autocomplete="new-password">
+          <button class="ver-pass" type="button" data-ver="piRepetir" aria-label="Mostrar contraseña" title="Mostrar contraseña">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>
+          </button>
+        </div>
+      </div>
+      <button class="btn btn-primario btn-bloque" id="btnGuardarPrimera">Guardar y continuar</button>
+    </div>
+  </div>
+</div>
+
+
+<div id="app" hidden>
+<header class="topbar">
+  <button class="menu-btn" id="btnMenu" aria-label="Abrir menú de navegación" aria-expanded="false">
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+  </button>
+
+  <div class="marca">
+    <img src="data:image/png;base64,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" alt="Municipalidad de Palmares">
+    <div class="marca-txt"><b>SIGEL</b><small>Municipalidad de Palmares</small></div>
+  </div>
+
+  <div class="topbar-fin">
+    <button class="tb-btn" id="btnVista" title="Cambiar entre la vista de RRHH y la de una funcionaria">
+      <span class="punto"></span><span id="txtVista">RRHH</span>
+    </button>
+    <button class="tb-btn" id="btnTema" aria-label="Cambiar entre tema claro y oscuro" title="Cambiar tema">
+      <svg id="icoTema" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
+    </button>
+    <button class="tb-btn" id="btnNotif" aria-label="Notificaciones" title="Notificaciones">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 1 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg>
+    </button>
+    <div class="usuario">
+      <div class="usuario-inicial">AV</div>
+      <div class="usuario-txt"><b>Ana Lucía Vargas</b><span>Administrador · RRHH</span></div>
+    </div>
+  </div>
+</header>
+
+<div class="franja-demo">
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+  <span><b>Prototipo del Sprint 1</b><span class="solo-ancho"> · Datos de ejemplo. Use <b>RRHH / Funcionaria</b> para ver cómo cambia la pantalla según quién entra, y <b>Salir</b> para volver al inicio de sesión.</span></span>
+  <button class="btn-texto" id="btnSalir" style="color:inherit;text-decoration:underline">Salir</button>
+</div>
+
+<div class="velo-nav" id="veloNav"></div>
+
+<div class="layout" id="layout" data-lateral="visible">
+  <nav class="lateral" id="lateral" aria-label="Navegación principal">
+    <div class="nav-grupo" data-rol="ambos">
+      <p class="nav-titulo" data-txt-rrhh="Personal" data-txt-func="Mi información">Personal</p>
+      <button class="nav-item" id="navFuncionarios" data-pagina="pgFuncionarios">
+        <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/></svg>
+        <span data-txt-rrhh="Funcionarios" data-txt-func="Mi expediente">Funcionarios</span>
+      </button>
+      <div class="nav-sub" id="subFuncionarios">
+        <button class="nav-sub-item" data-pagina="pgAltaFuncionario" data-rol="rrhh">Registrar funcionario</button>
+        <button class="nav-sub-item" data-pagina="pgExpediente" aria-current="page">
+          <span data-txt-rrhh="Expediente laboral" data-txt-func="Mi expediente">Expediente laboral</span>
+        </button>
+      </div>
+    </div>
+
+    <div class="nav-grupo" data-rol="rrhh">
+      <p class="nav-titulo">Seguridad</p>
+      <button class="nav-item" data-pagina="pgUsuarios">
+        <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M19 8v6M22 11h-6"/></svg>
+        Usuarios
+      </button>
+      <button class="nav-item" data-pagina="pgRoles">
+        <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2 4 6v6c0 5 3.4 8.7 8 10 4.6-1.3 8-5 8-10V6z"/><path d="m9 12 2 2 4-4"/></svg>
+        Roles y permisos
+      </button>
+    </div>
+
+    <div class="nav-grupo" data-rol="rrhh">
+      <p class="nav-titulo">Catálogos</p>
+      <button class="nav-item" data-pagina="pgTipos">
+        <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h7l2 2h7v13a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1z"/></svg>
+        Tipos de documento
+      </button>
+    </div>
+
+    <div class="nav-grupo" data-rol="ambos">
+      <p class="nav-titulo">Mi acceso</p>
+      <button class="nav-item" data-pagina="pgCuenta">
+        <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21v-1a6 6 0 0 1 6-6h4a6 6 0 0 1 6 6v1"/></svg>
+        Mi cuenta
+      </button>
+    </div>
+
+    <p style="margin-top:auto;padding:12px;font-size:11.5px;color:var(--texto-sec);line-height:1.5">
+      Los módulos de vacaciones, incapacidades, horas extra y Talent Pool corresponden a los Sprints 2 y 3.
+    </p>
+  </nav>
+
+  <main class="contenido" id="contenido">
+<section class="pagina" id="pgExpediente">
+    <nav class="migas" aria-label="Ruta de navegación">
+      <a href="#" id="migaLista">Funcionarios</a><span aria-hidden="true" id="migaSep">›</span>
+      <a href="#" id="migaNombre">María José Rodríguez Alfaro</a><span aria-hidden="true">›</span>
+      <span aria-current="page">Expediente laboral</span>
+    </nav>
+
+    <!-- Perfil del funcionario -->
+    <section class="perfil" aria-label="Datos del funcionario">
+      <div class="perfil-foto" aria-hidden="true">MR</div>
+      <h1>María José Rodríguez Alfaro</h1>
+      <p class="ident">Cédula 2-0678-0432 · Código 1042</p>
+      <div class="chips">
+        <span class="chip chip-exito">● Activa</span>
+        <span class="chip chip-neutro">En propiedad</span>
+        <span class="chip chip-info">Régimen general · 20 días</span>
+      </div>
+      <div class="acc">
+        <button class="btn btn-primario" id="btnSubir">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+          Subir documento
+        </button>
+      </div>
+    </section>
+
+    <!-- Pestañas -->
+    <div class="tabs" role="tablist" aria-label="Secciones del expediente">
+      <button class="tab" role="tab" aria-selected="false" data-panel="pDatos">Información personal</button>
+      <button class="tab" role="tab" aria-selected="false" data-panel="pLaboral">Información laboral</button>
+      <button class="tab" role="tab" aria-selected="true" data-panel="pDocs">Documentos <span class="cuenta">7</span></button>
+      <button class="tab" role="tab" aria-selected="false" data-panel="pCapa">Capacitaciones</button>
+      <button class="tab" role="tab" aria-selected="false" data-panel="pHist">Historial laboral</button>
+    </div>
+
+    <!-- Panel: documentos -->
+    <section id="pDocs" role="tabpanel">
+      <div class="aviso">
+        <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+        <p><b>Expediente con información sensible.</b> Cada apertura y cada descarga queda registrada en la bitácora, con usuario, fecha y documento.</p>
+      </div>
+
+      <div class="herramientas">
+        <div class="buscador">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+          <input type="search" placeholder="Buscar por título o tipo de documento" aria-label="Buscar documentos">
+        </div>
+        <div class="filtros" role="group" aria-label="Filtros">
+          <button class="filtro" aria-pressed="true">Todos</button>
+          <button class="filtro" aria-pressed="false">Vigentes</button>
+          <button class="filtro" aria-pressed="false">Generados por SIGEL</button>
+          <button class="filtro" aria-pressed="false">Dados de baja</button>
+        </div>
+      </div>
+
+      <div class="tabla-envoltura">
+        <table>
+          <thead>
+            <tr>
+              <th scope="col">Documento</th>
+              <th scope="col">Tipo</th>
+              <th scope="col">Fecha</th>
+              <th scope="col">Origen</th>
+              <th scope="col"><span class="sr">Acciones</span></th>
+            </tr>
+          </thead>
+          <tbody id="tablaDocs">
+            <tr data-vigente="si">
+              <td data-etiqueta="Documento">
+                <div class="doc"><div class="doc-ico pdf">PDF</div>
+                  <div><span class="doc-nombre">Cédula de identidad</span>
+                  <span class="doc-meta">1,2 MB · subido por RRHH</span></div></div>
+              </td>
+              <td data-etiqueta="Tipo">Cédula</td>
+              <td data-etiqueta="Fecha" class="num">03/02/2020</td>
+              <td data-etiqueta="Origen"><span class="chip chip-neutro">Manual</span></td>
+              <td class="acciones">
+                <button class="icono-btn" aria-label="Ver documento" title="Ver documento"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg></button>
+                <button class="icono-btn" aria-label="Descargar documento" title="Descargar documento"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5M12 15V3"/></svg></button>
+                <button class="icono-btn peligro solo-rrhh" aria-label="Dar de baja documento" title="Dar de baja documento" data-baja="Cédula de identidad"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/></svg></button>
+              </td>
+            </tr>
+
+            <tr data-vigente="si">
+              <td data-etiqueta="Documento">
+                <div class="doc"><div class="doc-ico pdf">PDF</div>
+                  <div><span class="doc-nombre">Título universitario — Administración</span>
+                  <span class="doc-meta">3,8 MB · subido por la funcionaria</span></div></div>
+              </td>
+              <td data-etiqueta="Tipo">Título universitario</td>
+              <td data-etiqueta="Fecha" class="num">14/05/2021</td>
+              <td data-etiqueta="Origen"><span class="chip chip-neutro">Manual</span></td>
+              <td class="acciones">
+                <button class="icono-btn" aria-label="Ver documento" title="Ver documento"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg></button>
+                <button class="icono-btn" aria-label="Descargar documento" title="Descargar documento"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5M12 15V3"/></svg></button>
+                <button class="icono-btn peligro solo-rrhh" aria-label="Dar de baja documento" title="Dar de baja documento" data-baja="Título universitario — Administración"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/></svg></button>
+              </td>
+            </tr>
+
+            <tr data-vigente="si">
+              <td data-etiqueta="Documento">
+                <div class="doc"><div class="doc-ico pdf">PDF</div>
+                  <div><span class="doc-nombre">Constancia de vacaciones · periodo 2025-2026</span>
+                  <span class="doc-meta">142 KB · generado al aprobarse la solicitud SOL-2026-0184</span></div></div>
+              </td>
+              <td data-etiqueta="Tipo">Constancia de vacaciones</td>
+              <td data-etiqueta="Fecha" class="num">21/07/2026</td>
+              <td data-etiqueta="Origen"><span class="chip chip-info">Generado por SIGEL</span></td>
+              <td class="acciones">
+                <button class="icono-btn" aria-label="Ver documento" title="Ver documento"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg></button>
+                <button class="icono-btn" aria-label="Descargar documento" title="Descargar documento"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5M12 15V3"/></svg></button>
+                <button class="icono-btn peligro solo-rrhh" aria-label="Dar de baja documento" title="Dar de baja documento" data-baja="Constancia de vacaciones · periodo 2025-2026"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/></svg></button>
+              </td>
+            </tr>
+
+            <tr data-vigente="si">
+              <td data-etiqueta="Documento">
+                <div class="doc"><div class="doc-ico pdf">PDF</div>
+                  <div><span class="doc-nombre">Acción de personal — cambio de puesto</span>
+                  <span class="doc-meta">228 KB · subido por RRHH</span></div></div>
+              </td>
+              <td data-etiqueta="Tipo">Acción de personal</td>
+              <td data-etiqueta="Fecha" class="num">01/03/2024</td>
+              <td data-etiqueta="Origen"><span class="chip chip-neutro">Manual</span></td>
+              <td class="acciones">
+                <button class="icono-btn" aria-label="Ver documento" title="Ver documento"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg></button>
+                <button class="icono-btn" aria-label="Descargar documento" title="Descargar documento"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5M12 15V3"/></svg></button>
+                <button class="icono-btn peligro solo-rrhh" aria-label="Dar de baja documento" title="Dar de baja documento" data-baja="Acción de personal — cambio de puesto"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/></svg></button>
+              </td>
+            </tr>
+
+            <tr data-vigente="si">
+              <td data-etiqueta="Documento">
+                <div class="doc"><div class="doc-ico img">JPG</div>
+                  <div><span class="doc-nombre">Hoja de delincuencia</span>
+                  <span class="doc-meta">890 KB · subido por RRHH</span></div></div>
+              </td>
+              <td data-etiqueta="Tipo">Hoja de delincuencia</td>
+              <td data-etiqueta="Fecha" class="num">18/01/2026</td>
+              <td data-etiqueta="Origen"><span class="chip chip-neutro">Manual</span></td>
+              <td class="acciones">
+                <button class="icono-btn" aria-label="Ver documento" title="Ver documento"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg></button>
+                <button class="icono-btn" aria-label="Descargar documento" title="Descargar documento"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5M12 15V3"/></svg></button>
+                <button class="icono-btn peligro solo-rrhh" aria-label="Dar de baja documento" title="Dar de baja documento" data-baja="Hoja de delincuencia"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/></svg></button>
+              </td>
+            </tr>
+
+            <tr data-vigente="si">
+              <td data-etiqueta="Documento">
+                <div class="doc"><div class="doc-ico pdf">PDF</div>
+                  <div><span class="doc-nombre">Currículum vitae</span>
+                  <span class="doc-meta">640 KB · copiado del Talent Pool al contratarla</span></div></div>
+              </td>
+              <td data-etiqueta="Tipo">Currículum</td>
+              <td data-etiqueta="Fecha" class="num">28/01/2020</td>
+              <td data-etiqueta="Origen"><span class="chip chip-info">Generado por SIGEL</span></td>
+              <td class="acciones">
+                <button class="icono-btn" aria-label="Ver documento" title="Ver documento"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg></button>
+                <button class="icono-btn" aria-label="Descargar documento" title="Descargar documento"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5M12 15V3"/></svg></button>
+                <button class="icono-btn peligro solo-rrhh" aria-label="Dar de baja documento" title="Dar de baja documento" data-baja="Currículum vitae"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/></svg></button>
+              </td>
+            </tr>
+
+            <tr data-vigente="no">
+              <td data-etiqueta="Documento">
+                <div class="doc"><div class="doc-ico">PDF</div>
+                  <div><span class="doc-nombre">Cédula de identidad (duplicado)</span>
+                  <span class="doc-meta">1,2 MB · dado de baja el 04/09/2026 por A. Vargas</span></div></div>
+              </td>
+              <td data-etiqueta="Tipo">Cédula</td>
+              <td data-etiqueta="Fecha" class="num">02/09/2026</td>
+              <td data-etiqueta="Origen"><span class="chip chip-advert">No vigente</span></td>
+              <td class="acciones">
+                <button class="icono-btn" aria-label="Ver documento" title="Ver documento"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg></button>
+                <button class="icono-btn solo-rrhh" aria-label="Restaurar documento" title="Restaurar documento"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></svg></button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Panel: capacitaciones (estado vacío) -->
+    <section id="pCapa" role="tabpanel" hidden>
+      <div class="vacio">
+        <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="color:var(--texto-desh)"><path d="M22 10 12 5 2 10l10 5 10-5z"/><path d="M6 12v5c3 2 9 2 12 0v-5"/></svg>
+        <h3>Sin capacitaciones registradas</h3>
+        <p>Cuando se registre una capacitación aparecerá aquí, junto con su certificado si se adjunta al finalizar.</p>
+        <button class="btn btn-primario">Registrar capacitación</button>
+      </div>
+    </section>
+
+    <section id="pDatos" role="tabpanel" hidden>
+      <div class="info-bloque">
+        <h3><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21v-1a6 6 0 0 1 6-6h4a6 6 0 0 1 6 6v1"/></svg> Identificación</h3>
+        <dl class="info-rejilla">
+          <div class="dato"><dt>Nombre completo</dt><dd>María José Rodríguez Alfaro</dd></div>
+          <div class="dato"><dt>Cédula</dt><dd class="num">2-0678-0432</dd></div>
+          <div class="dato"><dt>Fecha de nacimiento</dt><dd class="num">18/07/1993</dd></div>
+          <div class="dato"><dt>Profesión</dt><dd>Administración de Empresas</dd></div>
+        </dl>
+      </div>
+
+      <div class="info-bloque">
+        <h3><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16v16H4z"/><path d="m4 6 8 6 8-6"/></svg> Contacto</h3>
+        <dl class="info-rejilla">
+          <div class="dato"><dt>Correo institucional</dt><dd>mrodriguez@munipalmares.go.cr</dd></div>
+          <div class="dato"><dt>Correo personal</dt><dd>majo.rodriguez@gmail.com</dd></div>
+          <div class="dato"><dt>Teléfono</dt><dd class="num">8712 4408</dd></div>
+          <div class="dato"><dt>Dirección</dt><dd>Alajuela, Palmares, Santiago, 200 m norte de la escuela</dd></div>
+        </dl>
+      </div>
+
+      <p class="pie-proto">
+        <span class="marca-proto">Nota</span>
+        Estos datos los mantiene la propia funcionaria desde <b>Mi cuenta</b>. Recursos Humanos los corrige desde el listado de funcionarios.
+      </p>
+    </section>
+
+    <section id="pLaboral" role="tabpanel" hidden>
+      <div class="info-bloque">
+        <h3><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg> Puesto y ubicación</h3>
+        <dl class="info-rejilla">
+          <div class="dato"><dt>Puesto</dt><dd>Asistente de Recursos Humanos</dd></div>
+          <div class="dato"><dt>Departamento</dt><dd>Recursos Humanos</dd></div>
+          <div class="dato"><dt>Jefatura inmediata</dt><dd>Ana Lucía Vargas Chaves</dd></div>
+          <div class="dato"><dt>Código de empleado</dt><dd class="num">1042</dd></div>
+        </dl>
+      </div>
+
+      <div class="info-bloque">
+        <h3><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg> Nombramiento</h3>
+        <dl class="info-rejilla">
+          <div class="dato"><dt>Tipo de nombramiento</dt><dd>En propiedad</dd></div>
+          <div class="dato"><dt>Régimen de vacaciones</dt><dd>General · 20 días al año</dd></div>
+          <div class="dato"><dt>Fecha de ingreso</dt><dd class="num">03/02/2020</dd></div>
+          <div class="dato"><dt>Fecha de salida</dt><dd class="vacio-dato">Sin registrar</dd></div>
+          <div class="dato"><dt>Estado</dt><dd><span class="chip chip-exito">● Activa</span></dd></div>
+        </dl>
+      </div>
+
+      <p class="pie-proto">
+        <span class="marca-proto">Solo RRHH</span>
+        La información laboral solo la modifica Recursos Humanos, desde el listado de funcionarios. Nunca se edita desde el expediente ni desde el perfil propio.
+      </p>
+    </section>
+
+    <section id="pHist" role="tabpanel" hidden>
+      <div class="vacio"><h3>Historial laboral</h3>
+      <p>Pantalla pendiente de diseñar. Vista de solo lectura, alimentada por la bitácora de cambios.</p></div>
+    </section>
+</section>
+
+<!-- ============ BUSCAR FUNCIONARIOS (Ficha 14) ============ -->
+<section class="pagina" id="pgFuncionarios" hidden>
+  <div class="pagina-cab">
+    <div>
+      <h1>Funcionarios</h1>
+      <p>Busque por cédula, nombre o correo. Los resultados vienen paginados: el sistema nunca carga todos los registros de una vez.</p>
+    </div>
+    <div class="acc">
+      <button class="btn btn-primario" data-ir-pagina="pgAltaFuncionario">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+        Registrar funcionario
+      </button>
+    </div>
+  </div>
+
+  <div class="herramientas">
+    <div class="buscador">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+      <input type="search" id="buscaFunc" placeholder="Cédula, nombre o correo" aria-label="Buscar funcionarios">
+    </div>
+    <div class="filtros" role="group" aria-label="Filtros adicionales">
+      <button class="filtro" aria-pressed="true" data-filtro="todos">Todos</button>
+      <button class="filtro" aria-pressed="false" data-filtro="estado:activo">Activos</button>
+      <button class="filtro" aria-pressed="false" data-filtro="estado:inactivo">Inactivos</button>
+      <button class="filtro" aria-pressed="false" data-filtro="depto:rrhh">Recursos Humanos</button>
+    </div>
+  </div>
+
+  <div class="tabla-envoltura">
+    <table>
+      <thead><tr>
+        <th scope="col">Funcionario</th><th scope="col">Cédula</th><th scope="col">Puesto</th>
+        <th scope="col">Departamento</th><th scope="col">Estado</th><th scope="col">Acciones</th>
+      </tr></thead>
+      <tbody id="tbodyFunc">
+        <tr data-abrible tabindex="0" data-modal="mdResumen" data-estado="activo" data-depto="rrhh">
+          <td data-etiqueta="Funcionario"><div class="celda-usuario"><div class="avatar-sm">MR</div>
+            <div><span class="nom">María José Rodríguez Alfaro</span>
+            <span class="sec">mrodriguez@munipalmares.go.cr</span></div></div></td>
+          <td data-etiqueta="Cédula" class="num">2-0678-0432</td>
+          <td data-etiqueta="Puesto">Asistente de Recursos Humanos</td>
+          <td data-etiqueta="Departamento">Recursos Humanos</td>
+          <td data-etiqueta="Estado"><span class="chip chip-exito">● Activa</span></td>
+          <td class="acciones">
+            <button class="icono-btn" data-modal="mdResumen" aria-label="Ver ficha resumida" title="Ver ficha resumida"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg></button>
+            <button class="icono-btn" data-ir-pagina="pgExpediente" aria-label="Abrir expediente" title="Abrir expediente"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg></button>
+          </td>
+        </tr>
+        <tr data-abrible tabindex="0" data-modal="mdResumen" data-estado="activo" data-depto="rrhh">
+          <td data-etiqueta="Funcionario"><div class="celda-usuario"><div class="avatar-sm">AV</div>
+            <div><span class="nom">Ana Lucía Vargas Chaves</span>
+            <span class="sec">avargas@munipalmares.go.cr</span></div></div></td>
+          <td data-etiqueta="Cédula" class="num">2-0512-0908</td>
+          <td data-etiqueta="Puesto">Jefa de Recursos Humanos</td>
+          <td data-etiqueta="Departamento">Recursos Humanos</td>
+          <td data-etiqueta="Estado"><span class="chip chip-exito">● Activa</span></td>
+          <td class="acciones">
+            <button class="icono-btn" data-modal="mdResumen" aria-label="Ver ficha resumida" title="Ver ficha resumida"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg></button>
+            <button class="icono-btn" data-ir-pagina="pgExpediente" aria-label="Abrir expediente" title="Abrir expediente"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg></button>
+          </td>
+        </tr>
+        <tr data-abrible tabindex="0" data-modal="mdResumen" data-estado="inactivo" data-depto="otros">
+          <td data-etiqueta="Funcionario"><div class="celda-usuario"><div class="avatar-sm">CS</div>
+            <div><span class="nom">Carlos Solís Méndez</span>
+            <span class="sec">csolis@munipalmares.go.cr</span></div></div></td>
+          <td data-etiqueta="Cédula" class="num">2-0431-0177</td>
+          <td data-etiqueta="Puesto">Encargado de Acueductos</td>
+          <td data-etiqueta="Departamento">Servicios Públicos</td>
+          <td data-etiqueta="Estado"><span class="chip chip-neutro">● Inactivo</span></td>
+          <td class="acciones">
+            <button class="icono-btn" data-modal="mdResumen" aria-label="Ver ficha resumida" title="Ver ficha resumida"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg></button>
+            <button class="icono-btn" data-ir-pagina="pgExpediente" aria-label="Abrir expediente" title="Abrir expediente"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg></button>
+          </td>
+        </tr>
+        <tr data-abrible tabindex="0" data-modal="mdResumen" data-estado="activo" data-depto="otros">
+          <td data-etiqueta="Funcionario"><div class="celda-usuario"><div class="avatar-sm">LQ</div>
+            <div><span class="nom">Laura Quesada Ureña</span>
+            <span class="sec">lquesada@munipalmares.go.cr</span></div></div></td>
+          <td data-etiqueta="Cédula" class="num">2-0745-0219</td>
+          <td data-etiqueta="Puesto">Gestora Tributaria</td>
+          <td data-etiqueta="Departamento">Hacienda Municipal</td>
+          <td data-etiqueta="Estado"><span class="chip chip-exito">● Activa</span></td>
+          <td class="acciones">
+            <button class="icono-btn" data-modal="mdResumen" aria-label="Ver ficha resumida" title="Ver ficha resumida"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg></button>
+            <button class="icono-btn" data-ir-pagina="pgExpediente" aria-label="Abrir expediente" title="Abrir expediente"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg></button>
+          </td>
+        </tr>
+        <tr data-abrible tabindex="0" data-modal="mdResumen" data-estado="activo" data-depto="otros">
+          <td data-etiqueta="Funcionario"><div class="celda-usuario"><div class="avatar-sm">JG</div>
+            <div><span class="nom">Joseph Granda Vargas</span>
+            <span class="sec">jgranda@munipalmares.go.cr</span></div></div></td>
+          <td data-etiqueta="Cédula" class="num">2-0589-0664</td>
+          <td data-etiqueta="Puesto">Jefe de Informática</td>
+          <td data-etiqueta="Departamento">Informática</td>
+          <td data-etiqueta="Estado"><span class="chip chip-exito">● Activo</span></td>
+          <td class="acciones">
+            <button class="icono-btn" data-modal="mdResumen" aria-label="Ver ficha resumida" title="Ver ficha resumida"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg></button>
+            <button class="icono-btn" data-ir-pagina="pgExpediente" aria-label="Abrir expediente" title="Abrir expediente"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg></button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="vacio" id="sinResultados" hidden>
+    <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" style="color:var(--texto-desh)"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+    <h3>Sin resultados</h3>
+    <p>Ningún funcionario coincide con ese criterio. Revise la cédula o pruebe con parte del nombre.</p>
+  </div>
+
+  <div class="paginacion" id="pagFunc">
+    <span>Mostrando 5 de 138 funcionarios</span>
+    <div class="paginas">
+      <button class="pag-btn" disabled>Anterior</button>
+      <button class="pag-btn" aria-current="page">1</button>
+      <button class="pag-btn">2</button>
+      <button class="pag-btn">3</button>
+      <button class="pag-btn">Siguiente</button>
+    </div>
+  </div>
+</section>
+
+<!-- ============ REGISTRAR FUNCIONARIO (Ficha 11) — por pasos ============ -->
+<section class="pagina" id="pgAltaFuncionario" hidden>
+  <button class="volver" data-ir-pagina="pgFuncionarios">
+    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+    Volver a funcionarios
+  </button>
+
+  <div class="pagina-cab">
+    <div>
+      <h1>Registrar funcionario</h1>
+      <p>Al guardar se crea automáticamente su expediente laboral. La cédula no se puede repetir.</p>
+    </div>
+  </div>
+
+  <div class="pasos" role="tablist" aria-label="Pasos del registro">
+    <button class="paso" role="tab" aria-current="step" data-paso="1">
+      <span class="n">1</span><span>Datos personales<span class="sub">Cédula, nombre y profesión</span></span>
+    </button>
+    <button class="paso" role="tab" data-paso="2">
+      <span class="n">2</span><span>Contacto<span class="sub">Correos, teléfono y dirección</span></span>
+    </button>
+    <button class="paso" role="tab" data-paso="3">
+      <span class="n">3</span><span>Datos laborales<span class="sub">Puesto, jefatura y nombramiento</span></span>
+    </button>
+  </div>
+
+  <div class="card form-pasos">
+    <!-- Paso 1 -->
+    <div class="panel-paso" data-panel-paso="1">
+      <div class="barra-progreso"><span style="width:33%"></span></div>
+      <h2 class="paso-titulo">Datos personales</h2>
+      <p class="paso-desc">Identifican a la persona. La cédula queda como identificador permanente y no se puede repetir en el sistema.</p>
+      <div class="campo-fila">
+        <div class="campo" id="campoCedula">
+          <label for="fnCedula">Cédula <span class="obligatorio">*</span></label>
+          <input id="fnCedula" type="text" placeholder="2-0678-0432" style="font-variant-numeric:tabular-nums">
+          <span class="msg-error" id="errCedula" hidden>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v5M12 16h.01"/></svg>
+            Ya existe un funcionario con esta cédula. No se puede duplicar.
+          </span>
+        </div>
+        <div class="campo"><label for="fnNombre">Nombre <span class="obligatorio">*</span></label>
+          <input id="fnNombre" type="text"></div>
+        <div class="campo"><label for="fnAp1">Primer apellido <span class="obligatorio">*</span></label>
+          <input id="fnAp1" type="text"></div>
+        <div class="campo"><label for="fnAp2">Segundo apellido</label>
+          <input id="fnAp2" type="text"></div>
+        <div class="campo"><label for="fnNac">Fecha de nacimiento</label>
+          <input id="fnNac" type="date"></div>
+        <div class="campo"><label for="fnProf">Profesión</label>
+          <select id="fnProf">
+            <option>Seleccione…</option>
+            <option>Administración de Empresas</option>
+            <option>Ingeniería en Sistemas</option>
+            <option>Contaduría Pública</option>
+            <option>Derecho</option>
+            <option>Trabajo Social</option>
+          </select></div>
+      </div>
+    </div>
+
+    <!-- Paso 2 -->
+    <div class="panel-paso" data-panel-paso="2" hidden>
+      <div class="barra-progreso"><span style="width:66%"></span></div>
+      <h2 class="paso-titulo">Contacto</h2>
+      <p class="paso-desc">El correo personal es obligatorio: es a donde llegan los avisos del sistema cuando la persona no tiene correo institucional.</p>
+      <div class="campo-fila">
+        <div class="campo"><label for="fnCorreoP">Correo personal <span class="obligatorio">*</span></label>
+          <input id="fnCorreoP" type="email">
+          <span class="ayuda">Obligatorio: es el canal de respaldo si no tiene correo institucional.</span></div>
+        <div class="campo"><label for="fnCorreoI">Correo institucional</label>
+          <input id="fnCorreoI" type="email" placeholder="nombre@munipalmares.go.cr"></div>
+        <div class="campo"><label for="fnTel">Teléfono</label>
+          <input id="fnTel" type="tel" style="font-variant-numeric:tabular-nums"></div>
+      </div>
+      <div class="campo ancho"><label for="fnDir">Dirección exacta</label>
+        <textarea id="fnDir" rows="2" placeholder="Provincia, cantón, distrito y señas exactas"></textarea></div>
+    </div>
+
+    <!-- Paso 3 -->
+    <div class="panel-paso" data-panel-paso="3" hidden>
+      <div class="barra-progreso"><span style="width:100%"></span></div>
+      <h2 class="paso-titulo">Datos laborales</h2>
+      <p class="paso-desc">Definen su relación con la Municipalidad y quién aprueba sus trámites.</p>
+      <div class="mensaje mensaje-info">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+        <p>Solo Recursos Humanos registra o modifica estos campos. El funcionario nunca los edita, ni desde su propio perfil.</p>
+      </div>
+      <div class="campo-fila">
+        <div class="campo"><label for="fnPuesto">Puesto <span class="obligatorio">*</span></label>
+          <select id="fnPuesto"><option>Seleccione…</option><option>Asistente de Recursos Humanos</option><option>Gestora Tributaria</option><option>Encargado de Acueductos</option><option>Jefe de Informática</option></select></div>
+        <div class="campo"><label for="fnDepto">Departamento <span class="obligatorio">*</span></label>
+          <select id="fnDepto"><option>Seleccione…</option><option>Recursos Humanos</option><option>Hacienda Municipal</option><option>Servicios Públicos</option><option>Informática</option></select></div>
+        <div class="campo"><label for="fnJefe">Jefatura inmediata</label>
+          <select id="fnJefe"><option>Seleccione…</option><option>Ana Lucía Vargas Chaves</option><option>Joseph Granda Vargas</option><option>— Sin jefatura: tope de la jerarquía —</option></select>
+          <span class="ayuda">Define quién aprueba sus solicitudes. Sin jefatura, aprueba las propias.</span></div>
+        <div class="campo"><label for="fnNombramiento">Tipo de nombramiento <span class="obligatorio">*</span></label>
+          <select id="fnNombramiento"><option>En propiedad</option><option>Interino</option><option>Contratación por servicios</option></select></div>
+        <div class="campo"><label for="fnRegimen">Régimen de vacaciones <span class="obligatorio">*</span></label>
+          <select id="fnRegimen"><option>General — 15 días hasta 6 años, 20 después</option><option>Anterior — 30 días</option></select></div>
+        <div class="campo"><label for="fnIngreso">Fecha de ingreso <span class="obligatorio">*</span></label>
+          <input id="fnIngreso" type="date"></div>
+      </div>
+    </div>
+
+    <div class="pie-form">
+      <span class="contador-paso">Paso <b id="numPaso">1</b> de 3</span>
+      <div class="der">
+        <button class="btn btn-secundario" id="btnPasoAtras" hidden>Anterior</button>
+        <button class="btn btn-primario" id="btnPasoAdelante">Siguiente</button>
+        <button class="btn btn-primario" id="btnGuardarFunc" hidden>Guardar funcionario</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ USUARIOS (Fichas 2, 5, 7, 10) ============ -->
+<section class="pagina" id="pgUsuarios" hidden>
+  <div class="pagina-cab">
+    <div>
+      <h1>Usuarios</h1>
+      <p>Cuentas de acceso al sistema. Una cuenta puede estar asociada a un funcionario o ser administrativa, sin expediente.</p>
+    </div>
+    <div class="acc">
+      <button class="btn btn-primario" data-modal="mdUsuario">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+        Crear usuario
+      </button>
+    </div>
+  </div>
+
+  <div class="herramientas">
+    <div class="buscador">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+      <input type="search" placeholder="Buscar por usuario, nombre o correo" aria-label="Buscar usuarios">
+    </div>
+    <div class="filtros" role="group" aria-label="Filtrar por estado">
+      <button class="filtro" aria-pressed="true" data-filtro="todos">Todos</button>
+      <button class="filtro" aria-pressed="false" data-filtro="estado:activo">Activos</button>
+      <button class="filtro" aria-pressed="false" data-filtro="estado:inactivo">Inactivos</button>
+      <button class="filtro" aria-pressed="false" data-filtro="estado:bloqueado">Bloqueados</button>
+    </div>
+  </div>
+
+  <div class="tabla-envoltura">
+    <table>
+      <thead><tr>
+        <th scope="col">Usuario</th><th scope="col">Roles</th><th scope="col">Estado</th>
+        <th scope="col">Último acceso</th><th scope="col">Acciones</th>
+      </tr></thead>
+      <tbody>
+        <tr data-abrible tabindex="0" data-modal="mdVerUsuario" data-estado="activo">
+          <td data-etiqueta="Usuario"><div class="celda-usuario"><div class="avatar-sm">AV</div>
+            <div><span class="nom">Ana Lucía Vargas Chaves</span>
+            <span class="sec">avargas@munipalmares.go.cr</span></div></div></td>
+          <td data-etiqueta="Roles"><div class="pills"><span class="chip-rol sistema">Administrador</span><span class="chip-rol sistema">Aprobador</span></div></td>
+          <td data-etiqueta="Estado"><span class="chip chip-exito">● Activa</span></td>
+          <td data-etiqueta="Último acceso" class="num">10/09/2026 07:42</td>
+          <td class="acciones">
+            <button class="icono-btn" data-modal="mdUsuario" aria-label="Editar usuario" title="Editar usuario"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4v16h16v-7"/><path d="M18.5 2.5a2.1 2.1 0 0 1 3 3L12 15l-4 1 1-4z"/></svg></button>
+            <button class="icono-btn" data-modal="mdPermisos" aria-label="Permisos individuales" title="Permisos individuales"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2 4 6v6c0 5 3.4 8.7 8 10 4.6-1.3 8-5 8-10V6z"/><path d="m9 12 2 2 4-4"/></svg></button>
+            <button class="icono-btn peligro" data-modal="mdEstado" aria-label="Cambiar estado de la cuenta" title="Cambiar estado de la cuenta"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg></button>
+          </td>
+        </tr>
+        <tr data-abrible tabindex="0" data-modal="mdVerUsuario" data-estado="activo">
+          <td data-etiqueta="Usuario"><div class="celda-usuario"><div class="avatar-sm">MR</div>
+            <div><span class="nom">María José Rodríguez Alfaro</span>
+            <span class="sec">mrodriguez@munipalmares.go.cr</span></div></div></td>
+          <td data-etiqueta="Roles"><div class="pills"><span class="chip-rol sistema">Solicitante</span></div></td>
+          <td data-etiqueta="Estado"><span class="chip chip-exito">● Activa</span></td>
+          <td data-etiqueta="Último acceso" class="num">09/09/2026 15:10</td>
+          <td class="acciones">
+            <button class="icono-btn" data-modal="mdUsuario" aria-label="Editar usuario" title="Editar usuario"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4v16h16v-7"/><path d="M18.5 2.5a2.1 2.1 0 0 1 3 3L12 15l-4 1 1-4z"/></svg></button>
+            <button class="icono-btn" data-modal="mdPermisos" aria-label="Permisos individuales" title="Permisos individuales"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2 4 6v6c0 5 3.4 8.7 8 10 4.6-1.3 8-5 8-10V6z"/><path d="m9 12 2 2 4-4"/></svg></button>
+            <button class="icono-btn peligro" data-modal="mdEstado" aria-label="Cambiar estado de la cuenta" title="Cambiar estado de la cuenta"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg></button>
+          </td>
+        </tr>
+        <tr data-abrible tabindex="0" data-modal="mdVerUsuario" data-estado="activo">
+          <td data-etiqueta="Usuario"><div class="celda-usuario"><div class="avatar-sm">JG</div>
+            <div><span class="nom">Joseph Granda Vargas</span>
+            <span class="sec">jgranda@munipalmares.go.cr</span></div></div></td>
+          <td data-etiqueta="Roles"><div class="pills"><span class="chip-rol sistema">Súper Administrador</span></div></td>
+          <td data-etiqueta="Estado"><span class="chip chip-exito">● Activa</span></td>
+          <td data-etiqueta="Último acceso" class="num">10/09/2026 06:55</td>
+          <td class="acciones">
+            <button class="icono-btn" data-modal="mdUsuario" aria-label="Editar usuario" title="Editar usuario"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4v16h16v-7"/><path d="M18.5 2.5a2.1 2.1 0 0 1 3 3L12 15l-4 1 1-4z"/></svg></button>
+            <button class="icono-btn" data-modal="mdPermisos" aria-label="Permisos individuales" title="Permisos individuales"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2 4 6v6c0 5 3.4 8.7 8 10 4.6-1.3 8-5 8-10V6z"/><path d="m9 12 2 2 4-4"/></svg></button>
+            <button class="icono-btn peligro" data-modal="mdEstado" aria-label="Cambiar estado de la cuenta" title="Cambiar estado de la cuenta"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg></button>
+          </td>
+        </tr>
+        <tr data-abrible tabindex="0" data-modal="mdVerUsuario" data-estado="inactivo">
+          <td data-etiqueta="Usuario"><div class="celda-usuario"><div class="avatar-sm">CS</div>
+            <div><span class="nom">Carlos Solís Méndez</span>
+            <span class="sec">csolis@munipalmares.go.cr</span></div></div></td>
+          <td data-etiqueta="Roles"><div class="pills"><span class="chip-rol sistema">Aprobador</span><span class="chip-rol sistema">Solicitante</span></div></td>
+          <td data-etiqueta="Estado"><span class="chip chip-neutro">● Inactiva</span></td>
+          <td data-etiqueta="Último acceso" class="num">28/02/2026 11:03</td>
+          <td class="acciones">
+            <button class="icono-btn" data-modal="mdUsuario" aria-label="Editar usuario" title="Editar usuario"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4v16h16v-7"/><path d="M18.5 2.5a2.1 2.1 0 0 1 3 3L12 15l-4 1 1-4z"/></svg></button>
+            <button class="icono-btn" data-modal="mdPermisos" aria-label="Permisos individuales" title="Permisos individuales"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2 4 6v6c0 5 3.4 8.7 8 10 4.6-1.3 8-5 8-10V6z"/><path d="m9 12 2 2 4-4"/></svg></button>
+            <button class="icono-btn peligro" data-modal="mdEstado" aria-label="Cambiar estado de la cuenta" title="Cambiar estado de la cuenta"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg></button>
+          </td>
+        </tr>
+        <tr data-abrible tabindex="0" data-modal="mdVerUsuario" data-estado="bloqueado">
+          <td data-etiqueta="Usuario"><div class="celda-usuario"><div class="avatar-sm">LQ</div>
+            <div><span class="nom">Laura Quesada Ureña</span>
+            <span class="sec">lquesada@munipalmares.go.cr</span></div></div></td>
+          <td data-etiqueta="Roles"><div class="pills"><span class="chip-rol sistema">Solicitante</span></div></td>
+          <td data-etiqueta="Estado"><span class="chip chip-advert">● Bloqueada</span></td>
+          <td data-etiqueta="Último acceso" class="num">05/09/2026 09:21</td>
+          <td class="acciones">
+            <button class="icono-btn" data-modal="mdUsuario" aria-label="Editar usuario" title="Editar usuario"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4v16h16v-7"/><path d="M18.5 2.5a2.1 2.1 0 0 1 3 3L12 15l-4 1 1-4z"/></svg></button>
+            <button class="icono-btn" data-modal="mdPermisos" aria-label="Permisos individuales" title="Permisos individuales"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2 4 6v6c0 5 3.4 8.7 8 10 4.6-1.3 8-5 8-10V6z"/><path d="m9 12 2 2 4-4"/></svg></button>
+            <button class="icono-btn peligro" data-modal="mdEstado" aria-label="Cambiar estado de la cuenta" title="Cambiar estado de la cuenta"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg></button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="paginacion">
+    <span>5 de 5 cuentas</span>
+    <div class="paginas">
+      <button class="pag-btn" disabled>Anterior</button>
+      <button class="pag-btn" aria-current="page">1</button>
+      <button class="pag-btn" disabled>Siguiente</button>
+    </div>
+  </div>
+</section>
+
+<!-- ============ ROLES Y PERMISOS (Fichas 3, 4, 9) ============ -->
+<section class="pagina" id="pgRoles" hidden>
+  <div class="pagina-cab">
+    <div>
+      <h1>Roles y permisos</h1>
+      <p>Pantalla única de configuración de seguridad. Los permisos se definen por clave <span class="clave">módulo.acción</span>, para no amarrar las validaciones a un rol fijo.</p>
+    </div>
+  </div>
+
+  <div class="tabs" role="tablist" aria-label="Configuración de seguridad">
+    <button class="tab" role="tab" aria-selected="true" data-panel="tabRoles">Roles <span class="cuenta">5</span></button>
+    <button class="tab" role="tab" aria-selected="false" data-panel="tabPermisos">Catálogo de permisos <span class="cuenta">18</span></button>
+  </div>
+
+  <!-- Roles + sus permisos -->
+  <div id="tabRoles" role="tabpanel">
+    <div class="dos-columnas">
+      <div class="card lista-sel">
+        <button class="item-sel" aria-pressed="true">Súper Administrador <span class="cnt">18</span></button>
+        <button class="item-sel" aria-pressed="false">Administrador <span class="cnt">14</span></button>
+        <button class="item-sel" aria-pressed="false">Aprobador <span class="cnt">7</span></button>
+        <button class="item-sel" aria-pressed="false">Solicitante <span class="cnt">5</span></button>
+        <button class="item-sel" aria-pressed="false">Consulta <span class="cnt">4</span></button>
+        <button class="btn btn-secundario" style="margin:8px 4px 4px" data-modal="mdRol">Crear rol</button>
+      </div>
+
+      <div class="card">
+        <div style="padding:18px 20px;border-bottom:1px solid var(--borde);display:flex;
+             flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between">
+          <div>
+            <h2 style="font-size:18px;font-weight:700">Súper Administrador</h2>
+            <p style="font-size:14px;color:var(--texto-sec);margin-top:3px">Control total del sistema. Único rol que consulta la bitácora de auditoría.</p>
+          </div>
+          <span class="chip chip-info">Rol de sistema · no se puede eliminar</span>
+        </div>
+
+        <div class="grupo-permisos">
+          <h3>Funcionarios y expediente</h3>
+          <div class="rejilla-permisos">
+            <label class="check"><input type="checkbox" checked><span class="txt"><b>funcionarios.ver</b><span>Consultar funcionarios</span></span></label>
+            <label class="check"><input type="checkbox" checked><span class="txt"><b>funcionarios.crear</b><span>Registrar funcionario</span></span></label>
+            <label class="check"><input type="checkbox" checked><span class="txt"><b>funcionarios.editar</b><span>Modificar información</span></span></label>
+            <label class="check"><input type="checkbox" checked><span class="txt"><b>expediente.ver</b><span>Abrir expediente laboral</span></span></label>
+            <label class="check"><input type="checkbox" checked><span class="txt"><b>documentos.crear</b><span>Subir documentos</span></span></label>
+            <label class="check"><input type="checkbox" checked><span class="txt"><b>documentos.descargar</b><span>Descargar documentos</span></span></label>
+            <label class="check"><input type="checkbox" checked><span class="txt"><b>documentos.darDeBaja</b><span>Ocultar sin eliminar</span></span></label>
+            <label class="check"><input type="checkbox" checked><span class="txt"><b>tiposDocumento.editar</b><span>Administrar el catálogo</span></span></label>
+          </div>
+        </div>
+
+        <div class="grupo-permisos">
+          <h3>Seguridad</h3>
+          <div class="rejilla-permisos">
+            <label class="check"><input type="checkbox" checked><span class="txt"><b>usuarios.crear</b><span>Crear cuentas</span></span></label>
+            <label class="check"><input type="checkbox" checked><span class="txt"><b>usuarios.editar</b><span>Modificar cuentas</span></span></label>
+            <label class="check"><input type="checkbox" checked><span class="txt"><b>usuarios.cambiarEstado</b><span>Activar, inactivar o bloquear</span></span></label>
+            <label class="check"><input type="checkbox" checked><span class="txt"><b>roles.editar</b><span>Administrar roles</span></span></label>
+            <label class="check"><input type="checkbox" checked><span class="txt"><b>permisos.editar</b><span>Administrar el catálogo de permisos</span></span></label>
+            <label class="check"><input type="checkbox" checked><span class="txt"><b>bitacora.ver</b><span>Consultar la bitácora</span></span></label>
+          </div>
+        </div>
+
+        <div style="padding:16px 20px;display:flex;gap:10px;justify-content:flex-end;
+             border-top:1px solid var(--borde)">
+          <button class="btn btn-secundario">Descartar</button>
+          <button class="btn btn-primario">Guardar cambios</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Catálogo de permisos -->
+  <div id="tabPermisos" role="tabpanel" hidden>
+    <div class="pagina-cab" style="margin-bottom:14px">
+      <p style="color:var(--texto-sec);font-size:14.5px;max-width:70ch">
+        Cada funcionalidad nueva del sistema necesita su permiso. La clave no se puede repetir.</p>
+      <div class="acc"><button class="btn btn-primario" data-modal="mdPermiso">Crear permiso</button></div>
+    </div>
+    <div class="tabla-envoltura">
+      <table>
+        <thead><tr><th scope="col">Clave</th><th scope="col">Módulo</th>
+          <th scope="col">Descripción</th><th scope="col">Estado</th></tr></thead>
+        <tbody>
+          <tr><td data-etiqueta="Clave"><span class="clave">funcionarios.ver</span></td><td data-etiqueta="Módulo">funcionarios</td><td data-etiqueta="Descripción">Consultar funcionarios y su ficha resumida</td><td data-etiqueta="Estado"><span class="chip chip-exito">Activo</span></td></tr>
+          <tr><td data-etiqueta="Clave"><span class="clave">expediente.ver</span></td><td data-etiqueta="Módulo">expediente</td><td data-etiqueta="Descripción">Abrir el expediente laboral — se audita cada apertura</td><td data-etiqueta="Estado"><span class="chip chip-exito">Activo</span></td></tr>
+          <tr><td data-etiqueta="Clave"><span class="clave">documentos.descargar</span></td><td data-etiqueta="Módulo">documentos</td><td data-etiqueta="Descripción">Descargar documentos — se audita cada descarga</td><td data-etiqueta="Estado"><span class="chip chip-exito">Activo</span></td></tr>
+          <tr><td data-etiqueta="Clave"><span class="clave">documentos.darDeBaja</span></td><td data-etiqueta="Módulo">documentos</td><td data-etiqueta="Descripción">Ocultar un documento sin eliminarlo</td><td data-etiqueta="Estado"><span class="chip chip-exito">Activo</span></td></tr>
+          <tr><td data-etiqueta="Clave"><span class="clave">perfilPropio.editar</span></td><td data-etiqueta="Módulo">perfilPropio</td><td data-etiqueta="Descripción">Autoservicio: mantener los datos propios de contacto</td><td data-etiqueta="Estado"><span class="chip chip-exito">Activo</span></td></tr>
+          <tr><td data-etiqueta="Clave"><span class="clave">usuarios.cambiarEstado</span></td><td data-etiqueta="Módulo">usuarios</td><td data-etiqueta="Descripción">Activar, inactivar o bloquear una cuenta</td><td data-etiqueta="Estado"><span class="chip chip-exito">Activo</span></td></tr>
+          <tr><td data-etiqueta="Clave"><span class="clave">bitacora.ver</span></td><td data-etiqueta="Módulo">bitacora</td><td data-etiqueta="Descripción">Consultar la bitácora de auditoría</td><td data-etiqueta="Estado"><span class="chip chip-exito">Activo</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- ============ TIPOS DE DOCUMENTO (Ficha 18) ============ -->
+<section class="pagina" id="pgTipos" hidden>
+  <div class="pagina-cab">
+    <div>
+      <h1>Tipos de documento</h1>
+      <p>Catálogo del expediente. Los tipos manuales se administran libremente; los que genera SIGEL solo se pueden renombrar, porque cada uno depende de una plantilla programada.</p>
+    </div>
+    <div class="acc"><button class="btn btn-primario" data-modal="mdTipoDoc">Crear tipo manual</button></div>
+  </div>
+
+  <div class="tabla-envoltura">
+    <table>
+      <thead><tr><th scope="col">Nombre</th><th scope="col">Descripción</th>
+        <th scope="col">Origen</th><th scope="col">Estado</th><th scope="col">Acciones</th></tr></thead>
+      <tbody>
+        <tr><td data-etiqueta="Nombre"><b>Cédula de identidad</b></td><td data-etiqueta="Descripción">Copia del documento de identidad</td><td data-etiqueta="Origen"><span class="chip chip-neutro">Manual</span></td><td data-etiqueta="Estado"><span class="chip chip-exito">Activo</span></td>
+          <td class="acciones"><button class="icono-btn" data-modal="mdTipoDoc" aria-label="Editar" title="Editar"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4v16h16v-7"/><path d="M18.5 2.5a2.1 2.1 0 0 1 3 3L12 15l-4 1 1-4z"/></svg></button>
+          <button class="icono-btn peligro" aria-label="Desactivar" title="Desactivar"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg></button></td></tr>
+        <tr><td data-etiqueta="Nombre"><b>Título universitario</b></td><td data-etiqueta="Descripción">Grado académico del funcionario</td><td data-etiqueta="Origen"><span class="chip chip-neutro">Manual</span></td><td data-etiqueta="Estado"><span class="chip chip-exito">Activo</span></td>
+          <td class="acciones"><button class="icono-btn" data-modal="mdTipoDoc" aria-label="Editar" title="Editar"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4v16h16v-7"/><path d="M18.5 2.5a2.1 2.1 0 0 1 3 3L12 15l-4 1 1-4z"/></svg></button>
+          <button class="icono-btn peligro" aria-label="Desactivar" title="Desactivar"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg></button></td></tr>
+        <tr><td data-etiqueta="Nombre"><b>Acción de personal</b></td><td data-etiqueta="Descripción">Nombramientos y cambios de puesto</td><td data-etiqueta="Origen"><span class="chip chip-neutro">Manual</span></td><td data-etiqueta="Estado"><span class="chip chip-exito">Activo</span></td>
+          <td class="acciones"><button class="icono-btn" data-modal="mdTipoDoc" aria-label="Editar" title="Editar"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4v16h16v-7"/><path d="M18.5 2.5a2.1 2.1 0 0 1 3 3L12 15l-4 1 1-4z"/></svg></button>
+          <button class="icono-btn peligro" aria-label="Desactivar" title="Desactivar"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg></button></td></tr>
+        <tr><td data-etiqueta="Nombre"><b>Constancia de vacaciones</b></td><td data-etiqueta="Descripción">La genera SIGEL al aprobarse una solicitud de vacaciones</td><td data-etiqueta="Origen"><span class="chip chip-info">Generado por SIGEL</span></td><td data-etiqueta="Estado"><span class="chip chip-exito">Activo</span></td>
+          <td class="acciones"><button class="icono-btn" data-modal="mdTipoDoc" aria-label="Renombrar" title="Renombrar"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4v16h16v-7"/><path d="M18.5 2.5a2.1 2.1 0 0 1 3 3L12 15l-4 1 1-4z"/></svg></button></td></tr>
+        <tr><td data-etiqueta="Nombre"><b>Currículum</b></td><td data-etiqueta="Descripción">Se copia desde el Talent Pool al contratar</td><td data-etiqueta="Origen"><span class="chip chip-info">Generado por SIGEL</span></td><td data-etiqueta="Estado"><span class="chip chip-exito">Activo</span></td>
+          <td class="acciones"><button class="icono-btn" data-modal="mdTipoDoc" aria-label="Renombrar" title="Renombrar"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4v16h16v-7"/><path d="M18.5 2.5a2.1 2.1 0 0 1 3 3L12 15l-4 1 1-4z"/></svg></button></td></tr>
+        <tr><td data-etiqueta="Nombre"><b>Carta de amonestación</b></td><td data-etiqueta="Descripción">Ya no se utiliza en el expediente digital</td><td data-etiqueta="Origen"><span class="chip chip-neutro">Manual</span></td><td data-etiqueta="Estado"><span class="chip chip-advert">Inactivo</span></td>
+          <td class="acciones"><button class="icono-btn" data-modal="mdTipoDoc" aria-label="Editar" title="Editar"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4v16h16v-7"/><path d="M18.5 2.5a2.1 2.1 0 0 1 3 3L12 15l-4 1 1-4z"/></svg></button>
+          <button class="icono-btn" aria-label="Reactivar" title="Reactivar"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></svg></button></td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ============ MI CUENTA (Fichas 8 y 12 · autoservicio T-5) ============ -->
+<section class="pagina" id="pgCuenta" hidden>
+  <section class="perfil" aria-label="Mi perfil">
+    <div class="perfil-foto" aria-hidden="true">
+      <span id="perfilIniciales">AV</span>
+      <button class="cambiar" aria-label="Cambiar mi fotografía" title="Cambiar mi fotografía">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 4h-5L8 6H4a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1h16a1 1 0 0 0 1-1V7a1 1 0 0 0-1-1h-4z"/><circle cx="12" cy="13" r="3.2"/></svg>
+      </button>
+    </div>
+    <h1 id="perfilNombre">Ana Lucía Vargas Chaves</h1>
+    <p class="ident" id="perfilIdent">Cédula 2-0512-0908 · avargas@munipalmares.go.cr</p>
+    <div class="chips" id="perfilChips">
+      <span class="chip chip-exito">● Cuenta activa</span>
+      <span class="chip-rol sistema">Administrador</span>
+      <span class="chip-rol sistema">Aprobador</span>
+    </div>
+    <dl class="perfil-rapido">
+      <div><dt>Puesto</dt><dd id="perfilPuesto">Jefa de Recursos Humanos</dd></div>
+      <div><dt>Departamento</dt><dd id="perfilDepto">Recursos Humanos</dd></div>
+      <div><dt>Ingreso</dt><dd class="num" id="perfilIngreso">12/01/2015</dd></div>
+      <div><dt>Último acceso</dt><dd class="num">10/09/2026 07:42</dd></div>
+    </dl>
+  </section>
+
+  <div class="tabs" role="tablist" aria-label="Secciones de mi cuenta">
+    <button class="tab" role="tab" aria-selected="true" data-panel="ctaDatos">Mis datos personales</button>
+    <button class="tab" role="tab" aria-selected="false" data-panel="ctaAcceso">Acceso y seguridad</button>
+  </div>
+
+  <!-- Datos personales editables por el propio funcionario -->
+  <div id="ctaDatos" role="tabpanel">
+    <div class="card" style="max-width:1080px">
+      <div class="panel-paso">
+        <div class="campo-fila">
+          <div class="campo"><label for="mcTel">Teléfono</label>
+            <input id="mcTel" type="tel" value="8712 4408" style="font-variant-numeric:tabular-nums"></div>
+          <div class="campo"><label for="mcCorreoP">Correo personal <span class="obligatorio">*</span></label>
+            <input id="mcCorreoP" type="email" value="majo.rodriguez@gmail.com"></div>
+          <div class="campo"><label for="mcCorreoI">Correo institucional</label>
+            <input id="mcCorreoI" type="email" value="mrodriguez@munipalmares.go.cr"></div>
+          <div class="campo"><label for="mcProf">Profesión</label>
+            <select id="mcProf"><option selected>Administración de Empresas</option><option>Ingeniería en Sistemas</option><option>Contaduría Pública</option><option>Derecho</option><option>Trabajo Social</option></select></div>
+          <div class="campo doble"><label for="mcDir">Dirección exacta</label>
+            <textarea id="mcDir" rows="2">Alajuela, Palmares, Santiago, 200 metros norte de la escuela.</textarea></div>
+        </div>
+      </div>
+      <div class="pie-form">
+        <span class="contador-paso">Cada cambio se le notifica a Recursos Humanos y queda en la bitácora. Los datos laborales solo los modifica Recursos Humanos.</span>
+        <div class="der">
+          <button class="btn btn-secundario">Descartar</button>
+          <button class="btn btn-primario">Guardar cambios</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Acceso y seguridad -->
+  <div id="ctaAcceso" role="tabpanel" hidden>
+    <div class="cuenta-rejilla">
+      <div class="card bloque">
+        <h2>Datos de acceso</h2>
+        <dl class="lista-datos">
+          <div><dt>Correo de ingreso</dt><dd id="ctaCorreo">avargas@munipalmares.go.cr</dd></div>
+          <div><dt>Último acceso</dt><dd class="num">10/09/2026 07:42</dd></div>
+          <div><dt>Acceso anterior</dt><dd class="num">09/09/2026 08:15</dd></div>
+          <div><dt>Estado</dt><dd><span class="chip chip-exito">● Activa</span></dd></div>
+        </dl>
+      </div>
+
+      <div class="card bloque">
+        <h2>Roles asignados</h2>
+        <p style="font-size:14px;color:var(--texto-sec);margin-bottom:12px">
+          Sus roles definen lo que puede hacer. Solo Recursos Humanos puede cambiarlos.</p>
+        <div class="pills" id="ctaRoles">
+          <span class="chip-rol sistema">Administrador</span>
+          <span class="chip-rol sistema">Aprobador</span>
+        </div>
+        <p style="font-size:13.5px;color:var(--texto-sec);margin-top:16px">
+          Como Aprobador, sus propias solicitudes se envían a su jefatura inmediata; nunca se autoaprueban.</p>
+      </div>
+
+      <div class="card bloque">
+        <h2>Contraseña</h2>
+        <p style="font-size:14px;color:var(--texto-sec);margin-bottom:14px">
+          Su contraseña se guarda cifrada: ni Informática ni Recursos Humanos pueden verla. Para cambiarla,
+          el sistema le envía un código de verificación a su correo.</p>
+        <button class="btn btn-secundario" data-modal="mdCambiarPass">Cambiar mi contraseña</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+  </main>
+</div>
+
+<button class="tirador" id="btnPlegar" title="Ocultar el menú lateral" aria-label="Ocultar el menú lateral" aria-expanded="true">
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+</button>
+</div>
+
+
+<!-- ============ Ver usuario (solo lectura) ============ -->
+<div class="velo" id="mdVerUsuario" role="dialog" aria-modal="true" aria-labelledby="tVerUsuario">
+  <div class="modal modal-ancho">
+    <div class="modal-cab">
+      <h2 id="tVerUsuario">
+        <span class="ic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21v-1a6 6 0 0 1 6-6h4a6 6 0 0 1 6 6v1"/></svg></span>
+        <span id="vuNombre">Ana Lucía Vargas Chaves</span>
+      </h2>
+      <p>Cuenta de acceso al sistema. Para modificarla use el botón de editar.</p>
+    </div>
+    <div class="modal-cuerpo">
+      <div class="info-bloque" style="margin-bottom:0;border:0">
+        <dl class="info-rejilla" style="padding:0">
+          <div class="dato"><dt>Correo de ingreso</dt><dd id="vuCorreo">avargas@munipalmares.go.cr</dd></div>
+          <div class="dato"><dt>Funcionario asociado</dt><dd id="vuFuncionario">Ana Lucía Vargas Chaves</dd></div>
+          <div class="dato"><dt>Estado</dt><dd id="vuEstado"><span class="chip chip-exito">● Activa</span></dd></div>
+          <div class="dato"><dt>Último acceso</dt><dd class="num" id="vuAcceso">10/09/2026 07:42</dd></div>
+          <div class="dato" style="grid-column:1/-1"><dt>Roles</dt>
+            <dd><div class="pills" id="vuRoles"><span class="chip-rol sistema">Administrador</span></div></dd></div>
+        </dl>
+      </div>
+    </div>
+    <div class="modal-pie">
+      <button class="btn btn-secundario" data-cerrar>Cerrar</button>
+      <button class="btn btn-primario" id="btnEditarDesdeVer">Editar usuario</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ Ficha resumida del funcionario (Ficha 13) ============ -->
+<div class="velo" id="mdResumen" role="dialog" aria-modal="true" aria-labelledby="tResumen">
+  <div class="modal modal-ancho">
+    <div class="modal-cab">
+      <div class="resumen-cab" style="margin-bottom:0">
+        <div class="foto" aria-hidden="true">MR</div>
+        <div>
+          <h2 id="tResumen">María José Rodríguez Alfaro</h2>
+          <p class="ced">Cédula 2-0678-0432</p>
+          <div class="ficha-chips" style="margin-top:8px"><span class="chip chip-exito">● Activa</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-cuerpo">
+      <dl class="resumen-datos" style="border-top:0;padding-top:0">
+        <div class="dato"><dt>Puesto</dt><dd>Asistente de Recursos Humanos</dd></div>
+        <div class="dato"><dt>Departamento</dt><dd>Recursos Humanos</dd></div>
+        <div class="dato"><dt>Jefatura inmediata</dt><dd>Ana Lucía Vargas Chaves</dd></div>
+        <div class="dato"><dt>Teléfono</dt><dd class="num">8712 4408</dd></div>
+        <div class="dato"><dt>Correo</dt><dd>mrodriguez@munipalmares.go.cr</dd></div>
+        <div class="dato"><dt>Fecha de ingreso</dt><dd class="num">03/02/2020</dd></div>
+      </dl>
+    </div>
+    <div class="modal-pie">
+      <button class="btn btn-secundario" data-cerrar>Cerrar</button>
+      <button class="btn btn-primario" data-ir-pagina="pgExpediente" data-cerrar>Ver expediente</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ Crear / editar usuario (Fichas 2 y 5) — por pasos ============ -->
+<div class="velo" id="mdUsuario" role="dialog" aria-modal="true" aria-labelledby="tUsuario">
+  <div class="modal modal-ancho">
+    <div class="modal-cab">
+      <h2 id="tUsuario"><span class="ic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M19 8v6M22 11h-6"/></svg></span>Crear usuario</h2>
+      <p id="subUsuario">La contraseña inicial es temporal: el sistema obliga a cambiarla en el primer ingreso y avisa por correo.</p>
+      <div class="pasos" style="margin:16px 0 0" role="tablist" aria-label="Pasos de la cuenta">
+        <button class="paso" role="tab" aria-current="step" data-paso-us="1">
+          <span class="n">1</span><span>Cuenta<span class="sub">Funcionario y correo</span></span>
+        </button>
+        <button class="paso" role="tab" data-paso-us="2">
+          <span class="n">2</span><span>Roles<span class="sub">Qué podrá hacer</span></span>
+        </button>
+      </div>
+    </div>
+
+    <div class="modal-cuerpo">
+      <div data-panel-us="1">
+        <div class="campo">
+          <label for="usFuncionario">Funcionario asociado</label>
+          <select id="usFuncionario">
+            <option>— Cuenta administrativa, sin expediente —</option>
+            <option>María José Rodríguez Alfaro · 2-0678-0432</option>
+            <option>Laura Quesada Ureña · 2-0745-0219</option>
+            <option>Carlos Solís Méndez · 2-0431-0177</option>
+          </select>
+          <span class="ayuda">Si la cuenta no corresponde a un funcionario con expediente, déjela como administrativa.</span>
+        </div>
+        <div class="campo">
+          <label for="usCorreo">Correo de ingreso <span class="obligatorio">*</span></label>
+          <input id="usCorreo" type="email" placeholder="nombre@munipalmares.go.cr">
+          <span class="ayuda">Es el identificador con el que la persona inicia sesión. No se puede repetir.</span>
+        </div>
+        <div class="campo" id="campoPassTemp">
+          <label for="usPass">Contraseña temporal <span class="obligatorio">*</span></label>
+          <div class="pass-envoltura">
+            <input id="usPass" type="text" value="Palmares.2026" style="font-family:ui-monospace,monospace">
+            <button class="ver-pass" type="button" data-ver="usPass" aria-label="Mostrar contraseña" title="Mostrar contraseña">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>
+            </button>
+          </div>
+          <span class="ayuda">Se le enviará por correo junto con el aviso de cambiarla.</span>
+        </div>
+      </div>
+
+      <div data-panel-us="2" hidden>
+        <div class="campo">
+          <label>Roles <span class="obligatorio">*</span></label>
+          <label class="check"><input type="checkbox"><span class="txt"><b>Súper Administrador</b><span>Control total, incluida la bitácora de auditoría</span></span></label>
+          <label class="check"><input type="checkbox"><span class="txt"><b>Administrador</b><span>Recursos Humanos: funcionarios, expedientes y trámites</span></span></label>
+          <label class="check"><input type="checkbox"><span class="txt"><b>Aprobador</b><span>Resuelve las solicitudes de su equipo</span></span></label>
+          <label class="check"><input type="checkbox" checked><span class="txt"><b>Solicitante</b><span>Sus propios trámites y su propio expediente</span></span></label>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-pie">
+      <button class="btn btn-secundario" data-cerrar>Cancelar</button>
+      <button class="btn btn-secundario" id="btnUsAtras" hidden>Anterior</button>
+      <button class="btn btn-primario" id="btnUsAdelante">Siguiente</button>
+      <button class="btn btn-primario" id="btnUsGuardar" hidden>Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ Permisos individuales (Ficha 10) ============ -->
+<div class="velo" id="mdPermisos" role="dialog" aria-modal="true" aria-labelledby="tPermisos">
+  <div class="modal modal-ancho">
+    <div class="modal-cab">
+      <h2 id="tPermisos"><span class="ic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2 4 6v6c0 5 3.4 8.7 8 10 4.6-1.3 8-5 8-10V6z"/><path d="m9 12 2 2 4-4"/></svg></span>Permisos individuales</h2>
+      <p>Excepciones sobre lo que ya otorgan los roles de <b>Ana Lucía Vargas Chaves</b>: sirven para conceder algo puntual o para quitarlo, aunque el rol lo dé.</p>
+    </div>
+    <div class="modal-cuerpo">
+      <div class="mensaje mensaje-advert">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/><path d="M12 9v4M12 17h.01"/></svg>
+        <p>Úselo solo como excepción. Si varias personas necesitan lo mismo, conviene crear un rol.</p>
+      </div>
+      <div class="campo">
+        <label for="pmPermiso">Permiso</label>
+        <select id="pmPermiso">
+          <option>bitacora.ver — Consultar la bitácora de auditoría</option>
+          <option>documentos.darDeBaja — Ocultar un documento sin eliminarlo</option>
+          <option>tiposDocumento.editar — Administrar el catálogo</option>
+        </select>
+      </div>
+      <div class="campo">
+        <label>Efecto</label>
+        <label class="check"><input type="radio" name="efecto" checked><span class="txt"><b>Otorgar</b><span>Se concede aunque ningún rol suyo lo incluya</span></span></label>
+        <label class="check"><input type="radio" name="efecto"><span class="txt"><b>Revocar</b><span>Se quita aunque su rol sí lo otorgue</span></span></label>
+      </div>
+      <div class="campo">
+        <label for="pmMotivo">Motivo de la excepción</label>
+        <textarea id="pmMotivo" rows="3" placeholder="Queda registrado en la bitácora junto con quién la creó."></textarea>
+      </div>
+    </div>
+    <div class="modal-pie">
+      <button class="btn btn-secundario" data-cerrar>Cancelar</button>
+      <button class="btn btn-primario" data-cerrar>Guardar excepción</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ Cambiar estado de cuenta (Ficha 7) ============ -->
+<div class="velo" id="mdEstado" role="dialog" aria-modal="true" aria-labelledby="tEstado">
+  <div class="modal">
+    <div class="modal-cab">
+      <h2 id="tEstado"><span class="ic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg></span>Cambiar estado de la cuenta</h2>
+      <p>La cuenta y todo su historial se conservan. Una cuenta que no esté activa simplemente no puede iniciar sesión.</p>
+    </div>
+    <div class="modal-cuerpo">
+      <p class="modal-doc" style="margin-top:0">Ana Lucía Vargas Chaves · avargas@munipalmares.go.cr</p>
+      <label class="check"><input type="radio" name="estadoCta" checked><span class="txt"><b>Activa</b><span>Puede ingresar con normalidad</span></span></label>
+      <label class="check"><input type="radio" name="estadoCta"><span class="txt"><b>Inactiva</b><span>La persona dejó de trabajar en la Municipalidad</span></span></label>
+      <label class="check"><input type="radio" name="estadoCta"><span class="txt"><b>Bloqueada</b><span>Suspensión del acceso que decide Recursos Humanos, por ejemplo durante una investigación o una licencia larga. Se levanta volviendo a marcar Activa.</span></span></label>
+      <div class="mensaje mensaje-info" style="margin:12px 0 0">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+        <p>No confundir con el bloqueo de tres minutos por intentos fallidos: ese es automático, temporal y no cambia el estado de la cuenta.</p>
+      </div>
+    </div>
+    <div class="modal-pie">
+      <button class="btn btn-secundario" data-cerrar>Cancelar</button>
+      <button class="btn btn-primario" data-cerrar>Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ Subir documento (Ficha 19) ============ -->
+<div class="velo" id="mdSubir" role="dialog" aria-modal="true" aria-labelledby="tSubir">
+  <div class="modal modal-ancho">
+    <div class="modal-cab">
+      <h2 id="tSubir"><span class="ic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M17 8l-5-5-5 5M12 3v12"/></svg></span>Subir documento al expediente</h2>
+      <p>Se aceptan PDF, JPG y PNG, hasta 25 MB. El archivo se guarda con un nombre interno seguro, fuera de cualquier carpeta pública.</p>
+    </div>
+    <div class="modal-cuerpo">
+      <div class="campo">
+        <label for="dcTipo">Tipo de documento <span class="obligatorio">*</span></label>
+        <select id="dcTipo">
+          <option>Seleccione…</option>
+          <option>Cédula de identidad</option>
+          <option>Título universitario</option>
+          <option>Hoja de delincuencia</option>
+          <option>Acción de personal</option>
+        </select>
+      </div>
+      <div class="campo">
+        <label for="dcTitulo">Título <span class="obligatorio">*</span></label>
+        <input id="dcTitulo" type="text" placeholder="Título universitario — Administración">
+      </div>
+      <div class="campo">
+        <label for="dcDesc">Descripción</label>
+        <textarea id="dcDesc" rows="3"></textarea>
+      </div>
+      <div class="campo">
+        <label>Archivo <span class="obligatorio">*</span></label>
+        <div class="zona-archivo" id="zonaArchivo" role="button" tabindex="0">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="color:var(--texto-sec)"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M17 8l-5-5-5 5M12 3v12"/></svg>
+          <p class="tit">Arrastre el archivo o haga clic para elegirlo</p>
+          <p class="lim">PDF, JPG o PNG · máximo 25 MB</p>
+        </div>
+        <div class="archivo-elegido" id="archivoElegido" hidden style="margin-top:10px">
+          <div class="doc-ico pdf">PDF</div>
+          <div style="min-width:0"><span class="nom">titulo_universitario.pdf</span>
+          <span class="peso">3,8 MB</span></div>
+          <button class="icono-btn peligro" style="margin-left:auto" id="quitarArchivo" aria-label="Quitar archivo" title="Quitar archivo">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+          </button>
+        </div>
+      </div>
+    </div>
+    <div class="modal-pie">
+      <button class="btn btn-secundario" data-cerrar>Cancelar</button>
+      <button class="btn btn-primario" data-cerrar>Subir documento</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ Crear rol (Ficha 3) ============ -->
+<div class="velo" id="mdRol" role="dialog" aria-modal="true" aria-labelledby="tRol">
+  <div class="modal">
+    <div class="modal-cab">
+      <h2 id="tRol"><span class="ic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2 4 6v6c0 5 3.4 8.7 8 10 4.6-1.3 8-5 8-10V6z"/></svg></span>Crear rol</h2>
+      <p>Después de crearlo podrá marcarle los permisos que corresponda.</p>
+    </div>
+    <div class="modal-cuerpo">
+      <div class="campo"><label for="rlNombre">Nombre <span class="obligatorio">*</span></label>
+        <input id="rlNombre" type="text" placeholder="Ej.: Control Interno"></div>
+      <div class="campo"><label for="rlDesc">Descripción</label>
+        <textarea id="rlDesc" rows="3" placeholder="Para qué sirve este rol y quién debería tenerlo."></textarea></div>
+    </div>
+    <div class="modal-pie">
+      <button class="btn btn-secundario" data-cerrar>Cancelar</button>
+      <button class="btn btn-primario" data-cerrar>Crear rol</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ Crear permiso (Ficha 4) — módulo y acción desde catálogo ============ -->
+<div class="velo" id="mdPermiso" role="dialog" aria-modal="true" aria-labelledby="tPermiso">
+  <div class="modal">
+    <div class="modal-cab">
+      <h2 id="tPermiso"><span class="ic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M4.2 4.2l2.8 2.8M17 17l2.8 2.8M1 12h4M19 12h4M4.2 19.8 7 17M17 7l2.8-2.8"/></svg></span>Crear permiso</h2>
+      <p>El módulo y la acción se eligen de los valores que el sistema ya reconoce, para que la clave siempre exista en el código.</p>
+    </div>
+    <div class="modal-cuerpo">
+      <div class="campo-fila">
+        <div class="campo"><label for="pwModulo">Módulo <span class="obligatorio">*</span></label>
+          <select id="pwModulo">
+            <option value="">Seleccione…</option>
+            <option>funcionarios</option><option>expediente</option><option>documentos</option>
+            <option>tiposDocumento</option><option>usuarios</option><option>roles</option>
+            <option>permisos</option><option>perfilPropio</option><option>bitacora</option>
+          </select></div>
+        <div class="campo"><label for="pwAccion">Acción <span class="obligatorio">*</span></label>
+          <select id="pwAccion">
+            <option value="">Seleccione…</option>
+            <option>ver</option><option>crear</option><option>editar</option>
+            <option>descargar</option><option>darDeBaja</option><option>cambiarEstado</option>
+            <option>aprobar</option><option>rechazar</option>
+          </select></div>
+      </div>
+      <div class="campo">
+        <label>Clave que se generará</label>
+        <p><span class="clave" id="clavePreview">módulo.acción</span></p>
+        <span class="ayuda">Si esta combinación ya existe, el sistema la rechaza.</span>
+      </div>
+      <div class="campo"><label for="pwDesc">Descripción <span class="obligatorio">*</span></label>
+        <input id="pwDesc" type="text" placeholder="Aprobar o rechazar solicitudes de vacaciones"></div>
+    </div>
+    <div class="modal-pie">
+      <button class="btn btn-secundario" data-cerrar>Cancelar</button>
+      <button class="btn btn-primario" data-cerrar>Crear permiso</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ Tipo de documento (Ficha 18) ============ -->
+<div class="velo" id="mdTipoDoc" role="dialog" aria-modal="true" aria-labelledby="tTipoDoc">
+  <div class="modal">
+    <div class="modal-cab"><h2 id="tTipoDoc"><span class="ic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg></span>Tipo de documento</h2></div>
+    <div class="modal-cuerpo">
+      <div class="campo"><label for="tdNombre">Nombre <span class="obligatorio">*</span></label>
+        <input id="tdNombre" type="text" placeholder="Constancia de estudios"></div>
+      <div class="campo"><label for="tdDesc">Descripción</label>
+        <textarea id="tdDesc" rows="3"></textarea></div>
+      <div class="mensaje mensaje-info" style="margin-top:4px">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+        <p>Los tipos que genera SIGEL no se crean desde aquí: nacen junto con el proceso que los produce, y solo se les puede cambiar el nombre.</p>
+      </div>
+    </div>
+    <div class="modal-pie">
+      <button class="btn btn-secundario" data-cerrar>Cancelar</button>
+      <button class="btn btn-primario" data-cerrar>Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ Cambiar mi contraseña con código (Ficha 8 + Ficha 1) ============ -->
+<div class="velo" id="mdCambiarPass" role="dialog" aria-modal="true" aria-labelledby="tPass">
+  <div class="modal">
+    <div class="modal-cab">
+      <h2 id="tPass"><span class="ic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></span>Cambiar mi contraseña</h2>
+      <p id="subPass">Por seguridad, primero le enviamos un código de verificación al correo de su cuenta.</p>
+    </div>
+    <div class="modal-cuerpo">
+      <!-- paso 1 -->
+      <div id="cpPaso1">
+        <p class="modal-doc" style="margin-top:0">Se enviará a <b id="cpCorreo">avargas@munipalmares.go.cr</b></p>
+      </div>
+      <!-- paso 2 -->
+      <div id="cpPaso2" hidden>
+        <div class="mensaje mensaje-exito">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.1V12a10 10 0 1 1-5.9-9.1"/><path d="m9 11 3 3L22 4"/></svg>
+          <p>Código enviado. Revise su correo e ingréselo aquí.</p>
+        </div>
+        <div class="campo"><label for="cpCodigo">Código de verificación</label>
+          <input id="cpCodigo" type="text" inputmode="numeric" placeholder="6 dígitos" style="font-variant-numeric:tabular-nums;letter-spacing:.3em"></div>
+        <div class="campo"><label for="cpNueva">Contraseña nueva</label>
+          <div class="pass-envoltura">
+            <input id="cpNueva" type="password">
+            <button class="ver-pass" type="button" data-ver="cpNueva" aria-label="Mostrar contraseña" title="Mostrar contraseña">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>
+            </button>
+          </div>
+          <span class="ayuda">Mínimo 8 caracteres, con al menos una letra y un número.</span></div>
+        <div class="campo"><label for="cpRepetir">Repita la contraseña nueva</label>
+          <div class="pass-envoltura">
+            <input id="cpRepetir" type="password">
+            <button class="ver-pass" type="button" data-ver="cpRepetir" aria-label="Mostrar contraseña" title="Mostrar contraseña">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>
+            </button>
+          </div></div>
+      </div>
+    </div>
+    <div class="modal-pie">
+      <button class="btn btn-secundario" data-cerrar>Cancelar</button>
+      <button class="btn btn-primario" id="btnCpEnviar">Enviar código</button>
+      <button class="btn btn-primario" id="btnCpGuardar" hidden data-cerrar>Guardar contraseña</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ Dar de baja documento (Ficha 42) ============ -->
+<div class="velo" id="velo" role="dialog" aria-modal="true" aria-labelledby="tituloModal">
+  <div class="modal">
+    <div class="modal-cab">
+      <h2 id="tituloModal"><span class="ic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/></svg></span>Dar de baja este documento</h2>
+      <p>Dejará de aparecer en el expediente, pero el archivo y su registro se conservan. La acción queda en la bitácora.</p>
+    </div>
+    <div class="modal-cuerpo">
+      <p class="modal-doc" style="margin-top:0" id="modalDoc">Documento</p>
+    </div>
+    <div class="modal-pie">
+      <button class="btn btn-secundario" id="btnCancelar" data-cerrar>Cancelar</button>
+      <button class="btn btn-peligro" id="btnConfirmar" data-cerrar>Dar de baja</button>
+    </div>
+  </div>
+</div>
+
+
+<script>
+(function(){
+  var $=function(s,c){return (c||document).querySelector(s)},
+      $$=function(s,c){return Array.prototype.slice.call((c||document).querySelectorAll(s))};
+
+  /* ================= Tema claro / oscuro ================= */
+  var raiz=document.documentElement;
+  var LUNA='<path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/>';
+  var SOL='<circle cx="12" cy="12" r="4.2"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>';
+  function leer(){try{return localStorage.getItem('sigel-tema')}catch(e){return null}}
+  function guardar(v){try{localStorage.setItem('sigel-tema',v)}catch(e){}}
+  function esOscuro(){
+    var t=raiz.getAttribute('data-theme');
+    if(t) return t==='dark';
+    return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+  }
+  function pintarTema(){
+    var o=esOscuro();
+    $$('.ico-tema, #icoTema').forEach(function(i){ i.innerHTML = o?SOL:LUNA; });
+    $$('#btnTema, .btn-tema-acceso').forEach(function(b){
+      b.setAttribute('aria-label', o?'Cambiar a tema claro':'Cambiar a tema oscuro');
+      b.setAttribute('title', o?'Tema claro':'Tema oscuro');
+    });
+  }
+  var g=leer(); if(g==='dark'||g==='light') raiz.setAttribute('data-theme',g);
+  pintarTema();
+  $$('#btnTema, .btn-tema-acceso').forEach(function(b){
+    b.addEventListener('click',function(){
+      var n=esOscuro()?'light':'dark'; raiz.setAttribute('data-theme',n); guardar(n); pintarTema();
+    });
+  });
+
+  /* ================= Mostrar u ocultar contraseñas ================= */
+  $$('[data-ver]').forEach(function(b){
+    b.addEventListener('click',function(){
+      var i=$('#'+b.dataset.ver);
+      var oculta = i.type==='password';
+      i.type = oculta ? 'text' : 'password';
+      var t = oculta ? 'Ocultar contraseña' : 'Mostrar contraseña';
+      b.setAttribute('aria-label',t); b.setAttribute('title',t);
+    });
+  });
+
+  /* ================= Pantallas de acceso ================= */
+  var vistas=['vLogin','vRecuperar','vPrimerIngreso'];
+  function irVista(id){
+    vistas.forEach(function(v){ $('#'+v).hidden = (v!==id); });
+    $('#app').hidden = true; window.scrollTo(0,0);
+  }
+  function entrarApp(){
+    vistas.forEach(function(v){ $('#'+v).hidden = true; });
+    $('#app').hidden = false; window.scrollTo(0,0);
+  }
+  $$('[data-ir]').forEach(function(b){
+    b.addEventListener('click',function(){ irVista(b.dataset.ir); reiniciarLogin(); });
+  });
+
+  /* ---- Inicio de sesión: 3 intentos y bloqueo de 3 minutos (Ficha 1) ---- */
+  var fallos=0, temporizador=null;
+  function reiniciarLogin(){
+    fallos=0; clearInterval(temporizador);
+    $('#msgLoginError').hidden=true; $('#msgBloqueo').hidden=true;
+    $('#btnEntrar').disabled=false;
+    $('#recPaso1').hidden=false; $('#recPaso2').hidden=true; $('#recPaso3').hidden=true;
+  }
+  function bloquear(){
+    var restan=180;
+    $('#msgLoginError').hidden=true; $('#msgBloqueo').hidden=false; $('#btnEntrar').disabled=true;
+    function pintar(){ var m=Math.floor(restan/60),s=restan%60;
+      $('#cuentaRegresiva').textContent=m+':'+(s<10?'0':'')+s; }
+    pintar();
+    temporizador=setInterval(function(){ restan--; pintar();
+      if(restan<=0){ clearInterval(temporizador); reiniciarLogin(); } },1000);
+  }
+  $('#btnEntrar').addEventListener('click',function(){
+    var u=$('#lgUsuario').value.trim().toLowerCase(), p=$('#lgPass').value;
+    if(u && p){
+      reiniciarLogin();
+      if(u.indexOf('nueva')===0){ irVista('vPrimerIngreso'); return; }
+      entrarApp(); abrirPagina('pgExpediente'); return;
+    }
+    fallos++;
+    if(fallos>=3){ bloquear(); return; }
+    $('#msgLoginError').hidden=false;
+    $('#intentosRestantes').textContent=(3-fallos)===1?'1 intento':(3-fallos)+' intentos';
+  });
+  $('#btnGuardarPrimera').addEventListener('click',function(){ entrarApp(); abrirPagina('pgExpediente'); });
+  $('#btnEnviarCodigo').addEventListener('click',function(){
+    var c=$('#recCorreo').value.trim();
+    if(c) $('#correoEnviado').textContent=c;
+    $('#recPaso1').hidden=true; $('#recPaso2').hidden=false; $('#recPaso3').hidden=true;
+    $('#recCodigo').focus();
+  });
+  $('#btnVolverPaso1').addEventListener('click',function(){
+    $('#recPaso2').hidden=true; $('#recPaso1').hidden=false;
+  });
+  $('#btnOtroCodigo').addEventListener('click',function(){
+    $('#recPaso2').hidden=true; $('#recPaso1').hidden=false; $('#recCorreo').focus();
+  });
+  $('#btnGuardarPassRec').addEventListener('click',function(){
+    $('#recPaso2').hidden=true; $('#recPaso3').hidden=false;
+  });
+  $('#btnSalir').addEventListener('click',function(){ irVista('vLogin'); reiniciarLogin(); });
+
+  /* ================= Navegación entre páginas ================= */
+  function abrirPagina(id){
+    $$('.pagina').forEach(function(p){ p.hidden = p.id!==id; });
+    $$('.nav-item, .nav-sub-item').forEach(function(n){
+      if(n.dataset.pagina===id) n.setAttribute('aria-current','page');
+      else n.removeAttribute('aria-current');
+    });
+    // El padre queda marcado cuando se está en cualquiera de sus subsecciones
+    if(id==='pgAltaFuncionario' || id==='pgExpediente'){
+      var padre=$('#navFuncionarios');
+      if(padre) padre.setAttribute('aria-current','true');
+    }
+    if(id==='pgAltaFuncionario') irPaso(1);
+    cerrarMenuMovil(); window.scrollTo(0,0);
+  }
+  $$('.nav-item[data-pagina], .nav-sub-item[data-pagina]').forEach(function(n){
+    n.addEventListener('click',function(){ abrirPagina(n.dataset.pagina); });
+  });
+  $$('[data-ir-pagina]').forEach(function(b){
+    b.addEventListener('click',function(e){ e.preventDefault(); abrirPagina(b.dataset.irPagina); });
+  });
+
+  /* ================= Barra lateral ================= */
+  var lateral=$('#lateral'), veloNav=$('#veloNav'), btnMenu=$('#btnMenu'),
+      layout=$('#layout'), btnPlegar=$('#btnPlegar');
+  function menuMovil(abrir){
+    lateral.dataset.abierto=abrir?'si':'no';
+    veloNav.dataset.abierto=abrir?'si':'no';
+    btnMenu.setAttribute('aria-expanded',abrir?'true':'false');
+  }
+  function cerrarMenuMovil(){ menuMovil(false); }
+  btnMenu.addEventListener('click',function(){ menuMovil(lateral.dataset.abierto!=='si'); });
+  veloNav.addEventListener('click',cerrarMenuMovil);
+
+  function plegar(oculto){
+    layout.dataset.lateral = oculto ? 'oculto' : 'visible';
+    btnPlegar.style.left = oculto ? '8px' : '236px';
+    btnPlegar.querySelector('svg').style.transform = oculto ? 'rotate(180deg)' : 'none';
+    btnPlegar.setAttribute('aria-expanded', oculto?'false':'true');
+    var t = oculto ? 'Mostrar el menú lateral' : 'Ocultar el menú lateral';
+    btnPlegar.setAttribute('title',t); btnPlegar.setAttribute('aria-label',t);
+    try{ localStorage.setItem('sigel-lateral', oculto?'oculto':'visible'); }catch(e){}
+  }
+  btnPlegar.addEventListener('click',function(){
+    plegar(layout.dataset.lateral!=='oculto');
+  });
+  try{ if(localStorage.getItem('sigel-lateral')==='oculto') plegar(true); }catch(e){}
+
+  /* ================= Pestañas ================= */
+  $$('.tab').forEach(function(t){
+    t.addEventListener('click',function(){
+      $$('.tab',t.parentNode).forEach(function(o){
+        o.setAttribute('aria-selected','false');
+        var pn=document.getElementById(o.dataset.panel); if(pn) pn.hidden=true;
+      });
+      t.setAttribute('aria-selected','true');
+      var p=document.getElementById(t.dataset.panel); if(p) p.hidden=false;
+    });
+  });
+
+  /* ================= Filtros de tabla (funcionan de verdad) ================= */
+  $$('.filtros').forEach(function(grupo){
+    var tabla = grupo.closest('.pagina').querySelector('tbody');
+    $$('.filtro',grupo).forEach(function(f){
+      f.addEventListener('click',function(){
+        $$('.filtro',grupo).forEach(function(o){ o.setAttribute('aria-pressed','false'); });
+        f.setAttribute('aria-pressed','true');
+        var criterio=f.dataset.filtro||'todos', visibles=0;
+        $$('tr',tabla).forEach(function(tr){
+          var mostrar=true;
+          if(criterio!=='todos'){
+            var partes=criterio.split(':');
+            mostrar = tr.dataset[partes[0]]===partes[1];
+          }
+          tr.hidden=!mostrar; if(mostrar) visibles++;
+        });
+        var vacio=grupo.closest('.pagina').querySelector('.vacio');
+        if(vacio) vacio.hidden = visibles>0;
+      });
+    });
+  });
+
+  /* ================= Listas de selección (roles) ================= */
+  $$('.item-sel').forEach(function(i){
+    i.addEventListener('click',function(){
+      $$('.item-sel',i.parentNode).forEach(function(o){ o.setAttribute('aria-pressed','false'); });
+      i.setAttribute('aria-pressed','true');
+    });
+  });
+
+  /* ================= Modales ================= */
+  var ultimoFoco=null;
+  function abrirModal(id){
+    var m=document.getElementById(id); if(!m) return;
+    ultimoFoco=document.activeElement;
+    m.dataset.abierto='si';
+    var f=m.querySelector('input:not([type=hidden]),select,textarea,button'); if(f) f.focus();
+  }
+  function cerrarModales(){
+    $$('.velo').forEach(function(v){ v.dataset.abierto='no'; });
+    if(ultimoFoco && ultimoFoco.focus) ultimoFoco.focus();
+  }
+  $$('[data-modal]').forEach(function(b){
+    b.addEventListener('click',function(e){
+      // Si el clic salió de un botón dentro de la fila, ese botón manda
+      if(b.tagName==='TR' && e.target.closest('button')!==null && e.target.closest('button')!==b) return;
+      abrirModal(b.dataset.modal);
+    });
+  });
+  // Las filas también se abren con el teclado
+  $$('tr[data-abrible]').forEach(function(tr){
+    tr.addEventListener('keydown',function(e){
+      if(e.key==='Enter'||e.key===' '){ e.preventDefault(); abrirModal(tr.dataset.modal); }
+    });
+  });
+  $$('[data-cerrar]').forEach(function(b){ b.addEventListener('click',cerrarModales); });
+  $$('.velo').forEach(function(v){
+    v.addEventListener('click',function(e){ if(e.target===v) cerrarModales(); });
+  });
+  document.addEventListener('keydown',function(e){
+    if(e.key==='Escape'){ cerrarModales(); cerrarMenuMovil(); }
+  });
+
+  /* ---- El modal de usuario distingue crear de editar ---- */
+  function prepararUsuario(esNuevo, nombre){
+    $('#tUsuario').textContent = esNuevo ? 'Crear usuario' : 'Editar usuario';
+    $('#subUsuario').textContent = esNuevo
+      ? 'La contraseña inicial es temporal: el sistema obliga a cambiarla en el primer ingreso y avisa por correo.'
+      : 'Cambie el correo de ingreso o los roles de ' + nombre + '. La contraseña no se puede ver ni cambiar desde aquí.';
+    $('#campoPassTemp').hidden = !esNuevo;
+    $('#btnUsGuardar').textContent = esNuevo ? 'Crear cuenta' : 'Guardar cambios';
+    irPasoUs(1);
+  }
+  var filaUsuarioActiva=null;
+  $$('[data-modal="mdUsuario"]').forEach(function(b){
+    b.addEventListener('click',function(){
+      var fila = b.closest('tr');
+      filaUsuarioActiva = fila;
+      if(fila){
+        prepararUsuario(false, fila.querySelector('.nom').textContent);
+        $('#usCorreo').value = fila.querySelector('.sec').textContent.trim();
+      } else {
+        prepararUsuario(true,''); $('#usCorreo').value='';
+      }
+    });
+  });
+
+  // Ver usuario: la fila completa abre solo lectura
+  $$('[data-modal="mdVerUsuario"]').forEach(function(tr){
+    tr.addEventListener('click',function(){
+      filaUsuarioActiva = tr;
+      $('#vuNombre').textContent = tr.querySelector('.nom').textContent;
+      $('#vuCorreo').textContent = tr.querySelector('.sec').textContent.trim();
+      $('#vuFuncionario').textContent = tr.querySelector('.nom').textContent;
+      $('#vuEstado').innerHTML = tr.querySelector('.chip').outerHTML;
+      $('#vuAcceso').textContent = tr.querySelector('[data-etiqueta="Último acceso"]').textContent.trim();
+      $('#vuRoles').innerHTML = tr.querySelector('.pills').innerHTML;
+    });
+  });
+  $('#btnEditarDesdeVer').addEventListener('click',function(){
+    var fila = filaUsuarioActiva;
+    cerrarModales();
+    if(fila){
+      prepararUsuario(false, fila.querySelector('.nom').textContent);
+      $('#usCorreo').value = fila.querySelector('.sec').textContent.trim();
+    }
+    abrirModal('mdUsuario');
+  });
+
+  /* ---- Pasos dentro del modal de usuario ---- */
+  function irPasoUs(n){
+    $$('[data-panel-us]').forEach(function(p){ p.hidden = p.dataset.panelUs!==String(n); });
+    $$('[data-paso-us]').forEach(function(p){
+      if(p.dataset.pasoUs===String(n)) p.setAttribute('aria-current','step');
+      else p.removeAttribute('aria-current');
+      p.dataset.hecho = Number(p.dataset.pasoUs)<n ? 'si' : 'no';
+    });
+    $('#btnUsAtras').hidden = n===1;
+    $('#btnUsAdelante').hidden = n===2;
+    $('#btnUsGuardar').hidden = n!==2;
+  }
+  $('#btnUsAdelante').addEventListener('click',function(){ irPasoUs(2); });
+  $('#btnUsAtras').addEventListener('click',function(){ irPasoUs(1); });
+  $('#btnUsGuardar').addEventListener('click',cerrarModales);
+  $$('[data-paso-us]').forEach(function(p){
+    p.addEventListener('click',function(){ irPasoUs(Number(p.dataset.pasoUs)); });
+  });
+
+  /* ---- Clave del permiso que se va formando ---- */
+  function pintarClave(){
+    var m=$('#pwModulo').value||'módulo', a=$('#pwAccion').value||'acción';
+    $('#clavePreview').textContent=m+'.'+a;
+  }
+  $('#pwModulo').addEventListener('change',pintarClave);
+  $('#pwAccion').addEventListener('change',pintarClave);
+
+  /* ---- Cambio de contraseña con código (Mi cuenta) ---- */
+  $('#btnCpEnviar').addEventListener('click',function(){
+    $('#cpPaso1').hidden=true; $('#cpPaso2').hidden=false;
+    $('#subPass').textContent='Ingrese el código que le enviamos y defina su contraseña nueva.';
+    $('#btnCpEnviar').hidden=true; $('#btnCpGuardar').hidden=false;
+    $('#cpCodigo').focus();
+  });
+  $$('[data-modal="mdCambiarPass"]').forEach(function(b){
+    b.addEventListener('click',function(){
+      $('#cpPaso1').hidden=false; $('#cpPaso2').hidden=true;
+      $('#subPass').textContent='Por seguridad, primero le enviamos un código de verificación al correo de su cuenta.';
+      $('#btnCpEnviar').hidden=false; $('#btnCpGuardar').hidden=true;
+    });
+  });
+
+  /* ================= Dar de baja documento (Ficha 42) ================= */
+  $$('[data-baja]').forEach(function(b){
+    b.addEventListener('click',function(){
+      $('#modalDoc').textContent=b.dataset.baja; abrirModal('velo');
+    });
+  });
+
+  /* ================= Subir documento (Ficha 19) ================= */
+  var btnSubir=$('#btnSubir');
+  if(btnSubir) btnSubir.addEventListener('click',function(){ abrirModal('mdSubir'); });
+  var zona=$('#zonaArchivo');
+  if(zona){
+    zona.addEventListener('click',function(){
+      $('#archivoElegido').hidden=false; zona.hidden=true;
+    });
+    $('#quitarArchivo').addEventListener('click',function(){
+      $('#archivoElegido').hidden=true; zona.hidden=false;
+    });
+  }
+
+  /* ================= Alta de funcionario por pasos (Ficha 11) ================= */
+  var pasoActual=1, TOTAL=3;
+  function irPaso(n){
+    pasoActual=n;
+    $$('[data-panel-paso]').forEach(function(p){ p.hidden = p.dataset.panelPaso!==String(n); });
+    $$('[data-paso]').forEach(function(p){
+      if(p.dataset.paso===String(n)) p.setAttribute('aria-current','step');
+      else p.removeAttribute('aria-current');
+      p.dataset.hecho = Number(p.dataset.paso)<n ? 'si' : 'no';
+    });
+    $('#numPaso').textContent=n;
+    $('#btnPasoAtras').hidden = n===1;
+    $('#btnPasoAdelante').hidden = n===TOTAL;
+    $('#btnGuardarFunc').hidden = n!==TOTAL;
+  }
+  $$('[data-paso]').forEach(function(p){
+    p.addEventListener('click',function(){ irPaso(Number(p.dataset.paso)); });
+  });
+  $('#btnPasoAdelante').addEventListener('click',function(){
+    if(pasoActual===1 && !validarCedula()) return;
+    irPaso(Math.min(TOTAL,pasoActual+1));
+  });
+  $('#btnPasoAtras').addEventListener('click',function(){ irPaso(Math.max(1,pasoActual-1)); });
+
+  var cedulasUsadas=['2-0678-0432','2-0512-0908','2-0431-0177','2-0745-0219','2-0589-0664'];
+  function validarCedula(){
+    var ced=$('#fnCedula').value.trim();
+    var repetida = cedulasUsadas.indexOf(ced)!==-1;
+    $('#campoCedula').classList.toggle('error',repetida);
+    $('#errCedula').hidden=!repetida;
+    if(repetida) $('#fnCedula').focus();
+    return !repetida;
+  }
+  $('#fnCedula').addEventListener('input',function(){
+    $('#campoCedula').classList.remove('error'); $('#errCedula').hidden=true;
+  });
+  $('#btnGuardarFunc').addEventListener('click',function(){
+    if(!validarCedula()){ irPaso(1); return; }
+    abrirPagina('pgFuncionarios');
+  });
+
+  /* ================= Búsqueda de funcionarios (Ficha 14) ================= */
+  var busca=$('#buscaFunc');
+  if(busca) busca.addEventListener('input',function(){
+    var q=busca.value.trim().toLowerCase(), visibles=0;
+    $$('#tbodyFunc tr').forEach(function(tr){
+      var hay = tr.textContent.toLowerCase().indexOf(q)!==-1;
+      tr.hidden=!hay; if(hay) visibles++;
+    });
+    $('#sinResultados').hidden = visibles>0;
+    $('#pagFunc').hidden = visibles===0;
+  });
+
+  /* ================= Vista RRHH / funcionaria ================= */
+  var esRRHH=true, btnVista=$('#btnVista'), txtVista=$('#txtVista');
+  function aplicarRol(){
+    txtVista.textContent = esRRHH?'RRHH':'Funcionaria';
+    $$('[data-rol="rrhh"]').forEach(function(el){ el.hidden=!esRRHH; });
+    $$('[data-txt-rrhh]').forEach(function(el){
+      el.textContent = esRRHH?el.dataset.txtRrhh:el.dataset.txtFunc;
+    });
+    $$('.solo-rrhh').forEach(function(el){ el.hidden=!esRRHH; });
+
+    // Para la funcionaria no hay listado de funcionarios: su opción lleva a su expediente
+    var navF=$('#navFuncionarios');
+    navF.dataset.pagina = esRRHH ? 'pgFuncionarios' : 'pgExpediente';
+    $('#subFuncionarios').hidden = !esRRHH;
+
+    $('.usuario-inicial').textContent = esRRHH?'AV':'MR';
+    $('.usuario-txt b').textContent = esRRHH?'Ana Lucía Vargas':'María José Rodríguez';
+    $('.usuario-txt span').textContent = esRRHH?'Administrador · RRHH':'Solicitante · solo su expediente';
+    $('#ctaCorreo').textContent = esRRHH?'avargas@munipalmares.go.cr':'mrodriguez@munipalmares.go.cr';
+    $('#cpCorreo').textContent = esRRHH?'avargas@munipalmares.go.cr':'mrodriguez@munipalmares.go.cr';
+    $('#perfilIniciales').textContent = esRRHH?'AV':'MR';
+    $('#perfilNombre').textContent = esRRHH?'Ana Lucía Vargas Chaves':'María José Rodríguez Alfaro';
+    $('#perfilIdent').textContent = esRRHH
+      ? 'Cédula 2-0512-0908 · avargas@munipalmares.go.cr'
+      : 'Cédula 2-0678-0432 · mrodriguez@munipalmares.go.cr';
+    $('#perfilChips').innerHTML = esRRHH
+      ? '<span class="chip chip-exito">● Cuenta activa</span><span class="chip-rol sistema">Administrador</span><span class="chip-rol sistema">Aprobador</span>'
+      : '<span class="chip chip-exito">● Cuenta activa</span><span class="chip-rol sistema">Solicitante</span>';
+    $('#perfilPuesto').textContent = esRRHH?'Jefa de Recursos Humanos':'Asistente de RRHH';
+    $('#perfilIngreso').textContent = esRRHH?'12/01/2015':'03/02/2020';
+    $('#ctaRoles').innerHTML = esRRHH
+      ? '<span class="chip-rol sistema">Administrador</span><span class="chip-rol sistema">Aprobador</span>'
+      : '<span class="chip-rol sistema">Solicitante</span>';
+
+    $('#migaLista').hidden=!esRRHH;
+    $('#migaSep').hidden=!esRRHH;
+    $('#migaNombre').textContent = esRRHH?'María José Rodríguez Alfaro':'Mi expediente';
+
+    if(!esRRHH){
+      var visible=$$('.pagina').filter(function(p){ return !p.hidden; })[0];
+      if(visible && visible.id!=='pgExpediente' && visible.id!=='pgCuenta') abrirPagina('pgExpediente');
+    }
+  }
+  btnVista.addEventListener('click',function(){ esRRHH=!esRRHH; aplicarRol(); });
+
+  /* ================= Estado inicial ================= */
+  aplicarRol(); irPaso(1); irPasoUs(1); pintarClave();
+  irVista('vLogin');
+})();
+
+</script>

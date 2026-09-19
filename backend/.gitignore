@@ -1,0 +1,18 @@
+# Dependencias y compilados
+node_modules/
+dist/
+
+# Cliente de Prisma generado (se vuelve a generar con "npm run prisma:generate")
+src/generated/
+
+# Variables de entorno
+.env
+.env.*
+!.env.example
+
+# Archivos del expediente guardados en desarrollo
+archivos/
+
+# Logs y temporales
+*.log
+*.tsbuildinfo

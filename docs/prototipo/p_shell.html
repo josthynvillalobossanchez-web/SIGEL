@@ -1,0 +1,94 @@
+<div id="app" hidden>
+<header class="topbar">
+  <button class="menu-btn" id="btnMenu" aria-label="Abrir menú de navegación" aria-expanded="false">
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+  </button>
+
+  <div class="marca">
+    <img src="__LOGO__" alt="Municipalidad de Palmares">
+    <div class="marca-txt"><b>SIGEL</b><small>Municipalidad de Palmares</small></div>
+  </div>
+
+  <div class="topbar-fin">
+    <button class="tb-btn" id="btnVista" title="Cambiar entre la vista de RRHH y la de una funcionaria">
+      <span class="punto"></span><span id="txtVista">RRHH</span>
+    </button>
+    <button class="tb-btn" id="btnTema" aria-label="Cambiar entre tema claro y oscuro" title="Cambiar tema">
+      <svg id="icoTema" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
+    </button>
+    <button class="tb-btn" id="btnNotif" aria-label="Notificaciones" title="Notificaciones">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 1 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg>
+    </button>
+    <div class="usuario">
+      <div class="usuario-inicial">AV</div>
+      <div class="usuario-txt"><b>Ana Lucía Vargas</b><span>Administrador · RRHH</span></div>
+    </div>
+  </div>
+</header>
+
+<div class="franja-demo">
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+  <span><b>Prototipo del Sprint 1</b><span class="solo-ancho"> · Datos de ejemplo. Use <b>RRHH / Funcionaria</b> para ver cómo cambia la pantalla según quién entra, y <b>Salir</b> para volver al inicio de sesión.</span></span>
+  <button class="btn-texto" id="btnSalir" style="color:inherit;text-decoration:underline">Salir</button>
+</div>
+
+<div class="velo-nav" id="veloNav"></div>
+
+<div class="layout" id="layout" data-lateral="visible">
+  <nav class="lateral" id="lateral" aria-label="Navegación principal">
+    <div class="nav-grupo" data-rol="ambos">
+      <p class="nav-titulo" data-txt-rrhh="Personal" data-txt-func="Mi información">Personal</p>
+      <button class="nav-item" id="navFuncionarios" data-pagina="pgFuncionarios">
+        <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/></svg>
+        <span data-txt-rrhh="Funcionarios" data-txt-func="Mi expediente">Funcionarios</span>
+      </button>
+      <div class="nav-sub" id="subFuncionarios">
+        <button class="nav-sub-item" data-pagina="pgAltaFuncionario" data-rol="rrhh">Registrar funcionario</button>
+        <button class="nav-sub-item" data-pagina="pgExpediente" aria-current="page">
+          <span data-txt-rrhh="Expediente laboral" data-txt-func="Mi expediente">Expediente laboral</span>
+        </button>
+      </div>
+    </div>
+
+    <div class="nav-grupo" data-rol="rrhh">
+      <p class="nav-titulo">Seguridad</p>
+      <button class="nav-item" data-pagina="pgUsuarios">
+        <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M19 8v6M22 11h-6"/></svg>
+        Usuarios
+      </button>
+      <button class="nav-item" data-pagina="pgRoles">
+        <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2 4 6v6c0 5 3.4 8.7 8 10 4.6-1.3 8-5 8-10V6z"/><path d="m9 12 2 2 4-4"/></svg>
+        Roles y permisos
+      </button>
+    </div>
+
+    <div class="nav-grupo" data-rol="rrhh">
+      <p class="nav-titulo">Catálogos</p>
+      <button class="nav-item" data-pagina="pgTipos">
+        <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h7l2 2h7v13a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1z"/></svg>
+        Tipos de documento
+      </button>
+    </div>
+
+    <div class="nav-grupo" data-rol="ambos">
+      <p class="nav-titulo">Mi acceso</p>
+      <button class="nav-item" data-pagina="pgCuenta">
+        <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21v-1a6 6 0 0 1 6-6h4a6 6 0 0 1 6 6v1"/></svg>
+        Mi cuenta
+      </button>
+    </div>
+
+    <p style="margin-top:auto;padding:12px;font-size:11.5px;color:var(--texto-sec);line-height:1.5">
+      Los módulos de vacaciones, incapacidades, horas extra y Talent Pool corresponden a los Sprints 2 y 3.
+    </p>
+  </nav>
+
+  <main class="contenido" id="contenido">
+__PAGINAS__
+  </main>
+</div>
+
+<button class="tirador" id="btnPlegar" title="Ocultar el menú lateral" aria-label="Ocultar el menú lateral" aria-expanded="true">
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+</button>
+</div>

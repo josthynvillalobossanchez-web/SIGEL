@@ -1,0 +1,237 @@
+<!-- ============ BUSCAR FUNCIONARIOS (Ficha 14) ============ -->
+<section class="pagina" id="pgFuncionarios" hidden>
+  <div class="pagina-cab">
+    <div>
+      <h1>Funcionarios</h1>
+      <p>Busque por cédula, nombre o correo. Los resultados vienen paginados: el sistema nunca carga todos los registros de una vez.</p>
+    </div>
+    <div class="acc">
+      <button class="btn btn-primario" data-ir-pagina="pgAltaFuncionario">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+        Registrar funcionario
+      </button>
+    </div>
+  </div>
+
+  <div class="herramientas">
+    <div class="buscador">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+      <input type="search" id="buscaFunc" placeholder="Cédula, nombre o correo" aria-label="Buscar funcionarios">
+    </div>
+    <div class="filtros" role="group" aria-label="Filtros adicionales">
+      <button class="filtro" aria-pressed="true" data-filtro="todos">Todos</button>
+      <button class="filtro" aria-pressed="false" data-filtro="estado:activo">Activos</button>
+      <button class="filtro" aria-pressed="false" data-filtro="estado:inactivo">Inactivos</button>
+      <button class="filtro" aria-pressed="false" data-filtro="depto:rrhh">Recursos Humanos</button>
+    </div>
+  </div>
+
+  <div class="tabla-envoltura">
+    <table>
+      <thead><tr>
+        <th scope="col">Funcionario</th><th scope="col">Cédula</th><th scope="col">Puesto</th>
+        <th scope="col">Departamento</th><th scope="col">Estado</th><th scope="col">Acciones</th>
+      </tr></thead>
+      <tbody id="tbodyFunc">
+        <tr data-abrible tabindex="0" data-modal="mdResumen" data-estado="activo" data-depto="rrhh">
+          <td data-etiqueta="Funcionario"><div class="celda-usuario"><div class="avatar-sm">MR</div>
+            <div><span class="nom">María José Rodríguez Alfaro</span>
+            <span class="sec">mrodriguez@munipalmares.go.cr</span></div></div></td>
+          <td data-etiqueta="Cédula" class="num">2-0678-0432</td>
+          <td data-etiqueta="Puesto">Asistente de Recursos Humanos</td>
+          <td data-etiqueta="Departamento">Recursos Humanos</td>
+          <td data-etiqueta="Estado"><span class="chip chip-exito">● Activa</span></td>
+          <td class="acciones">
+            <button class="icono-btn" data-modal="mdResumen" aria-label="Ver ficha resumida" title="Ver ficha resumida"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg></button>
+            <button class="icono-btn" data-ir-pagina="pgExpediente" aria-label="Abrir expediente" title="Abrir expediente"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg></button>
+          </td>
+        </tr>
+        <tr data-abrible tabindex="0" data-modal="mdResumen" data-estado="activo" data-depto="rrhh">
+          <td data-etiqueta="Funcionario"><div class="celda-usuario"><div class="avatar-sm">AV</div>
+            <div><span class="nom">Ana Lucía Vargas Chaves</span>
+            <span class="sec">avargas@munipalmares.go.cr</span></div></div></td>
+          <td data-etiqueta="Cédula" class="num">2-0512-0908</td>
+          <td data-etiqueta="Puesto">Jefa de Recursos Humanos</td>
+          <td data-etiqueta="Departamento">Recursos Humanos</td>
+          <td data-etiqueta="Estado"><span class="chip chip-exito">● Activa</span></td>
+          <td class="acciones">
+            <button class="icono-btn" data-modal="mdResumen" aria-label="Ver ficha resumida" title="Ver ficha resumida"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg></button>
+            <button class="icono-btn" data-ir-pagina="pgExpediente" aria-label="Abrir expediente" title="Abrir expediente"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg></button>
+          </td>
+        </tr>
+        <tr data-abrible tabindex="0" data-modal="mdResumen" data-estado="inactivo" data-depto="otros">
+          <td data-etiqueta="Funcionario"><div class="celda-usuario"><div class="avatar-sm">CS</div>
+            <div><span class="nom">Carlos Solís Méndez</span>
+            <span class="sec">csolis@munipalmares.go.cr</span></div></div></td>
+          <td data-etiqueta="Cédula" class="num">2-0431-0177</td>
+          <td data-etiqueta="Puesto">Encargado de Acueductos</td>
+          <td data-etiqueta="Departamento">Servicios Públicos</td>
+          <td data-etiqueta="Estado"><span class="chip chip-neutro">● Inactivo</span></td>
+          <td class="acciones">
+            <button class="icono-btn" data-modal="mdResumen" aria-label="Ver ficha resumida" title="Ver ficha resumida"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg></button>
+            <button class="icono-btn" data-ir-pagina="pgExpediente" aria-label="Abrir expediente" title="Abrir expediente"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg></button>
+          </td>
+        </tr>
+        <tr data-abrible tabindex="0" data-modal="mdResumen" data-estado="activo" data-depto="otros">
+          <td data-etiqueta="Funcionario"><div class="celda-usuario"><div class="avatar-sm">LQ</div>
+            <div><span class="nom">Laura Quesada Ureña</span>
+            <span class="sec">lquesada@munipalmares.go.cr</span></div></div></td>
+          <td data-etiqueta="Cédula" class="num">2-0745-0219</td>
+          <td data-etiqueta="Puesto">Gestora Tributaria</td>
+          <td data-etiqueta="Departamento">Hacienda Municipal</td>
+          <td data-etiqueta="Estado"><span class="chip chip-exito">● Activa</span></td>
+          <td class="acciones">
+            <button class="icono-btn" data-modal="mdResumen" aria-label="Ver ficha resumida" title="Ver ficha resumida"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg></button>
+            <button class="icono-btn" data-ir-pagina="pgExpediente" aria-label="Abrir expediente" title="Abrir expediente"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg></button>
+          </td>
+        </tr>
+        <tr data-abrible tabindex="0" data-modal="mdResumen" data-estado="activo" data-depto="otros">
+          <td data-etiqueta="Funcionario"><div class="celda-usuario"><div class="avatar-sm">JG</div>
+            <div><span class="nom">Joseph Granda Vargas</span>
+            <span class="sec">jgranda@munipalmares.go.cr</span></div></div></td>
+          <td data-etiqueta="Cédula" class="num">2-0589-0664</td>
+          <td data-etiqueta="Puesto">Jefe de Informática</td>
+          <td data-etiqueta="Departamento">Informática</td>
+          <td data-etiqueta="Estado"><span class="chip chip-exito">● Activo</span></td>
+          <td class="acciones">
+            <button class="icono-btn" data-modal="mdResumen" aria-label="Ver ficha resumida" title="Ver ficha resumida"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg></button>
+            <button class="icono-btn" data-ir-pagina="pgExpediente" aria-label="Abrir expediente" title="Abrir expediente"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg></button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="vacio" id="sinResultados" hidden>
+    <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" style="color:var(--texto-desh)"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+    <h3>Sin resultados</h3>
+    <p>Ningún funcionario coincide con ese criterio. Revise la cédula o pruebe con parte del nombre.</p>
+  </div>
+
+  <div class="paginacion" id="pagFunc">
+    <span>Mostrando 5 de 138 funcionarios</span>
+    <div class="paginas">
+      <button class="pag-btn" disabled>Anterior</button>
+      <button class="pag-btn" aria-current="page">1</button>
+      <button class="pag-btn">2</button>
+      <button class="pag-btn">3</button>
+      <button class="pag-btn">Siguiente</button>
+    </div>
+  </div>
+</section>
+
+<!-- ============ REGISTRAR FUNCIONARIO (Ficha 11) — por pasos ============ -->
+<section class="pagina" id="pgAltaFuncionario" hidden>
+  <button class="volver" data-ir-pagina="pgFuncionarios">
+    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+    Volver a funcionarios
+  </button>
+
+  <div class="pagina-cab">
+    <div>
+      <h1>Registrar funcionario</h1>
+      <p>Al guardar se crea automáticamente su expediente laboral. La cédula no se puede repetir.</p>
+    </div>
+  </div>
+
+  <div class="pasos" role="tablist" aria-label="Pasos del registro">
+    <button class="paso" role="tab" aria-current="step" data-paso="1">
+      <span class="n">1</span><span>Datos personales<span class="sub">Cédula, nombre y profesión</span></span>
+    </button>
+    <button class="paso" role="tab" data-paso="2">
+      <span class="n">2</span><span>Contacto<span class="sub">Correos, teléfono y dirección</span></span>
+    </button>
+    <button class="paso" role="tab" data-paso="3">
+      <span class="n">3</span><span>Datos laborales<span class="sub">Puesto, jefatura y nombramiento</span></span>
+    </button>
+  </div>
+
+  <div class="card form-pasos">
+    <!-- Paso 1 -->
+    <div class="panel-paso" data-panel-paso="1">
+      <div class="barra-progreso"><span style="width:33%"></span></div>
+      <h2 class="paso-titulo">Datos personales</h2>
+      <p class="paso-desc">Identifican a la persona. La cédula queda como identificador permanente y no se puede repetir en el sistema.</p>
+      <div class="campo-fila">
+        <div class="campo" id="campoCedula">
+          <label for="fnCedula">Cédula <span class="obligatorio">*</span></label>
+          <input id="fnCedula" type="text" placeholder="2-0678-0432" style="font-variant-numeric:tabular-nums">
+          <span class="msg-error" id="errCedula" hidden>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v5M12 16h.01"/></svg>
+            Ya existe un funcionario con esta cédula. No se puede duplicar.
+          </span>
+        </div>
+        <div class="campo"><label for="fnNombre">Nombre <span class="obligatorio">*</span></label>
+          <input id="fnNombre" type="text"></div>
+        <div class="campo"><label for="fnAp1">Primer apellido <span class="obligatorio">*</span></label>
+          <input id="fnAp1" type="text"></div>
+        <div class="campo"><label for="fnAp2">Segundo apellido</label>
+          <input id="fnAp2" type="text"></div>
+        <div class="campo"><label for="fnNac">Fecha de nacimiento</label>
+          <input id="fnNac" type="date"></div>
+        <div class="campo"><label for="fnProf">Profesión</label>
+          <select id="fnProf">
+            <option>Seleccione…</option>
+            <option>Administración de Empresas</option>
+            <option>Ingeniería en Sistemas</option>
+            <option>Contaduría Pública</option>
+            <option>Derecho</option>
+            <option>Trabajo Social</option>
+          </select></div>
+      </div>
+    </div>
+
+    <!-- Paso 2 -->
+    <div class="panel-paso" data-panel-paso="2" hidden>
+      <div class="barra-progreso"><span style="width:66%"></span></div>
+      <h2 class="paso-titulo">Contacto</h2>
+      <p class="paso-desc">El correo personal es obligatorio: es a donde llegan los avisos del sistema cuando la persona no tiene correo institucional.</p>
+      <div class="campo-fila">
+        <div class="campo"><label for="fnCorreoP">Correo personal <span class="obligatorio">*</span></label>
+          <input id="fnCorreoP" type="email">
+          <span class="ayuda">Obligatorio: es el canal de respaldo si no tiene correo institucional.</span></div>
+        <div class="campo"><label for="fnCorreoI">Correo institucional</label>
+          <input id="fnCorreoI" type="email" placeholder="nombre@munipalmares.go.cr"></div>
+        <div class="campo"><label for="fnTel">Teléfono</label>
+          <input id="fnTel" type="tel" style="font-variant-numeric:tabular-nums"></div>
+      </div>
+      <div class="campo ancho"><label for="fnDir">Dirección exacta</label>
+        <textarea id="fnDir" rows="2" placeholder="Provincia, cantón, distrito y señas exactas"></textarea></div>
+    </div>
+
+    <!-- Paso 3 -->
+    <div class="panel-paso" data-panel-paso="3" hidden>
+      <div class="barra-progreso"><span style="width:100%"></span></div>
+      <h2 class="paso-titulo">Datos laborales</h2>
+      <p class="paso-desc">Definen su relación con la Municipalidad y quién aprueba sus trámites.</p>
+      <div class="mensaje mensaje-info">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+        <p>Solo Recursos Humanos registra o modifica estos campos. El funcionario nunca los edita, ni desde su propio perfil.</p>
+      </div>
+      <div class="campo-fila">
+        <div class="campo"><label for="fnPuesto">Puesto <span class="obligatorio">*</span></label>
+          <select id="fnPuesto"><option>Seleccione…</option><option>Asistente de Recursos Humanos</option><option>Gestora Tributaria</option><option>Encargado de Acueductos</option><option>Jefe de Informática</option></select></div>
+        <div class="campo"><label for="fnDepto">Departamento <span class="obligatorio">*</span></label>
+          <select id="fnDepto"><option>Seleccione…</option><option>Recursos Humanos</option><option>Hacienda Municipal</option><option>Servicios Públicos</option><option>Informática</option></select></div>
+        <div class="campo"><label for="fnJefe">Jefatura inmediata</label>
+          <select id="fnJefe"><option>Seleccione…</option><option>Ana Lucía Vargas Chaves</option><option>Joseph Granda Vargas</option><option>— Sin jefatura: tope de la jerarquía —</option></select>
+          <span class="ayuda">Define quién aprueba sus solicitudes. Sin jefatura, aprueba las propias.</span></div>
+        <div class="campo"><label for="fnNombramiento">Tipo de nombramiento <span class="obligatorio">*</span></label>
+          <select id="fnNombramiento"><option>En propiedad</option><option>Interino</option><option>Contratación por servicios</option></select></div>
+        <div class="campo"><label for="fnRegimen">Régimen de vacaciones <span class="obligatorio">*</span></label>
+          <select id="fnRegimen"><option>General — 15 días hasta 6 años, 20 después</option><option>Anterior — 30 días</option></select></div>
+        <div class="campo"><label for="fnIngreso">Fecha de ingreso <span class="obligatorio">*</span></label>
+          <input id="fnIngreso" type="date"></div>
+      </div>
+    </div>
+
+    <div class="pie-form">
+      <span class="contador-paso">Paso <b id="numPaso">1</b> de 3</span>
+      <div class="der">
+        <button class="btn btn-secundario" id="btnPasoAtras" hidden>Anterior</button>
+        <button class="btn btn-primario" id="btnPasoAdelante">Siguiente</button>
+        <button class="btn btn-primario" id="btnGuardarFunc" hidden>Guardar funcionario</button>
+      </div>
+    </div>
+  </div>
+</section>

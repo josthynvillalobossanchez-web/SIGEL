@@ -1,0 +1,217 @@
+<!-- ============ ACCESO: iniciar sesión (Ficha 1) ============ -->
+<div class="acceso" id="vLogin">
+  <div class="acceso-barra">
+    <button class="btn-icono-claro btn-tema-acceso" aria-label="Cambiar entre tema claro y oscuro" title="Cambiar tema">
+      <svg class="ico-tema" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
+    </button>
+  </div>
+
+  <div class="acceso-caja">
+    <div class="acceso-marca">
+      <span class="logo-caja">
+        <img class="logo-claro" src="__LOGO_COLOR__" alt="Municipalidad de Palmares">
+        <img class="logo-oscuro" src="__LOGO_BLANCO__" alt="">
+      </span>
+      <div class="nom"><b>SIGEL</b><span>Sistema Integral de Gestión Laboral · Municipalidad de Palmares</span></div>
+    </div>
+
+    <div class="card">
+      <h1>Iniciar sesión</h1>
+      <p class="sub">Ingrese con la cuenta que le asignó Recursos Humanos.</p>
+
+      <div class="mensaje mensaje-error" id="msgLoginError" hidden>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M15 9l-6 6M9 9l6 6"/></svg>
+        <p>Correo o contraseña incorrectos. Le queda <b id="intentosRestantes">1 intento</b> antes de que el acceso se bloquee temporalmente.</p>
+      </div>
+
+      <div class="mensaje mensaje-advert" id="msgBloqueo" hidden>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
+        <p><b>Acceso bloqueado temporalmente.</b> Por tres intentos fallidos seguidos, debe esperar <b id="cuentaRegresiva">3:00</b> minutos antes de volver a intentarlo.</p>
+      </div>
+
+      <div class="campo">
+        <label for="lgUsuario">Correo institucional</label>
+        <input id="lgUsuario" type="email" autocomplete="username" placeholder="nombre@munipalmares.go.cr">
+      </div>
+
+      <div class="campo">
+        <label for="lgPass">Contraseña</label>
+        <div class="pass-envoltura">
+          <input id="lgPass" type="password" autocomplete="current-password" placeholder="••••••••">
+          <button class="ver-pass" type="button" data-ver="lgPass" aria-label="Mostrar contraseña" title="Mostrar contraseña">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>
+          </button>
+        </div>
+      </div>
+
+      <button class="btn btn-primario btn-bloque" id="btnEntrar">Ingresar</button>
+
+      <p style="text-align:center;margin-top:16px">
+        <button class="btn-texto" data-ir="vRecuperar">¿Olvidó su contraseña?</button>
+      </p>
+    </div>
+
+    <p class="acceso-pie">
+      Si no tiene cuenta o no puede ingresar, comuníquese con Recursos Humanos.
+    </p>
+
+    <div class="mensaje mensaje-info" style="margin-top:18px">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+      <p><b>Prototipo:</b> escriba cualquier correo y contraseña para entrar. Con <b>nueva@munipalmares.go.cr</b> verá el cambio obligatorio del primer ingreso; equivocándose tres veces, el bloqueo de tres minutos.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ============ ACCESO: recuperar contraseña (Ficha 1) ============ -->
+<div class="acceso" id="vRecuperar" hidden>
+  <div class="acceso-barra">
+    <button class="btn-icono-claro btn-tema-acceso" aria-label="Cambiar entre tema claro y oscuro" title="Cambiar tema">
+      <svg class="ico-tema" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
+    </button>
+  </div>
+
+  <div class="acceso-caja">
+    <div class="acceso-marca">
+      <span class="logo-caja">
+        <img class="logo-claro" src="__LOGO_COLOR__" alt="Municipalidad de Palmares">
+        <img class="logo-oscuro" src="__LOGO_BLANCO__" alt="">
+      </span>
+      <div class="nom"><b>SIGEL</b><span>Recuperación de contraseña</span></div>
+    </div>
+
+    <!-- Paso 1: pedir el código -->
+    <div class="card" id="recPaso1">
+      <button class="volver" data-ir="vLogin">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+        Volver al inicio de sesión
+      </button>
+      <h1>Recuperar contraseña</h1>
+      <p class="sub">Le enviaremos un código de un solo uso al correo registrado en su cuenta.</p>
+      <div class="campo">
+        <label for="recCorreo">Correo registrado</label>
+        <input id="recCorreo" type="email" autocomplete="email" placeholder="nombre@munipalmares.go.cr">
+        <span class="ayuda">Si no recuerda cuál es, Recursos Humanos puede indicárselo.</span>
+      </div>
+      <button class="btn btn-primario btn-bloque" id="btnEnviarCodigo">Enviar código</button>
+    </div>
+
+    <!-- Paso 2: código + contraseña nueva -->
+    <div class="card" id="recPaso2" hidden>
+      <button class="volver" id="btnVolverPaso1">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+        Volver
+      </button>
+
+      <div class="mensaje mensaje-exito">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.1V12a10 10 0 1 1-5.9-9.1"/><path d="m9 11 3 3L22 4"/></svg>
+        <p>Enviamos un código a <b id="correoEnviado">nombre@munipalmares.go.cr</b>. Revise su correo e ingréselo aquí.</p>
+      </div>
+
+      <h1>Ingrese el código</h1>
+      <p class="sub">El código vence en 15 minutos y solo se puede usar una vez.</p>
+
+      <div class="campo">
+        <label for="recCodigo">Código de recuperación</label>
+        <input id="recCodigo" type="text" inputmode="numeric" placeholder="6 dígitos" style="font-variant-numeric:tabular-nums;letter-spacing:.3em">
+      </div>
+      <div class="campo">
+        <label for="recPass1">Contraseña nueva</label>
+        <div class="pass-envoltura">
+          <input id="recPass1" type="password" autocomplete="new-password">
+          <button class="ver-pass" type="button" data-ver="recPass1" aria-label="Mostrar contraseña" title="Mostrar contraseña">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>
+          </button>
+        </div>
+        <span class="ayuda">Mínimo 8 caracteres, con al menos una letra y un número.</span>
+      </div>
+      <div class="campo">
+        <label for="recPass2">Repita la contraseña nueva</label>
+        <div class="pass-envoltura">
+          <input id="recPass2" type="password" autocomplete="new-password">
+          <button class="ver-pass" type="button" data-ver="recPass2" aria-label="Mostrar contraseña" title="Mostrar contraseña">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>
+          </button>
+        </div>
+      </div>
+      <button class="btn btn-primario btn-bloque" id="btnGuardarPassRec">Guardar contraseña</button>
+      <p style="text-align:center;margin-top:14px">
+        <button class="btn-texto" id="btnOtroCodigo">Enviar otro código</button>
+      </p>
+    </div>
+
+    <!-- Paso 3: confirmación -->
+    <div class="card" id="recPaso3" hidden style="text-align:center">
+      <div style="display:grid;place-items:center;gap:14px;padding:12px 0 6px">
+        <span style="display:grid;place-items:center;width:56px;height:56px;border-radius:50%;
+              background:var(--exito-bg);color:var(--exito-fg)">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m5 13 4 4L19 7"/></svg>
+        </span>
+        <h1>Contraseña actualizada</h1>
+        <p class="sub" style="margin-bottom:6px">Ya puede ingresar a SIGEL con su contraseña nueva.</p>
+      </div>
+      <button class="btn btn-primario btn-bloque" data-ir="vLogin">Ir al inicio de sesión</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ ACCESO: cambio obligatorio en el primer ingreso (Ficha 2) ============ -->
+<div class="acceso" id="vPrimerIngreso" hidden>
+  <div class="acceso-barra">
+    <button class="btn-icono-claro btn-tema-acceso" aria-label="Cambiar entre tema claro y oscuro" title="Cambiar tema">
+      <svg class="ico-tema" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
+    </button>
+  </div>
+
+  <div class="acceso-caja">
+    <div class="acceso-marca">
+      <span class="logo-caja">
+        <img class="logo-claro" src="__LOGO_COLOR__" alt="Municipalidad de Palmares">
+        <img class="logo-oscuro" src="__LOGO_BLANCO__" alt="">
+      </span>
+      <div class="nom"><b>SIGEL</b><span>Primer ingreso</span></div>
+    </div>
+    <div class="card">
+      <button class="volver" data-ir="vLogin">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+        Volver al inicio de sesión
+      </button>
+      <h1>Cambie su contraseña</h1>
+      <p class="sub">Su cuenta se creó con una contraseña temporal. Debe cambiarla antes de continuar.</p>
+
+      <div class="mensaje mensaje-info">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+        <p>Este paso es obligatorio: no se puede usar el sistema con la contraseña temporal.</p>
+      </div>
+
+      <div class="campo">
+        <label for="piActual">Contraseña temporal</label>
+        <div class="pass-envoltura">
+          <input id="piActual" type="password" autocomplete="current-password">
+          <button class="ver-pass" type="button" data-ver="piActual" aria-label="Mostrar contraseña" title="Mostrar contraseña">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>
+          </button>
+        </div>
+      </div>
+      <div class="campo">
+        <label for="piNueva">Contraseña nueva</label>
+        <div class="pass-envoltura">
+          <input id="piNueva" type="password" autocomplete="new-password">
+          <button class="ver-pass" type="button" data-ver="piNueva" aria-label="Mostrar contraseña" title="Mostrar contraseña">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>
+          </button>
+        </div>
+        <span class="ayuda">Mínimo 8 caracteres, con al menos una letra y un número.</span>
+      </div>
+      <div class="campo">
+        <label for="piRepetir">Repita la contraseña nueva</label>
+        <div class="pass-envoltura">
+          <input id="piRepetir" type="password" autocomplete="new-password">
+          <button class="ver-pass" type="button" data-ver="piRepetir" aria-label="Mostrar contraseña" title="Mostrar contraseña">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>
+          </button>
+        </div>
+      </div>
+      <button class="btn btn-primario btn-bloque" id="btnGuardarPrimera">Guardar y continuar</button>
+    </div>
+  </div>
+</div>

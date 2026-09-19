@@ -1,0 +1,379 @@
+// =====================================================================
+// SIGEL - Sistema Integral de Gestion Laboral
+// Municipalidad de Palmares
+//
+// Esquema de Prisma para el SPRINT 1: autenticacion y usuarios,
+// funcionarios y expediente, y gestion documental.
+//
+// Traduccion fiel de SIGEL_BaseDatos_v3.dbml (solo las tablas del
+// Sprint 1). Los sprints 2 y 3 agregan sus tablas a este mismo archivo.
+//
+// Convenciones (Documento de Especificacion, secciones 8 y 9):
+//   - Nombres en espanol, camelCase.
+//   - UUID char(36) como llave primaria en todas las tablas,
+//     incluidas las de union muchos a muchos.
+//   - Baja logica (campo "vigente" / "activo"), nunca DELETE fisico.
+//   - Los archivos NO se guardan en MySQL: se guarda la ruta que
+//     apunta al servidor de archivos de la Municipalidad.
+// =====================================================================
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "mysql"
+}
+
+// =====================================================================
+// ENUMERACIONES
+// Solo se quedan como enum las que tienen comportamiento programado.
+// =====================================================================
+
+enum estadoUsuario {
+  activo
+  inactivo
+  bloqueado
+}
+
+enum estadoFuncionario {
+  activo
+  inactivo
+}
+
+enum tipoNombramiento {
+  propiedad
+  interino
+  contratacionServicios
+}
+
+enum accionBitacora {
+  crear
+  modificar
+  eliminar
+  aprobar
+  rechazar
+  cancelar
+  consultar
+  descargar
+  iniciarSesion
+  cerrarSesion
+}
+
+// =====================================================================
+// 1. SEGURIDAD
+// =====================================================================
+
+/// Cuenta de acceso al sistema. Se ingresa con el correo institucional
+/// y, si el funcionario no tiene uno, con su correo personal.
+model usuario {
+  id                    String        @id @default(uuid()) @db.Char(36)
+  funcionarioId         String?       @unique @db.Char(36)
+  correo                String        @unique @db.VarChar(150)
+  contrasenaHash        String        @db.VarChar(255)
+  estado                estadoUsuario @default(activo)
+  debeCambiarContrasena Boolean       @default(true)
+
+  /// Se reinicia con cada ingreso exitoso. Los intentos fallidos NO se auditan.
+  intentosFallidos Int       @default(0) @db.SmallInt
+  /// Nulo = sin bloqueo. Tres intentos fallidos bloquean la cuenta 3 minutos.
+  bloqueadoHasta   DateTime?
+
+  ultimoAcceso        DateTime?
+  fechaCreacion       DateTime  @default(now())
+  fechaActualizacion  DateTime? @updatedAt
+
+  funcionario          funcionario?                 @relation(fields: [funcionarioId], references: [id])
+  roles                usuarioRol[]                 @relation("rolesDelUsuario")
+  rolesAsignados       usuarioRol[]                 @relation("rolesAsignadosPorEsteUsuario")
+  permisos             usuarioPermiso[]             @relation("permisosDelUsuario")
+  permisosAsignados    usuarioPermiso[]             @relation("permisosAsignadosPorEsteUsuario")
+  tokensRecuperacion   tokenRecuperacionContrasena[]
+  documentosRegistrados documento[]                 @relation("documentosRegistradosPorUsuario")
+  documentosDadosDeBaja documento[]                 @relation("documentosDadosDeBajaPorUsuario")
+  movimientosBitacora  bitacoraCambio[]
+
+  @@index([estado])
+}
+
+/// Codigo de un solo uso para restablecer la contrasena. Se guarda hasheado.
+model tokenRecuperacionContrasena {
+  id              String    @id @default(uuid()) @db.Char(36)
+  usuarioId       String    @db.Char(36)
+  codigoHash      String    @db.VarChar(255)
+  fechaCreacion   DateTime  @default(now())
+  fechaExpiracion DateTime
+  fechaUso        DateTime?
+
+  usuario usuario @relation(fields: [usuarioId], references: [id])
+
+  @@index([usuarioId, fechaExpiracion], map: "idxTokenRecuperacionUsuario")
+}
+
+/// Agrupacion de permisos. Los roles de sistema no se pueden eliminar,
+/// pero la Municipalidad puede crear los suyos desde el panel.
+model rol {
+  id          String  @id @default(uuid()) @db.Char(36)
+  nombre      String  @unique @db.VarChar(60)
+  descripcion String? @db.VarChar(255)
+  esSistema   Boolean @default(false)
+  activo      Boolean @default(true)
+
+  permisos rolPermiso[]
+  usuarios usuarioRol[]
+}
+
+/// Permiso granular con clave "modulo.accion". El backend lo verifica
+/// en cada operacion; nunca se valida contra un rol fijo.
+model permiso {
+  id          String  @id @default(uuid()) @db.Char(36)
+  clave       String  @unique @db.VarChar(80)
+  modulo      String  @db.VarChar(40)
+  descripcion String? @db.VarChar(255)
+  activo      Boolean @default(true)
+
+  roles    rolPermiso[]
+  usuarios usuarioPermiso[]
+
+  @@index([modulo], map: "idxPermisoModulo")
+}
+
+model rolPermiso {
+  id        String @id @default(uuid()) @db.Char(36)
+  rolId     String @db.Char(36)
+  permisoId String @db.Char(36)
+
+  rol     rol     @relation(fields: [rolId], references: [id], onDelete: Cascade)
+  permiso permiso @relation(fields: [permisoId], references: [id], onDelete: Cascade)
+
+  @@unique([rolId, permisoId], map: "uqRolPermiso")
+}
+
+model usuarioRol {
+  id              String   @id @default(uuid()) @db.Char(36)
+  usuarioId       String   @db.Char(36)
+  rolId           String   @db.Char(36)
+  fechaAsignacion DateTime @default(now())
+  asignadoPorId   String?  @db.Char(36)
+
+  usuario     usuario  @relation("rolesDelUsuario", fields: [usuarioId], references: [id], onDelete: Cascade)
+  rol         rol      @relation(fields: [rolId], references: [id])
+  asignadoPor usuario? @relation("rolesAsignadosPorEsteUsuario", fields: [asignadoPorId], references: [id])
+
+  @@unique([usuarioId, rolId], map: "uqUsuarioRol")
+}
+
+/// Excepcion individual sobre los permisos que otorga el rol.
+/// Permiso efectivo = permisos de sus roles, sobrescritos por esta tabla.
+model usuarioPermiso {
+  id              String   @id @default(uuid()) @db.Char(36)
+  usuarioId       String   @db.Char(36)
+  permisoId       String   @db.Char(36)
+  /// true = se concede aunque el rol no lo de. false = se revoca aunque el rol si lo de.
+  otorgado        Boolean  @default(true)
+  fechaAsignacion DateTime @default(now())
+  asignadoPorId   String?  @db.Char(36)
+  observacion     String?  @db.VarChar(255)
+
+  usuario     usuario  @relation("permisosDelUsuario", fields: [usuarioId], references: [id], onDelete: Cascade)
+  permiso     permiso  @relation(fields: [permisoId], references: [id])
+  asignadoPor usuario? @relation("permisosAsignadosPorEsteUsuario", fields: [asignadoPorId], references: [id])
+
+  @@unique([usuarioId, permisoId], map: "uqUsuarioPermiso")
+}
+
+// =====================================================================
+// 2. FUNCIONARIOS
+// =====================================================================
+
+model departamento {
+  id          String  @id @default(uuid()) @db.Char(36)
+  nombre      String  @unique @db.VarChar(120)
+  descripcion String? @db.VarChar(255)
+  activo      Boolean @default(true)
+
+  funcionarios funcionario[]
+}
+
+model puesto {
+  id          String  @id @default(uuid()) @db.Char(36)
+  nombre      String  @unique @db.VarChar(120)
+  descripcion String? @db.VarChar(255)
+  activo      Boolean @default(true)
+
+  funcionarios funcionario[]
+}
+
+/// Catalogo compartido por funcionarios y candidatos del Talent Pool.
+model profesion {
+  id          String  @id @default(uuid()) @db.Char(36)
+  nombre      String  @unique @db.VarChar(150)
+  descripcion String? @db.VarChar(255)
+  activo      Boolean @default(true)
+
+  funcionarios funcionario[]
+}
+
+/// Regimen de vacaciones. Cada uno define su propio tope de acumulacion.
+/// Sus tramos (reglaVacaciones) se agregan en el Sprint 2.
+model regimenVacaciones {
+  id                         String  @id @default(uuid()) @db.Char(36)
+  nombre                     String  @unique @db.VarChar(60)
+  descripcion                String? @db.VarChar(255)
+  periodosMaximosAcumulables Int     @default(2) @db.SmallInt
+  diasAvisoAntesDeVencer     Int     @default(60) @db.SmallInt
+  activo                     Boolean @default(true)
+
+  funcionarios funcionario[]
+}
+
+/// AUTOSERVICIO: el funcionario mantiene sus datos personales y de
+/// contacto, y cada cambio suyo notifica a RRHH y queda en bitacora.
+/// Los datos laborales son exclusivos de Recursos Humanos.
+model funcionario {
+  id              String    @id @default(uuid()) @db.Char(36)
+  cedula          String    @unique @db.VarChar(20)
+  nombre          String    @db.VarChar(80)
+  primerApellido  String    @db.VarChar(80)
+  segundoApellido String?   @db.VarChar(80)
+  fechaNacimiento DateTime? @db.Date
+
+  // ----- Datos de contacto: los edita el propio funcionario -----
+  telefonoPersonal    String? @db.VarChar(30)
+  /// Obligatorio: es el canal de respaldo para las notificaciones.
+  correoPersonal      String  @db.VarChar(150)
+  correoInstitucional String? @unique @db.VarChar(150)
+  direccion           String? @db.VarChar(255)
+  profesionId         String? @db.Char(36)
+  /// Ruta en el servidor de archivos de la Municipalidad, no el binario.
+  fotoRuta            String? @db.VarChar(500)
+
+  // ----- Datos laborales: solo Recursos Humanos -----
+  numeroEmpleado      String?           @db.VarChar(30)
+  puestoId            String?           @db.Char(36)
+  departamentoId      String?           @db.Char(36)
+  /// Jefatura inmediata: define quien aprueba sus solicitudes.
+  /// Nulo = tope de la jerarquia, se autoaprueba.
+  jefaturaId          String?           @db.Char(36)
+  tipoNombramiento    tipoNombramiento  @default(propiedad)
+  regimenVacacionesId String            @db.Char(36)
+  estado              estadoFuncionario @default(activo)
+  fechaIngreso        DateTime          @db.Date
+  fechaSalida         DateTime?         @db.Date
+  motivoSalida        String?           @db.VarChar(150)
+
+  fechaRegistro      DateTime  @default(now())
+  fechaActualizacion DateTime? @updatedAt
+
+  profesion         profesion?        @relation(fields: [profesionId], references: [id])
+  puesto            puesto?           @relation(fields: [puestoId], references: [id])
+  departamento      departamento?     @relation(fields: [departamentoId], references: [id])
+  jefatura          funcionario?      @relation("jefaturaDelFuncionario", fields: [jefaturaId], references: [id])
+  personalACargo    funcionario[]     @relation("jefaturaDelFuncionario")
+  regimenVacaciones regimenVacaciones @relation(fields: [regimenVacacionesId], references: [id])
+  usuario           usuario?
+  documentos        documento[]
+  movimientosBitacora bitacoraCambio[]
+
+  @@index([cedula], map: "idxFuncionarioCedula")
+  @@index([primerApellido, nombre], map: "idxFuncionarioNombre")
+  @@index([correoInstitucional], map: "idxFuncionarioCorreo")
+  @@index([estado, departamentoId], map: "idxFuncionarioEstadoDepto")
+  @@index([jefaturaId], map: "idxFuncionarioJefatura")
+  @@index([profesionId], map: "idxFuncionarioProfesion")
+}
+
+// =====================================================================
+// 3. EXPEDIENTE Y DOCUMENTOS
+// El expediente no es una tabla: es el conjunto de documentos de un
+// funcionario.
+// =====================================================================
+
+/// Catalogo administrable. Los tipos que genera SIGEL solo se pueden
+/// renombrar, porque cada uno depende de una plantilla programada.
+model tipoDocumento {
+  id                 String  @id @default(uuid()) @db.Char(36)
+  nombre             String  @unique @db.VarChar(120)
+  descripcion        String? @db.VarChar(255)
+  generadoPorSistema Boolean @default(false)
+  activo             Boolean @default(true)
+
+  documentos documento[]
+}
+
+/// La descarga y la visualizacion siempre pasan por el backend, que
+/// valida permisos (proteccion contra IDOR) y las registra en bitacora.
+model documento {
+  id              String  @id @default(uuid()) @db.Char(36)
+  funcionarioId   String  @db.Char(36)
+  tipoDocumentoId String  @db.Char(36)
+  titulo          String  @db.VarChar(180)
+  descripcion     String? @db.VarChar(500)
+
+  /// Nombre original del archivo, solo informativo.
+  nombreArchivo String @db.VarChar(255)
+  /// Ruta al servidor de archivos de la Municipalidad. El binario NO va en MySQL.
+  rutaArchivo   String @unique @db.VarChar(500)
+  /// Validado en el backend: application/pdf, image/jpeg, image/png.
+  tipoMime      String @db.VarChar(100)
+  /// Maximo 26214400 bytes = 25 MB. Se usa Int (no BigInt) a proposito:
+  /// alcanza de sobra para 25 MB y evita tener que convertir BigInt al
+  /// serializar la respuesta JSON.
+  tamanoBytes   Int
+
+  generadoPorSistema Boolean   @default(false)
+  fechaDocumento     DateTime? @db.Date
+  fechaRegistro      DateTime  @default(now())
+  /// RRHH o el propio funcionario. Nulo si lo genero el sistema.
+  usuarioRegistroId  String?   @db.Char(36)
+
+  /// Baja logica. No existe borrado fisico: eso es lo que sostiene la trazabilidad.
+  vigente       Boolean   @default(true)
+  /// Quien dio de baja el documento. Si coincide con el usuario del funcionario
+  /// dueno del expediente, la baja la hizo el propio funcionario
+  /// (permiso documentos.darDeBajaPropio) y para el queda oculto por completo.
+  usuarioBajaId String?   @db.Char(36)
+  fechaBaja     DateTime?
+  motivoBaja    String?   @db.VarChar(255)
+
+  funcionario    funcionario   @relation(fields: [funcionarioId], references: [id])
+  tipoDocumento  tipoDocumento @relation(fields: [tipoDocumentoId], references: [id])
+  usuarioRegistro usuario?     @relation("documentosRegistradosPorUsuario", fields: [usuarioRegistroId], references: [id])
+  usuarioBaja     usuario?     @relation("documentosDadosDeBajaPorUsuario", fields: [usuarioBajaId], references: [id])
+
+  @@index([funcionarioId, tipoDocumentoId], map: "idxDocumentoFuncionarioTipo")
+  @@index([funcionarioId, vigente], map: "idxDocumentoVigente")
+}
+
+// =====================================================================
+// 4. TRANSVERSALES
+// =====================================================================
+
+/// Registro inmutable: la aplicacion nunca hace UPDATE ni DELETE sobre
+/// esta tabla. Se auditan las mutaciones y, por excepcion confirmada,
+/// abrir un expediente y abrir o descargar un documento. NO se registran
+/// los intentos de login fallidos, los accesos denegados ni la
+/// recuperacion de contrasena.
+model bitacoraCambio {
+  id                    String         @id @default(uuid()) @db.Char(36)
+  usuarioId             String?        @db.Char(36)
+  funcionarioAfectadoId String?        @db.Char(36)
+  entidad               String         @db.VarChar(60)
+  /// UUID del registro afectado. NO es llave foranea: la bitacora debe
+  /// sobrevivir aunque el registro cambie o se de de baja.
+  registroAfectadoId    String         @db.Char(36)
+  accion                accionBitacora
+  fechaHora             DateTime       @default(now())
+  direccionIp           String?        @db.VarChar(45)
+  datosAnteriores       Json?
+  datosNuevos           Json?
+  descripcion           String?        @db.VarChar(1000)
+
+  usuario             usuario?     @relation(fields: [usuarioId], references: [id])
+  funcionarioAfectado funcionario? @relation(fields: [funcionarioAfectadoId], references: [id])
+
+  @@index([fechaHora], map: "idxBitacoraFecha")
+  @@index([usuarioId, fechaHora], map: "idxBitacoraUsuario")
+  @@index([entidad, registroAfectadoId], map: "idxBitacoraRegistro")
+}

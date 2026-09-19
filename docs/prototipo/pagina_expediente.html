@@ -1,0 +1,251 @@
+  <main class="contenido">
+    <nav class="migas" aria-label="Ruta de navegación">
+      <a href="#" id="migaLista">Funcionarios</a><span aria-hidden="true" id="migaSep">›</span>
+      <a href="#" id="migaNombre">María José Rodríguez Alfaro</a><span aria-hidden="true">›</span>
+      <span aria-current="page">Expediente laboral</span>
+    </nav>
+
+    <!-- Perfil del funcionario -->
+    <section class="perfil" aria-label="Datos del funcionario">
+      <div class="perfil-foto" aria-hidden="true">MR</div>
+      <h1>María José Rodríguez Alfaro</h1>
+      <p class="ident">Cédula 2-0678-0432 · Código 1042</p>
+      <div class="chips">
+        <span class="chip chip-exito">● Activa</span>
+        <span class="chip chip-neutro">En propiedad</span>
+        <span class="chip chip-info">Régimen general · 20 días</span>
+      </div>
+      <div class="acc">
+        <button class="btn btn-primario" id="btnSubir">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+          Subir documento
+        </button>
+      </div>
+    </section>
+
+    <!-- Pestañas -->
+    <div class="tabs" role="tablist" aria-label="Secciones del expediente">
+      <button class="tab" role="tab" aria-selected="false" data-panel="pDatos">Información personal</button>
+      <button class="tab" role="tab" aria-selected="false" data-panel="pLaboral">Información laboral</button>
+      <button class="tab" role="tab" aria-selected="true" data-panel="pDocs">Documentos <span class="cuenta">7</span></button>
+      <button class="tab" role="tab" aria-selected="false" data-panel="pCapa">Capacitaciones</button>
+      <button class="tab" role="tab" aria-selected="false" data-panel="pHist">Historial laboral</button>
+    </div>
+
+    <!-- Panel: documentos -->
+    <section id="pDocs" role="tabpanel">
+      <div class="aviso">
+        <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+        <p><b>Expediente con información sensible.</b> Cada apertura y cada descarga queda registrada en la bitácora, con usuario, fecha y documento.</p>
+      </div>
+
+      <div class="herramientas">
+        <div class="buscador">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+          <input type="search" placeholder="Buscar por título o tipo de documento" aria-label="Buscar documentos">
+        </div>
+        <div class="filtros" role="group" aria-label="Filtros">
+          <button class="filtro" aria-pressed="true">Todos</button>
+          <button class="filtro" aria-pressed="false">Vigentes</button>
+          <button class="filtro" aria-pressed="false">Generados por SIGEL</button>
+          <button class="filtro" aria-pressed="false">Dados de baja</button>
+        </div>
+      </div>
+
+      <div class="tabla-envoltura">
+        <table>
+          <thead>
+            <tr>
+              <th scope="col">Documento</th>
+              <th scope="col">Tipo</th>
+              <th scope="col">Fecha</th>
+              <th scope="col">Origen</th>
+              <th scope="col"><span class="sr">Acciones</span></th>
+            </tr>
+          </thead>
+          <tbody id="tablaDocs">
+            <tr data-vigente="si">
+              <td data-etiqueta="Documento">
+                <div class="doc"><div class="doc-ico pdf">PDF</div>
+                  <div><span class="doc-nombre">Cédula de identidad</span>
+                  <span class="doc-meta">1,2 MB · subido por RRHH</span></div></div>
+              </td>
+              <td data-etiqueta="Tipo">Cédula</td>
+              <td data-etiqueta="Fecha" class="num">03/02/2020</td>
+              <td data-etiqueta="Origen"><span class="chip chip-neutro">Manual</span></td>
+              <td class="acciones">
+                <button class="icono-btn" aria-label="Ver documento" title="Ver documento"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg></button>
+                <button class="icono-btn" aria-label="Descargar documento" title="Descargar documento"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5M12 15V3"/></svg></button>
+                <button class="icono-btn peligro solo-rrhh" aria-label="Dar de baja documento" title="Dar de baja documento" data-baja="Cédula de identidad"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/></svg></button>
+              </td>
+            </tr>
+
+            <tr data-vigente="si">
+              <td data-etiqueta="Documento">
+                <div class="doc"><div class="doc-ico pdf">PDF</div>
+                  <div><span class="doc-nombre">Título universitario — Administración</span>
+                  <span class="doc-meta">3,8 MB · subido por la funcionaria</span></div></div>
+              </td>
+              <td data-etiqueta="Tipo">Título universitario</td>
+              <td data-etiqueta="Fecha" class="num">14/05/2021</td>
+              <td data-etiqueta="Origen"><span class="chip chip-neutro">Manual</span></td>
+              <td class="acciones">
+                <button class="icono-btn" aria-label="Ver documento" title="Ver documento"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg></button>
+                <button class="icono-btn" aria-label="Descargar documento" title="Descargar documento"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5M12 15V3"/></svg></button>
+                <button class="icono-btn peligro solo-rrhh" aria-label="Dar de baja documento" title="Dar de baja documento" data-baja="Título universitario — Administración"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/></svg></button>
+              </td>
+            </tr>
+
+            <tr data-vigente="si">
+              <td data-etiqueta="Documento">
+                <div class="doc"><div class="doc-ico pdf">PDF</div>
+                  <div><span class="doc-nombre">Constancia de vacaciones · periodo 2025-2026</span>
+                  <span class="doc-meta">142 KB · generado al aprobarse la solicitud SOL-2026-0184</span></div></div>
+              </td>
+              <td data-etiqueta="Tipo">Constancia de vacaciones</td>
+              <td data-etiqueta="Fecha" class="num">21/07/2026</td>
+              <td data-etiqueta="Origen"><span class="chip chip-info">Generado por SIGEL</span></td>
+              <td class="acciones">
+                <button class="icono-btn" aria-label="Ver documento" title="Ver documento"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg></button>
+                <button class="icono-btn" aria-label="Descargar documento" title="Descargar documento"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5M12 15V3"/></svg></button>
+                <button class="icono-btn peligro solo-rrhh" aria-label="Dar de baja documento" title="Dar de baja documento" data-baja="Constancia de vacaciones · periodo 2025-2026"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/></svg></button>
+              </td>
+            </tr>
+
+            <tr data-vigente="si">
+              <td data-etiqueta="Documento">
+                <div class="doc"><div class="doc-ico pdf">PDF</div>
+                  <div><span class="doc-nombre">Acción de personal — cambio de puesto</span>
+                  <span class="doc-meta">228 KB · subido por RRHH</span></div></div>
+              </td>
+              <td data-etiqueta="Tipo">Acción de personal</td>
+              <td data-etiqueta="Fecha" class="num">01/03/2024</td>
+              <td data-etiqueta="Origen"><span class="chip chip-neutro">Manual</span></td>
+              <td class="acciones">
+                <button class="icono-btn" aria-label="Ver documento" title="Ver documento"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg></button>
+                <button class="icono-btn" aria-label="Descargar documento" title="Descargar documento"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5M12 15V3"/></svg></button>
+                <button class="icono-btn peligro solo-rrhh" aria-label="Dar de baja documento" title="Dar de baja documento" data-baja="Acción de personal — cambio de puesto"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/></svg></button>
+              </td>
+            </tr>
+
+            <tr data-vigente="si">
+              <td data-etiqueta="Documento">
+                <div class="doc"><div class="doc-ico img">JPG</div>
+                  <div><span class="doc-nombre">Hoja de delincuencia</span>
+                  <span class="doc-meta">890 KB · subido por RRHH</span></div></div>
+              </td>
+              <td data-etiqueta="Tipo">Hoja de delincuencia</td>
+              <td data-etiqueta="Fecha" class="num">18/01/2026</td>
+              <td data-etiqueta="Origen"><span class="chip chip-neutro">Manual</span></td>
+              <td class="acciones">
+                <button class="icono-btn" aria-label="Ver documento" title="Ver documento"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg></button>
+                <button class="icono-btn" aria-label="Descargar documento" title="Descargar documento"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5M12 15V3"/></svg></button>
+                <button class="icono-btn peligro solo-rrhh" aria-label="Dar de baja documento" title="Dar de baja documento" data-baja="Hoja de delincuencia"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/></svg></button>
+              </td>
+            </tr>
+
+            <tr data-vigente="si">
+              <td data-etiqueta="Documento">
+                <div class="doc"><div class="doc-ico pdf">PDF</div>
+                  <div><span class="doc-nombre">Currículum vitae</span>
+                  <span class="doc-meta">640 KB · copiado del Talent Pool al contratarla</span></div></div>
+              </td>
+              <td data-etiqueta="Tipo">Currículum</td>
+              <td data-etiqueta="Fecha" class="num">28/01/2020</td>
+              <td data-etiqueta="Origen"><span class="chip chip-info">Generado por SIGEL</span></td>
+              <td class="acciones">
+                <button class="icono-btn" aria-label="Ver documento" title="Ver documento"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg></button>
+                <button class="icono-btn" aria-label="Descargar documento" title="Descargar documento"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5M12 15V3"/></svg></button>
+                <button class="icono-btn peligro solo-rrhh" aria-label="Dar de baja documento" title="Dar de baja documento" data-baja="Currículum vitae"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/></svg></button>
+              </td>
+            </tr>
+
+            <tr data-vigente="no">
+              <td data-etiqueta="Documento">
+                <div class="doc"><div class="doc-ico">PDF</div>
+                  <div><span class="doc-nombre">Cédula de identidad (duplicado)</span>
+                  <span class="doc-meta">1,2 MB · dado de baja el 04/09/2026 por A. Vargas</span></div></div>
+              </td>
+              <td data-etiqueta="Tipo">Cédula</td>
+              <td data-etiqueta="Fecha" class="num">02/09/2026</td>
+              <td data-etiqueta="Origen"><span class="chip chip-advert">No vigente</span></td>
+              <td class="acciones">
+                <button class="icono-btn" aria-label="Ver documento" title="Ver documento"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg></button>
+                <button class="icono-btn solo-rrhh" aria-label="Restaurar documento" title="Restaurar documento"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></svg></button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Panel: capacitaciones (estado vacío) -->
+    <section id="pCapa" role="tabpanel" hidden>
+      <div class="vacio">
+        <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="color:var(--texto-desh)"><path d="M22 10 12 5 2 10l10 5 10-5z"/><path d="M6 12v5c3 2 9 2 12 0v-5"/></svg>
+        <h3>Sin capacitaciones registradas</h3>
+        <p>Cuando se registre una capacitación aparecerá aquí, junto con su certificado si se adjunta al finalizar.</p>
+        <button class="btn btn-primario">Registrar capacitación</button>
+      </div>
+    </section>
+
+    <section id="pDatos" role="tabpanel" hidden>
+      <div class="info-bloque">
+        <h3><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21v-1a6 6 0 0 1 6-6h4a6 6 0 0 1 6 6v1"/></svg> Identificación</h3>
+        <dl class="info-rejilla">
+          <div class="dato"><dt>Nombre completo</dt><dd>María José Rodríguez Alfaro</dd></div>
+          <div class="dato"><dt>Cédula</dt><dd class="num">2-0678-0432</dd></div>
+          <div class="dato"><dt>Fecha de nacimiento</dt><dd class="num">18/07/1993</dd></div>
+          <div class="dato"><dt>Profesión</dt><dd>Administración de Empresas</dd></div>
+        </dl>
+      </div>
+
+      <div class="info-bloque">
+        <h3><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16v16H4z"/><path d="m4 6 8 6 8-6"/></svg> Contacto</h3>
+        <dl class="info-rejilla">
+          <div class="dato"><dt>Correo institucional</dt><dd>mrodriguez@munipalmares.go.cr</dd></div>
+          <div class="dato"><dt>Correo personal</dt><dd>majo.rodriguez@gmail.com</dd></div>
+          <div class="dato"><dt>Teléfono</dt><dd class="num">8712 4408</dd></div>
+          <div class="dato"><dt>Dirección</dt><dd>Alajuela, Palmares, Santiago, 200 m norte de la escuela</dd></div>
+        </dl>
+      </div>
+
+      <p class="pie-proto">
+        <span class="marca-proto">Nota</span>
+        Estos datos los mantiene la propia funcionaria desde <b>Mi cuenta</b>. Recursos Humanos los corrige desde el listado de funcionarios.
+      </p>
+    </section>
+
+    <section id="pLaboral" role="tabpanel" hidden>
+      <div class="info-bloque">
+        <h3><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg> Puesto y ubicación</h3>
+        <dl class="info-rejilla">
+          <div class="dato"><dt>Puesto</dt><dd>Asistente de Recursos Humanos</dd></div>
+          <div class="dato"><dt>Departamento</dt><dd>Recursos Humanos</dd></div>
+          <div class="dato"><dt>Jefatura inmediata</dt><dd>Ana Lucía Vargas Chaves</dd></div>
+          <div class="dato"><dt>Código de empleado</dt><dd class="num">1042</dd></div>
+        </dl>
+      </div>
+
+      <div class="info-bloque">
+        <h3><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg> Nombramiento</h3>
+        <dl class="info-rejilla">
+          <div class="dato"><dt>Tipo de nombramiento</dt><dd>En propiedad</dd></div>
+          <div class="dato"><dt>Régimen de vacaciones</dt><dd>General · 20 días al año</dd></div>
+          <div class="dato"><dt>Fecha de ingreso</dt><dd class="num">03/02/2020</dd></div>
+          <div class="dato"><dt>Fecha de salida</dt><dd class="vacio-dato">Sin registrar</dd></div>
+          <div class="dato"><dt>Estado</dt><dd><span class="chip chip-exito">● Activa</span></dd></div>
+        </dl>
+      </div>
+
+      <p class="pie-proto">
+        <span class="marca-proto">Solo RRHH</span>
+        La información laboral solo la modifica Recursos Humanos, desde el listado de funcionarios. Nunca se edita desde el expediente ni desde el perfil propio.
+      </p>
+    </section>
+
+    <section id="pHist" role="tabpanel" hidden>
+      <div class="vacio"><h3>Historial laboral</h3>
+      <p>Pantalla pendiente de diseñar. Vista de solo lectura, alimentada por la bitácora de cambios.</p></div>
+    </section>
+  </main>

@@ -1,0 +1,312 @@
+/* =====================================================================
+   SIGEL — Sistema de diseño · Tokens
+   Municipalidad de Palmares
+   ---------------------------------------------------------------------
+   Fuente: documento "Sistema de diseño" (paleta municipal, Public Sans,
+   radios 8/6/999, sombras suaves, cuadrícula base de 8 px, WCAG AA).
+
+   Este archivo es la ÚNICA fuente de verdad de los tokens. Funciona con
+   Tailwind (v3 o v4) y también sin Tailwind, porque son variables CSS
+   estándar. Al final está el mapeo para Tailwind en ambas versiones.
+
+   Verificación de contraste: todos los pares fueron calculados, no
+   asumidos. Dos correcciones respecto del documento original están
+   marcadas como [AJUSTE AA] más abajo.
+   ===================================================================== */
+
+:root {
+
+  /* ---------------------------------------------------------------
+     1 · COLOR — Marca institucional
+     --------------------------------------------------------------- */
+
+  /* Navy — estructura: encabezados, pie, texto de máxima jerarquía */
+  --navy-900: #1F3140;   /* sobre blanco 13,36:1  AA / AAA */
+  --navy-800: #274152;   /* hover sobre navy · sobre blanco 10,69:1 */
+  --navy-700: #2F4E63;   /* secundarios sobre navy · sobre blanco 8,78:1 */
+
+  /* Olivo — ACCIÓN: botones primarios y navegación activa.
+     Nunca se usa como color de estado semántico. */
+  --olive-600: #667306;  /* con texto blanco 5,22:1  AA */
+  --olive-700: #4F5905;  /* hover / presionado · con texto blanco 7,60:1 */
+  --olive-800: #3D4504;  /* texto olivo sobre blanco 10,24:1 */
+
+  /* Cyan — detalle: foco, chips, subrayado */
+  --cyan-300: #6BCCF2;   /* con texto navy-900 encima 7,35:1 */
+
+  /* Rojo institucional — EXCLUSIVO del escudo y el logo municipal.
+     Prohibido usarlo para errores, botones o cualquier otra cosa. */
+  --red-700: #BE0811;
+
+  /* ---------------------------------------------------------------
+     2 · COLOR — Estados semánticos
+     Regla: todo estado comunica con color + icono + palabra.
+     Nunca solo con color.
+     --------------------------------------------------------------- */
+
+  --info-bg:    #E3F2FD;
+  --info-fg:    #1565C0;   /* 5,03:1  AA */
+
+  --exito-bg:   #E8F2E9;
+  --exito-fg:   #2B762E;   /* 4,90:1  AA — [AJUSTE AA] el #2E7D32 original
+                              daba 4,47:1 y no alcanzaba el 4,5 mínimo.
+                              Se oscureció lo mínimo necesario. */
+
+  --advert-bg:  #FDF3E2;
+  --advert-fg:  #965900;   /* 5,13:1  AA — [AJUSTE AA] el #B26A00 original
+                              daba 3,85:1, claramente por debajo de AA. */
+
+  --error-bg:   #FCE9E7;
+  --error-fg:   #B3261E;   /* 5,59:1  AA */
+
+  --neutro-bg:  #EEF2F7;
+  --neutro-fg:  #5F6B75;   /* 4,86:1 sobre su fondo · 5,46:1 sobre blanco */
+
+  /* ---------------------------------------------------------------
+     3 · COLOR — Neutros de interfaz
+     [EXTENSIÓN] Estos no venían en el documento original, pero una UI
+     real los necesita (fondo de página, bordes, deshabilitados).
+     Elegidos para armonizar con la paleta navy. Validar con quien
+     definió el sistema de diseño.
+     --------------------------------------------------------------- */
+
+  --superficie:        #F7F8FA;  /* fondo de página */
+  --superficie-card:   #FFFFFF;  /* tarjetas, modales, tablas */
+  --borde:             #DDE3EA;  /* bordes de campos y tarjetas */
+  --borde-fuerte:      #C3CCD6;  /* separadores marcados, bordes de tabla */
+  --texto:             var(--navy-900);
+  --texto-secundario:  var(--neutro-fg);
+  --texto-deshabil:    #8B96A0;  /* solo para estados deshabilitados */
+
+  /* ---------------------------------------------------------------
+     4 · TIPOGRAFÍA — Public Sans
+     El cuerpo sube a 17 px con interlineado 1,55 en el lado público,
+     pensando en personas adultas mayores.
+     --------------------------------------------------------------- */
+
+  --fuente: "Public Sans", -apple-system, BlinkMacSystemFont, "Segoe UI",
+            Roboto, "Helvetica Neue", Arial, sans-serif;
+
+  --texto-pagina:     2rem;      /* 32 px · peso 800 · título de página */
+  --texto-seccion:    1.5rem;    /* 24 px · peso 700 · título de sección */
+  --texto-subtitulo:  1.25rem;   /* 20 px · peso 700 · subtítulo o tarjeta */
+  --texto-cuerpo:     1rem;      /* 16 px · peso 400 · cuerpo interno */
+  --texto-cuerpo-pub: 1.0625rem; /* 17 px · peso 400 · cuerpo lado público */
+  --texto-aux:        0.875rem;  /* 14 px · peso 400 · secundario y ayudas */
+  --texto-meta:       0.75rem;   /* 12 px · peso 600 · metadatos, insignias */
+
+  --peso-titulo: 800;
+  --peso-fuerte: 700;
+  --peso-medio:  600;
+  --peso-normal: 400;
+
+  --interlineado-titulo:  1.2;
+  --interlineado-cuerpo:  1.5;
+  --interlineado-publico: 1.55;
+
+  /* ---------------------------------------------------------------
+     5 · FORMA — Radios y sombras
+     --------------------------------------------------------------- */
+
+  --radio-lg:    8px;    /* tarjetas, modales, contenedores */
+  --radio-md:    6px;    /* botones, campos, selects */
+  --radio-full:  999px;  /* chips, insignias, avatares */
+
+  --sombra-sm: 0 1px 2px rgba(31, 49, 64, .06),
+               0 1px 3px rgba(31, 49, 64, .08);
+  --sombra-md: 0 2px 4px rgba(31, 49, 64, .06),
+               0 4px 12px rgba(31, 49, 64, .08);
+  --sombra-lg: 0 8px 24px rgba(31, 49, 64, .12);
+
+  /* ---------------------------------------------------------------
+     6 · ESPACIADO — Cuadrícula base de 8 px
+     El 4 px existe solo para ajustes finos dentro de un componente.
+     --------------------------------------------------------------- */
+
+  --esp-1:  4px;
+  --esp-2:  8px;
+  --esp-3:  16px;
+  --esp-4:  24px;
+  --esp-5:  32px;
+  --esp-6:  48px;
+  --esp-7:  64px;
+
+  /* ---------------------------------------------------------------
+     7 · FOCO — Accesibilidad de teclado
+     [EXTENSIÓN] El cyan solo no es suficiente sobre fondo blanco
+     (1,9:1). Se usa anillo doble: navy da el contraste, cyan da la
+     identidad. Así el foco se ve tanto sobre blanco como sobre navy.
+     --------------------------------------------------------------- */
+
+  --avatar-bg:   var(--navy-700);  /* fondo del círculo con iniciales */
+
+  --foco-color:  var(--cyan-300);
+  --foco-borde:  var(--navy-900);
+  --foco-grosor: 2px;
+}
+
+/* =====================================================================
+   BASE
+   ===================================================================== */
+
+*, *::before, *::after { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: var(--fuente);
+  font-size: var(--texto-cuerpo);
+  line-height: var(--interlineado-cuerpo);
+  color: var(--texto);
+  background: var(--superficie);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Foco visible en todo elemento interactivo. No se elimina nunca. */
+:where(a, button, input, select, textarea, [tabindex]):focus-visible {
+  outline: var(--foco-grosor) solid var(--foco-borde);
+  outline-offset: 0;
+  box-shadow: 0 0 0 calc(var(--foco-grosor) * 2) var(--foco-color);
+  border-radius: var(--radio-md);
+}
+
+/* Respeta a quien pidió menos animación en su sistema operativo. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: .01ms !important;
+    transition-duration: .01ms !important;
+  }
+}
+
+/* =====================================================================
+   REGLAS NO NEGOCIABLES DEL SISTEMA
+   (van como comentario a propósito: son decisiones, no código)
+
+   1. Nunca olivo sobre navy, ni navy sobre olivo.
+   2. El olivo es solo para acción y navegación activa. Nunca como
+      color de estado semántico.
+   3. El rojo #BE0811 es exclusivo del escudo y el logo municipal.
+      Los errores usan #B3261E, que es otro rojo.
+   4. Todo estado comunica con color + icono + palabra.
+   5. Todo par de color usado para texto cumple WCAG AA (4,5:1).
+   ===================================================================== */
+
+/* =====================================================================
+   MODO OSCURO
+   ---------------------------------------------------------------------
+   No viene del documento original: es una adaptación del equipo.
+   Base gris fría, ligeramente inclinada hacia el navy de la marca, para
+   que no se sienta ajena a la paleta sin repetir el navy institucional.
+   El olivo se aclara porque el #667306 sobre fondo oscuro es ilegible.
+   Todos los pares fueron verificados: el más bajo supera 6,5:1.
+   Se aplica de tres formas para cubrir los tres estados posibles del
+   visitante: preferencia del sistema, elección manual clara y oscura.
+   ===================================================================== */
+
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --superficie:#17191C; --card:#1F2226;
+    --borde:#34393E; --borde-fuerte:#454C53;
+    --texto:#E9EBEE; --texto-sec:#A9B0B7; --texto-desh:#717981;
+
+    --info-bg:#1B2831;   --info-fg:#8ECBF5;   /* 8,61:1 */
+    --exito-bg:#1C2A20;  --exito-fg:#7FC98A;  /* 7,58:1 */
+    --advert-bg:#2E2618; --advert-fg:#E0A44A; /* 6,81:1 */
+    --error-bg:#33211F;  --error-fg:#F2938C;  /* 6,77:1 */
+    --neutro-bg:#262A2F; --neutro-fg:#A9B0B7; /* 6,59:1 */
+
+    --accion:#A9BC1C;                         /* con texto #17191C: 8,30:1 */
+    --accion-hover:#BCD02A;
+    --accion-txt:#17191C;
+    --accion-tinte:#262B18;
+    --accion-sobre-claro:#B3C433;
+
+    --barra:#0F1113;
+    --avatar-bg:#343B42;
+
+    --sombra-sm:0 1px 2px rgba(0,0,0,.45);
+    --sombra-md:0 4px 12px rgba(0,0,0,.5);
+    --sombra-lg:0 8px 24px rgba(0,0,0,.6);
+    --foco-borde:#E9EBEE;
+  }
+}
+
+/* La misma paleta, cuando la persona elige el tema oscuro a mano.
+   Se repite a propósito: un token que solo existe dentro de la consulta
+   de medios no aplica cuando el usuario eligió el tema manualmente. */
+:root[data-theme="dark"]{
+  --superficie:#17191C; --card:#1F2226;
+  --borde:#34393E; --borde-fuerte:#454C53;
+  --texto:#E9EBEE; --texto-sec:#A9B0B7; --texto-desh:#717981;
+  --info-bg:#1B2831;   --info-fg:#8ECBF5;
+  --exito-bg:#1C2A20;  --exito-fg:#7FC98A;
+  --advert-bg:#2E2618; --advert-fg:#E0A44A;
+  --error-bg:#33211F;  --error-fg:#F2938C;
+  --neutro-bg:#262A2F; --neutro-fg:#A9B0B7;
+  --accion:#A9BC1C; --accion-hover:#BCD02A; --accion-txt:#17191C;
+  --accion-tinte:#262B18; --accion-sobre-claro:#B3C433;
+  --barra:#0F1113; --avatar-bg:#343B42;
+  --sombra-sm:0 1px 2px rgba(0,0,0,.45);
+  --sombra-md:0 4px 12px rgba(0,0,0,.5);
+  --sombra-lg:0 8px 24px rgba(0,0,0,.6);
+  --foco-borde:#E9EBEE;
+}
+
+/* =====================================================================
+   MAPEO A TAILWIND
+   ---------------------------------------------------------------------
+   Tailwind v4 — pegar en el CSS principal, después de @import "tailwindcss":
+
+     @theme {
+       --color-navy-900: #1F3140;
+       --color-navy-800: #274152;
+       --color-navy-700: #2F4E63;
+       --color-olive-600: #667306;
+       --color-olive-700: #4F5905;
+       --color-olive-800: #3D4504;
+       --color-cyan-300: #6BCCF2;
+       --color-red-700: #BE0811;
+       --color-info: #1565C0;
+       --color-info-bg: #E3F2FD;
+       --color-exito: #2B762E;
+       --color-exito-bg: #E8F2E9;
+       --color-advert: #965900;
+       --color-advert-bg: #FDF3E2;
+       --color-error: #B3261E;
+       --color-error-bg: #FCE9E7;
+       --color-neutro: #5F6B75;
+       --color-neutro-bg: #EEF2F7;
+       --color-superficie: #F7F8FA;
+       --color-borde: #DDE3EA;
+       --font-sans: "Public Sans", ui-sans-serif, system-ui, sans-serif;
+       --radius-md: 6px;
+       --radius-lg: 8px;
+     }
+
+   ---------------------------------------------------------------------
+   Tailwind v3 — tailwind.config.js:
+
+     theme: {
+       extend: {
+         colors: {
+           navy:  { 700:'#2F4E63', 800:'#274152', 900:'#1F3140' },
+           olive: { 600:'#667306', 700:'#4F5905', 800:'#3D4504' },
+           cyan:  { 300:'#6BCCF2' },
+           red:   { 700:'#BE0811' },
+           info:   { DEFAULT:'#1565C0', bg:'#E3F2FD' },
+           exito:  { DEFAULT:'#2B762E', bg:'#E8F2E9' },
+           advert: { DEFAULT:'#965900', bg:'#FDF3E2' },
+           error:  { DEFAULT:'#B3261E', bg:'#FCE9E7' },
+           neutro: { DEFAULT:'#5F6B75', bg:'#EEF2F7' },
+           superficie: '#F7F8FA',
+           borde: '#DDE3EA',
+         },
+         fontFamily: { sans: ['Public Sans', 'ui-sans-serif', 'system-ui'] },
+         borderRadius: { md:'6px', lg:'8px', full:'999px' },
+         boxShadow: {
+           sm: '0 1px 2px rgba(31,49,64,.06), 0 1px 3px rgba(31,49,64,.08)',
+           md: '0 2px 4px rgba(31,49,64,.06), 0 4px 12px rgba(31,49,64,.08)',
+           lg: '0 8px 24px rgba(31,49,64,.12)',
+         },
+       }
+     }
+   ===================================================================== */
