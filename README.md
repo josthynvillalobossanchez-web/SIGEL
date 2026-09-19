@@ -59,7 +59,7 @@ El sistema se desarrolla considerando controles de autenticación, autorización
 ```
 SIGEL/
 ├── backend/            API en NestJS + Prisma
-├── frontend/           Interfaz en React + Vite
+├── frontend/           Interfaz en React + Vite (pendiente de crear)
 ├── docs/               Documentación del proyecto
 └── docker-compose.yml  MySQL 8.4 para desarrollo
 ```
@@ -84,6 +84,8 @@ comunes, está en [`docs/GUIA_DESARROLLO.md`](docs/GUIA_DESARROLLO.md).
 ## Estado del proyecto
 
 Sprint 1 en desarrollo: autenticación y usuarios, funcionarios y expediente, y gestión documental. Las fases de análisis, diseño y prototipado están concluidas y el prototipo de interfaces fue aprobado por el supervisor.
+
+Al 19 de setiembre de 2026 el backend ya levanta contra MySQL: el modelo de datos del Sprint 1 está migrado, los permisos, roles y catálogos quedaron sembrados y el endpoint `GET /api/salud` responde con la base conectada. El siguiente paso es el módulo de autenticación.
 
 ## Proyecto
 

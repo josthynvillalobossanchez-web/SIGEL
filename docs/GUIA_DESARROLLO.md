@@ -136,6 +136,32 @@ Qué hace cada uno:
 4. **`db:seed`** carga los datos base: los 19 permisos, los cinco roles de sistema, los
    regímenes de vacaciones, los tipos de documento y la cuenta del Súper Administrador.
 
+> **Si `npm install` avisa que bloqueó scripts de instalación.** npm ya no ejecuta los
+> scripts de los paquetes sin permiso, y `argon2`, `prisma`, `@prisma/engines` y `esbuild`
+> los necesitan. Apruébelos y vuelva a instalar:
+>
+> ```powershell
+> npm install-scripts approve argon2
+> npm install-scripts approve prisma
+> npm install-scripts approve @prisma/engines
+> npm install-scripts approve esbuild
+> npm install
+> ```
+>
+> No corra `npm audit fix --force`: cambia versiones mayores y rompe el proyecto.
+
+> **Si `prisma:migrate` falla con el error P3014.** Para comparar el esquema, Prisma crea una
+> base temporal aparte, la *shadow database*, y el usuario `sigel` necesita permiso para
+> crearla. Entre al contenedor como root y otórguelo solo sobre esas bases temporales:
+>
+> ```powershell
+> docker exec -it sigel-mysql mysql -u root -p
+> ```
+> ```sql
+> GRANT ALL PRIVILEGES ON `prisma_migrate_shadow_db%`.* TO 'sigel'@'%';
+> FLUSH PRIVILEGES;
+> ```
+
 > El seed **no** carga funcionarios, departamentos ni puestos. Esa carga inicial la hace
 > la Municipalidad desde el sistema.
 
@@ -202,14 +228,15 @@ SIGEL\
 │   │   ├── schema.prisma   el modelo de datos
 │   │   ├── migrations\     historial de cambios de la base
 │   │   └── seed.ts         datos base
-│   ├── src\
-│   │   ├── main.ts         arranque de la API
-│   │   ├── app.module.ts   módulo raíz
-│   │   ├── prisma\         conexión a la base
-│   │   └── salud\          endpoint de comprobación
-│   └── generated\          cliente de Prisma (se genera, no se sube)
-├── frontend\               React + Vite (siguiente paso)
+│   └── src\
+│       ├── main.ts         arranque de la API
+│       ├── app.module.ts   módulo raíz
+│       ├── prisma\         conexión a la base
+│       ├── salud\          endpoint de comprobación
+│       └── generated\      cliente de Prisma (se genera, no se sube)
+├── frontend\               React + Vite (todavía no existe; se crea más adelante)
 └── docs\                   documentación del proyecto
+    └── _trabajo\           respaldos y borradores, fuera de Git
 ```
 
 ---
@@ -250,4 +277,9 @@ seguir con el Talent Pool en `main`.
 | `Access denied for user 'sigel'` | La contraseña de `DATABASE_URL` no coincide con la del `.env` de la raíz |
 | `Can't reach database server at localhost:3307` | El contenedor está apagado: `docker compose up -d` |
 | `Environment variable not found: DATABASE_URL` | Falta `backend\.env` o está incompleto |
-| Error al generar el cliente de Prisma | Corra `npm run prisma:generate` de nuevo; si persiste, borre `backend\generated` y repita |
+| Error al generar el cliente de Prisma | Corra `npm run prisma:generate` de nuevo; si persiste, borre `backend\src\generated` y repita |
+| `TS6059: File is not under rootDir` | El cliente de Prisma quedó fuera de `src`. El `output` del generador debe ser `../src/generated/prisma` |
+| `P3014: could not create the shadow database` | Al usuario `sigel` le falta el permiso sobre `prisma_migrate_shadow_db%` (ver 4.2) |
+| npm avisa que ignoró scripts de instalación | Apruebe `argon2`, `prisma`, `@prisma/engines` y `esbuild` (ver 4.2) |
+| `ECONNRESET` o `EPERM` durante `npm install` | Cierre VS Code, pause OneDrive, borre `node_modules` y `package-lock.json`, corra `npm cache verify` y reinstale |
+| `git push` responde `403 Permission denied` | Git se está autenticando con otra cuenta de GitHub. Esa cuenta debe ser colaboradora del repositorio |

@@ -49,15 +49,28 @@ Decisión tomada el 16/09/2026: *el proyecto va atrasado respecto al cronograma*
 más prototipos: los Sprints 2 y 3 se programan directo, tomando el prototipo del Sprint 1 como
 referencia visual y de interacción y reusando los mismos tokens y componentes.
 
+Al **19/09/2026** el backend ya corre de punta a punta en la máquina de Josthyn: MySQL 8.4 en
+Docker, migración inicial aplicada, seed cargado y `GET /api/salud` respondiendo
+`{"sistema":"SIGEL","estado":"operativo","baseDeDatos":"conectada"}`. Ese mismo día el proyecto
+se versionó en GitHub (ver "Repositorio en GitHub" más abajo). La épica que sigue es la de
+autenticación.
+
 ### Lo que toca ahora, en orden
 
-1. **Informe de Avance Intermedio** (generado el 16/09 en `Proyectos\Informe_Avance_Intermedio_SIGEL.docx`; faltan capturas de Jira/GitHub, minutas y el criterio de Joseph) del curso EIF408 (entrega: sábado 19/09/2026, por correo
-   desde la cuenta UNA). Word editable, Arial, con la guía `EIF408-04-Guia Avance Intermedio`.
-   Requiere además el *Aval del Patrocinador* firmado por Joseph y Josthyn.
-2. **Resolver los pendientes de §8** que bloquean partes del Sprint 1 (dónde se guardan los
-   archivos del expediente y si se elimina `nombreUsuario` del DBML).
-3. **Desarrollo del Sprint 1** (en curso desde el 17/09; ver "Entorno de desarrollo" abajo):
-   autenticación, gestión de usuarios, roles/permisos y expediente laboral.
+1. **Épica de autenticación**, el paso inmediato: login que valida contra Argon2id, token JWT
+   de sesión, cambio obligatorio de contraseña en el primer ingreso, bloqueo de tres minutos a
+   los tres intentos fallidos, recuperación con código al correo y el guard que revisa los
+   permisos `modulo.accion`.
+2. **Resto del backend del Sprint 1**: usuarios y roles, funcionarios, expediente, documentos
+   (baja lógica y archivos en el servidor) y bitácora.
+3. **Frontend en React + Vite**, una vez que los endpoints respondan, reusando los tokens y
+   componentes del prototipo aprobado.
+4. **Informe de Avance Intermedio** (generado el 16/09 en
+   `Proyectos\Informe_Avance_Intermedio_SIGEL.docx`, entrega sábado 19/09/2026 por correo desde
+   la cuenta UNA, Word editable en Arial según la guía `EIF408-04-Guia Avance Intermedio`, con el
+   *Aval del Patrocinador* firmado). Le faltan las capturas de Jira/GitHub, las minutas y el
+   criterio de Joseph, que los aporta Josthyn.
+5. **Cerrar el pendiente §8-2**: la ruta concreta del servidor de archivos, que define TI.
 
 ### Entorno de desarrollo (armado el 17/09/2026)
 
@@ -76,26 +89,60 @@ referencia visual y de interacción y reusando los mismos tokens y componentes.
     `@nestjs/schematics` 12 exige **TypeScript >= 6**, y las herramientas piden **Node
     >= 22.22.3** (o 24 LTS).
   - **Prisma 7** ya no lleva la URL en `schema.prisma`: usa **`prisma.config.ts`** en la raíz
-    del backend, el generador es **`prisma-client`** con `output` obligatorio
-    (`backend/generated/prisma`), el cliente se importa desde `../generated/prisma/client.js`
-    y la conexión necesita el **driver adapter `@prisma/adapter-mariadb`** (sirve para MySQL).
-    `migrate dev` ya no corre `generate` ni `seed` automáticamente.
-- **Verificación hecha:** `tsc --noEmit` y `nest build` pasan. El `prisma generate` y las
-  migraciones no se pudieron correr desde aquí (el proxy bloquea `binaries.prisma.sh`); los
-  corre Josthyn en Windows.
+    del backend, el generador es **`prisma-client`** con `output` obligatorio, y el cliente se
+    genera como **código TypeScript**, así que tiene que quedar **dentro de `src`**:
+    `backend/src/generated/prisma`. Si se deja fuera, `tsc` falla con **TS6059** porque el
+    archivo queda afuera del `rootDir`. Se importa desde `../generated/prisma/client.js` en el
+    código de `src`, y desde `../src/generated/prisma/client.js` en `prisma/seed.ts`. La conexión
+    necesita el **driver adapter `@prisma/adapter-mariadb`** (sirve para MySQL) y `migrate dev`
+    ya no corre `generate` ni `seed` automáticamente.
+- **Verificación hecha (18 y 19/09/2026, en la máquina de Josthyn):** `tsc --noEmit` y
+  `nest build` pasan, `prisma generate` produce el cliente, la migración
+  `20260919022756_inicial` quedó aplicada sobre MySQL, el seed cargó permisos, roles,
+  regímenes, tipos de documento y la cuenta del Súper Administrador, y `GET /api/salud`
+  responde con la base conectada. Desde el entorno de Claude **no** se pueden correr
+  `prisma generate` ni las migraciones (el proxy bloquea `binaries.prisma.sh`): esos comandos
+  los corre siempre Josthyn en Windows.
+- **Máquina de desarrollo:** Windows con Node 24.19.0. El contenedor se llama `sigel-mysql` y
+  expone el puerto **3307**. Las credenciales de MySQL se regeneraron el 17/09 con
+  `docker compose down -v` porque la contraseña anterior se había perdido; viven únicamente en
+  los `.env`, que no se versionan.
 - **Ramas:** `main` = SIGEL completo. Cuando el expediente esté terminado (antes del Talent
   Pool) se saca la rama **`piscinas`** desde `main`, sin Talent Pool, para el proyecto de las
   piscinas municipales.
 
 ### Estado del backend (Sprint 1)
 
-Ya está en el repositorio: estructura NestJS (ESM), `PrismaService` global, endpoint
-`GET /api/salud`, `schema.prisma` con las 15 tablas del Sprint 1 traducidas del DBML v3
-(incluye `usuarioBajaId`, `fechaBaja` y `motivoBaja` en `documento`) y `prisma/seed.ts` con
-19 permisos, los 5 roles de sistema, los regímenes de vacaciones, los tipos de documento y la
-cuenta del Súper Administrador. Falta: autenticación (Argon2id + JWT), guard de permisos
-`modulo.accion`, módulos de usuarios/roles, funcionarios, expediente y documentos, y el
-frontend.
+**Hecho y funcionando:** estructura NestJS (ESM), `PrismaService` global con el adapter de
+MariaDB, endpoint `GET /api/salud`, `schema.prisma` con las 15 tablas del Sprint 1 traducidas
+del DBML v3 (incluye `usuarioBajaId`, `fechaBaja` y `motivoBaja` en `documento`), la migración
+inicial aplicada y `prisma/seed.ts` cargando 19 permisos, los 5 roles de sistema, los 2
+regímenes de vacaciones, los 6 tipos de documento y la cuenta del Súper Administrador con
+contraseña temporal.
+
+**Falta:** autenticación (Argon2id + JWT), guard de permisos `modulo.accion`, módulos de
+usuarios y roles, funcionarios, expediente, documentos y bitácora.
+
+**Sobre el frontend:** la carpeta `frontend\` **todavía no existe**, el proyecto de Vite no se
+ha creado. Es a propósito: la pantalla de login no tiene contra qué autenticarse mientras no
+exista el endpoint que valide la contraseña y devuelva el token. Primero se levanta el backend
+del Sprint 1 y se prueba con Postman; después se monta el frontend reusando el diseño del
+prototipo aprobado.
+
+### Repositorio en GitHub (versionado el 19/09/2026)
+
+- Remoto: `https://github.com/josthynvillalobossanchez-web/SIGEL.git`, rama `main`.
+- El primer commit lleva los cimientos: el backend completo del Sprint 1 y toda la
+  documentación vigente (contexto, DBML v3, los dos `.docx` de análisis, el prototipo y la
+  guía de desarrollo).
+- Fuera de Git por `.gitignore`: `node_modules`, `dist`, `backend/src/generated`, los `.env` y
+  la carpeta **`docs\_trabajo\`**, que es donde van respaldos, borradores y material del curso.
+  Lo que se deje ahí no sube a GitHub, así que nunca debe ser la única copia de nada.
+- Se eliminaron las versiones históricas del DBML (`SIGEL_BaseDatos.dbml`, `_v2` y
+  `_Extendido`): de aquí en adelante el historial de cambios lo lleva el propio repositorio.
+- El repositorio pertenece a la cuenta `josthynvillalobossanchez-web`. La cuenta con la que
+  Josthyn trabaja a diario se agregó como colaboradora para poder empujar; los commits quedan
+  firmados con su correo institucional de la UNA.
 
 ### Stack tecnológico (definido)
 
@@ -386,7 +433,7 @@ La barra lateral del prototipo lo dice al pie.
 
 | # | Pendiente | Quién decide |
 |---|---|---|
-| 2 | **Dónde se guardan físicamente los archivos** del expediente (ruta de servidor, nube, permisos, respaldo). La BD solo guarda la referencia. | Joseph / TI |
+| 2 | **Ruta concreta del servidor de archivos.** Ya se decidió que los documentos del expediente viven en el servidor de la Municipalidad y que la BD solo guarda la referencia; falta la ruta exacta, los permisos de esa carpeta y el esquema de respaldo. | Joseph / TI |
 | 3 | **Horas extra**: Joseph delegó la definición. Falta proponerle un flujo. | Josthyn propone |
 | 4a | **Texto del consentimiento informado** del Talent Pool: lo define Joseph. | Joseph |
 | 4b | **Envío de notificaciones** desde el dominio `@munipalmares.go.cr`: confirmar las restricciones del servidor de correo para envío automático. | Joseph / TI |
@@ -472,6 +519,10 @@ Preferencias que Josthyn ya expresó y conviene mantener:
 8. **Respetar la jerarquía de fuentes** (§3) y reportar contradicciones en vez de resolverlas.
 9. En entregables formales usar la **numeración del Perfil del Proyecto** (§2).
 10. No abrir `SIGEL\.env` ni tocar `SIGEL\.git`.
+11. Nada de respaldos, borradores ni material del curso dentro del repositorio: eso va en
+    `docs\_trabajo\`, que Git ignora.
+12. Antes de borrar archivos, listarlos y pedir confirmación explícita.
+13. Programar **paso a paso**, no todo de golpe: Josthyn escribe el código y Claude explica.
 
 ---
 
