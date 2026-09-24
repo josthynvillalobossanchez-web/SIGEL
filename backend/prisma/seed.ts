@@ -20,12 +20,13 @@ import { randomBytes } from 'node:crypto';
 import * as argon2 from 'argon2';
 import { PrismaMariaDb } from '@prisma/adapter-mariadb';
 import { PrismaClient } from '../src/generated/prisma/client.js';
+import { configuracionDeConexion } from '../src/prisma/configuracion-conexion.js';
 
 const url = process.env.DATABASE_URL;
 if (!url) {
   throw new Error('Falta DATABASE_URL en backend/.env');
 }
-const prisma = new PrismaClient({ adapter: new PrismaMariaDb(url) });
+const prisma = new PrismaClient({ adapter: new PrismaMariaDb(configuracionDeConexion(url)) });
 
 // ---------------------------------------------------------------------
 // Catalogo de permisos del Sprint 1

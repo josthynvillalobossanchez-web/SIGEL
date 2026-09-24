@@ -276,6 +276,8 @@ seguir con el Talent Pool en `main`.
 | `port is already allocated` | Algo más usa el puerto 3307. Cambie el puerto en `docker-compose.yml` y en `DATABASE_URL` |
 | `Access denied for user 'sigel'` | La contraseña de `DATABASE_URL` no coincide con la del `.env` de la raíz |
 | `Can't reach database server at localhost:3307` | El contenedor está apagado: `docker compose up -d` |
+| `connect ECONNREFUSED ::1:3307` o la API tarda 10 s y devuelve 500 | En `DATABASE_URL` use `127.0.0.1` en lugar de `localhost`. Windows resuelve `localhost` como IPv6 y Docker publica el puerto solo en IPv4 |
+| `RSA public key is not available client side` | Autenticación de MySQL 8. Lo resuelve `allowPublicKeyRetrieval` en `src/prisma/configuracion-conexion.ts`; si reaparece, revise que ese archivo exista y que el contenedor esté arriba |
 | `Environment variable not found: DATABASE_URL` | Falta `backend\.env` o está incompleto |
 | Error al generar el cliente de Prisma | Corra `npm run prisma:generate` de nuevo; si persiste, borre `backend\src\generated` y repita |
 | `TS6059: File is not under rootDir` | El cliente de Prisma quedó fuera de `src`. El `output` del generador debe ser `../src/generated/prisma` |
@@ -283,3 +285,4 @@ seguir con el Talent Pool en `main`.
 | npm avisa que ignoró scripts de instalación | Apruebe `argon2`, `prisma`, `@prisma/engines` y `esbuild` (ver 4.2) |
 | `ECONNRESET` o `EPERM` durante `npm install` | Cierre VS Code, pause OneDrive, borre `node_modules` y `package-lock.json`, corra `npm cache verify` y reinstale |
 | `git push` responde `403 Permission denied` | Git se está autenticando con otra cuenta de GitHub. Esa cuenta debe ser colaboradora del repositorio |
+| Se perdió la contraseña de una cuenta | `npm run contrasena:restablecer -- correo@munipalmares.go.cr`. Genera una nueva, la imprime una sola vez y obliga a cambiarla en el primer ingreso. **Nunca** comente validaciones del código para entrar |

@@ -340,6 +340,36 @@ Estas ya están validadas. **Trátelas como verdad** salvo que Josthyn diga lo c
 
 ### Decisiones puntuales
 
+**Consultadas a Joseph el 23/09/2026:**
+
+- **Dónde se guardan los archivos del expediente**: en una carpeta del propio backend, la que
+  el equipo defina; no hay una ubicación impuesta por TI. Se configura con `RUTA_ARCHIVOS` en
+  el `.env`, queda fuera de Git, se organiza por funcionario, el archivo se guarda con un
+  nombre generado (no el original) y **nunca se sirve como carpeta pública**: la descarga pasa
+  siempre por el backend, que verifica el permiso antes de entregar el archivo.
+- **Envío de correos**: se hará desde una cuenta que ya tiene la Municipalidad, presumiblemente
+  del dominio institucional. TI debe pasar servidor, puerto, cuenta, si exige TLS y si el
+  dominio autoriza el envío desde una aplicación. Mientras tanto el envío queda detrás de una
+  interfaz: en desarrollo el código se imprime en consola y en producción se enchufa el correo
+  real sin tocar la lógica.
+- **Carga inicial de datos**: la hace una persona de Recursos Humanos desde el sistema. El
+  equipo de práctica, a lo sumo, registra funcionarios o usuarios como apoyo. Confirma que la
+  semilla no debe crear funcionarios, departamentos ni puestos.
+- **Historial laboral (Ficha 17)**: Joseph delegó el diseño. Se resuelve como pestaña de solo
+  lectura, en línea de tiempo descendente, con los movimientos del funcionario: cambios de
+  puesto, departamento, jornada, salario y régimen de vacaciones; el ingreso y la salida; y los
+  documentos agregados o dados de baja en su expediente. Cada entrada muestra fecha, qué
+  cambió, de qué valor a cuál y quién lo hizo. Se alimenta de `bitacoraCambio` filtrada por ese
+  funcionario, sin tabla aparte. Si Joseph pide otra cosa, se ajusta.
+- **Sesión sobre HTTPS (asumido, pendiente de confirmar)**: se programa asumiendo que SIGEL se
+  sirve por HTTPS, aunque sea dentro de la red interna. Por lo tanto el token de sesión viaja
+  en una **cookie `httpOnly`, `Secure` y `SameSite`**, no en `localStorage`, de modo que un XSS
+  no pueda robarla. En desarrollo la marca `Secure` se apaga por `.env`, porque `localhost` no
+  usa HTTPS. Si Joseph confirmara que no hay certificado, habría que rehacer el manejo de
+  sesión completo.
+
+**Decisiones anteriores:**
+
 - **Vacaciones**: tope de 2 periodos acumulados, con avisos antes de llegar al tope.
   Solo días completos, nada de medios días.
 - **Perfil propio (autoservicio, aclarado 16/09/2026)**: el funcionario edita sus **datos personales
@@ -433,15 +463,18 @@ La barra lateral del prototipo lo dice al pie.
 
 | # | Pendiente | Quién decide |
 |---|---|---|
-| 2 | **Ruta concreta del servidor de archivos.** Ya se decidió que los documentos del expediente viven en el servidor de la Municipalidad y que la BD solo guarda la referencia; falta la ruta exacta, los permisos de esa carpeta y el esquema de respaldo. | Joseph / TI |
+| 2 | **Certificado HTTPS**: confirmar con Joseph que SIGEL se servirá por HTTPS. Se está programando asumiendo que sí (ver §6). | Joseph / TI |
 | 3 | **Horas extra**: Joseph delegó la definición. Falta proponerle un flujo. | Josthyn propone |
 | 4a | **Texto del consentimiento informado** del Talent Pool: lo define Joseph. | Joseph |
-| 4b | **Envío de notificaciones** desde el dominio `@munipalmares.go.cr`: confirmar las restricciones del servidor de correo para envío automático. | Joseph / TI |
-| 4 | **Ficha 17 — Historial laboral**: en el prototipo es una pestaña marcador de posición. Falta diseñarla (solo lectura, alimentada por la bitácora). | Josthyn / Joseph |
+| 4b | **Datos del servidor de correo**: servidor, puerto, cuenta, TLS y autorización del dominio para envío desde la aplicación. Es lo único que falta para cerrar la recuperación de contraseña. | TI |
 
 > Resueltos el 16/09/2026: el **stack** quedó definido (§2), Joseph **aprobó el prototipo v4** sin
-> correcciones, el **almacenamiento de archivos** es el servidor de la Municipalidad y `nombreUsuario`
-> **se da por eliminado** (se entra con el correo; ya se quitó del DBML v3).
+> correcciones y `nombreUsuario` **se da por eliminado** (se entra con el correo; ya se quitó del
+> DBML v3).
+>
+> Resueltos el 23/09/2026 (ver §6): **dónde se guardan los archivos**, **quién hace la carga
+> inicial de datos**, el **diseño del historial laboral** y el **envío de correos**, que queda
+> a la espera únicamente de los datos técnicos del servidor.
 
 ### Pendientes para el prototipo v5 (no hacer hasta terminar el informe intermedio)
 
@@ -478,10 +511,21 @@ personas con discapacidad visual**. Lo que ya está definido:
   si hace falta otro perfil, se crea desde el panel sin tocar código.
 - **Contraseñas cifradas**. Ni Informática ni RRHH pueden verlas. El cambio se hace con código de
   verificación enviado al correo.
-- **Primer ingreso**: la contraseña inicial es temporal y el sistema obliga a cambiarla.
+- **Primer ingreso**: la contraseña inicial es temporal y el sistema obliga a cambiarla. Mientras
+  no la cambie, la persona solo puede consultar su sesión y cambiar la contraseña; el resto de la
+  API le responde `CONTRASENA_TEMPORAL`.
+- **Política de contraseñas (decidida por Josthyn el 24/09/2026)**: mínimo 8 caracteres, con al
+  menos una minúscula, una mayúscula, un número y un carácter especial. Vive en
+  `backend/src/autenticacion/politica-contrasena.ts` y se aplica al crear o cambiar la contraseña,
+  nunca al usarla para entrar.
 - **Bloqueo**: 3 intentos fallidos → bloqueo temporal de 3 minutos.
 - **Bitácora**: se registra abrir un expediente y abrir o descargar un documento, con usuario,
   fecha y documento. **No** se registran consultas generales ni accesos fallidos (T-4).
+- **Cambios de contraseña en bitácora (decisión de Josthyn, 24/09/2026)**: sí se auditan, tanto el
+  cambio voluntario como el restablecimiento con código, con usuario, fecha y dirección IP. Es el
+  rastro que permite investigar un cambio no autorizado. **Nunca** se guarda la contraseña ni su
+  hash, solo la constancia de que hubo un cambio. No contradice lo anterior: lo que Joseph descartó
+  auditar son los accesos, no las modificaciones sobre la cuenta.
 - **Baja lógica** de documentos (Ficha 42): se ocultan, nunca se borran, y se pueden restaurar.
   **No existe el borrado físico**: eso es lo que sostiene la trazabilidad del expediente.
 - **Baja de un documento propio (decisión 16/09/2026)** — permiso nuevo `documentos.darDeBajaPropio`.

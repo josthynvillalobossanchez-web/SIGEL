@@ -1,6 +1,7 @@
 import { Injectable, Logger, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
 import { PrismaMariaDb } from '@prisma/adapter-mariadb';
 import { PrismaClient } from '../generated/prisma/client.js';
+import { configuracionDeConexion } from './configuracion-conexion.js';
 
 /**
  * Conexion unica a MySQL para toda la aplicacion.
@@ -17,7 +18,7 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
     if (!url) {
       throw new Error('Falta DATABASE_URL en backend/.env (copie .env.example y complete los valores).');
     }
-    super({ adapter: new PrismaMariaDb(url) });
+    super({ adapter: new PrismaMariaDb(configuracionDeConexion(url)) });
   }
 
   async onModuleInit(): Promise<void> {

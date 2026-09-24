@@ -13,7 +13,8 @@
     "prisma:migrate": "prisma migrate dev",
     "prisma:studio": "prisma studio",
     "db:seed": "prisma db seed",
-    "db:reset": "prisma migrate reset"
+    "db:reset": "prisma migrate reset",
+    "contrasena:restablecer": "tsx prisma/restablecer-contrasena.ts"
   },
   "dependencies": {
     "@nestjs/common": "^12.0.0",
@@ -21,11 +22,13 @@
     "@nestjs/core": "^12.0.0",
     "@nestjs/jwt": "^12.0.0",
     "@nestjs/platform-express": "^12.0.0",
+    "@nestjs/throttler": "^6.7.0",
     "@prisma/adapter-mariadb": "^7.10.0",
     "@prisma/client": "^7.10.0",
     "argon2": "^0.45.1",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.15.0",
+    "cookie-parser": "^1.4.7",
     "dotenv": "^17.0.0",
     "mariadb": "^3.4.5",
     "reflect-metadata": "^0.2.2",
@@ -34,6 +37,7 @@
   "devDependencies": {
     "@nestjs/cli": "^12.0.0",
     "@nestjs/schematics": "^12.0.0",
+    "@types/cookie-parser": "^1.4.10",
     "@types/express": "^5.0.0",
     "@types/node": "^22.10.0",
     "prisma": "^7.10.0",
