@@ -85,7 +85,7 @@ comunes, está en [`docs/GUIA_DESARROLLO.md`](docs/GUIA_DESARROLLO.md).
 
 Sprint 1 en desarrollo: autenticación y usuarios, funcionarios y expediente, y gestión documental. Las fases de análisis, diseño y prototipado están concluidas y el prototipo de interfaces fue aprobado por el supervisor.
 
-Al 19 de setiembre de 2026 el backend ya levanta contra MySQL: el modelo de datos del Sprint 1 está migrado, los permisos, roles y catálogos quedaron sembrados y el endpoint `GET /api/salud` responde con la base conectada. El siguiente paso es el módulo de autenticación.
+Al 24 de setiembre de 2026 el backend tiene terminado el módulo de autenticación y seguridad: inicio de sesión con Argon2id, sesión en cookie protegida, bloqueo por intentos fallidos, límite de peticiones por dirección IP, autorización por permisos granulares aplicada a toda la API, cambio obligatorio de contraseña en el primer ingreso, recuperación por correo, manejo uniforme de errores y bitácora de auditoría. Lo siguiente son los módulos de usuarios y roles.
 
 ## Proyecto
 

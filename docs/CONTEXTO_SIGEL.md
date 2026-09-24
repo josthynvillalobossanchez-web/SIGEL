@@ -57,12 +57,10 @@ autenticación.
 
 ### Lo que toca ahora, en orden
 
-1. **Épica de autenticación**, el paso inmediato: login que valida contra Argon2id, token JWT
-   de sesión, cambio obligatorio de contraseña en el primer ingreso, bloqueo de tres minutos a
-   los tres intentos fallidos, recuperación con código al correo y el guard que revisa los
-   permisos `modulo.accion`.
-2. **Resto del backend del Sprint 1**: usuarios y roles, funcionarios, expediente, documentos
-   (baja lógica y archivos en el servidor) y bitácora.
+1. ~~Épica de autenticación~~ **terminada el 24/09/2026** (ver "Estado del backend").
+2. **Resto del backend del Sprint 1**, en este orden: usuarios, roles, asignación de roles y
+   permisos individuales, funcionarios, expediente y documentos (baja lógica y archivos en el
+   servidor).
 3. **Frontend en React + Vite**, una vez que los endpoints respondan, reusando los tokens y
    componentes del prototipo aprobado.
 4. **Informe de Avance Intermedio** (generado el 16/09 en
@@ -113,15 +111,51 @@ autenticación.
 
 ### Estado del backend (Sprint 1)
 
-**Hecho y funcionando:** estructura NestJS (ESM), `PrismaService` global con el adapter de
+**Cimientos (17–19/09):** estructura NestJS (ESM), `PrismaService` global con el adapter de
 MariaDB, endpoint `GET /api/salud`, `schema.prisma` con las 15 tablas del Sprint 1 traducidas
 del DBML v3 (incluye `usuarioBajaId`, `fechaBaja` y `motivoBaja` en `documento`), la migración
 inicial aplicada y `prisma/seed.ts` cargando 19 permisos, los 5 roles de sistema, los 2
 regímenes de vacaciones, los 6 tipos de documento y la cuenta del Súper Administrador con
 contraseña temporal.
 
-**Falta:** autenticación (Argon2id + JWT), guard de permisos `modulo.accion`, módulos de
-usuarios y roles, funcionarios, expediente, documentos y bitácora.
+**Autenticación y seguridad (22–24/09), probado de punta a punta:**
+
+- Inicio de sesión con verificación **Argon2id**, bloqueo de tres minutos a los tres intentos
+  fallidos y límite de peticiones por dirección IP.
+- La sesión viaja en una **cookie `httpOnly`, `Secure` y `SameSite=strict`**, no en
+  `localStorage`. El token no lleva los permisos dentro: el guard los consulta en cada
+  petición, de modo que un cambio de rol surte efecto de inmediato.
+- **Guard de sesión global**: la API está cerrada por omisión y solo se abre lo marcado con
+  `@Publico()`.
+- **Guard de permisos** `modulo.accion`, con permisos individuales que pisan los del rol en
+  los dos sentidos.
+- **Cambio obligatorio de contraseña** en el primer ingreso: mientras no la cambie, la persona
+  solo puede ver su sesión y cambiarla.
+- **Recuperación por correo** con código de 6 dígitos, vigencia de 15 minutos y un solo uso,
+  tal como lo muestra el prototipo aprobado.
+- **Filtro global de errores**: toda respuesta de error sale con `statusCode`, `codigo` y
+  `message`, sin trazas ni datos internos. El frontend se guía por `codigo`, nunca por el texto.
+- **Bitácora** con consulta paginada y filtros, que ya audita los cambios de contraseña.
+- **Salida de correo** centralizada: en desarrollo imprime en consola, a la espera de los datos
+  del servidor de la Municipalidad.
+- Comando `npm run contrasena:restablecer` para recuperar una cuenta desde la terminal.
+
+**Endpoints disponibles:**
+
+| Método y ruta | Permiso | Para qué |
+|---|---|---|
+| `POST /api/autenticacion/iniciar-sesion` | público | Inicia sesión y deja la cookie |
+| `POST /api/autenticacion/cerrar-sesion` | público | Borra la cookie |
+| `GET /api/autenticacion/mi-sesion` | con sesión | Datos, roles y permisos efectivos |
+| `POST /api/autenticacion/cambiar-contrasena` | con sesión | Cambio propio y del primer ingreso |
+| `POST /api/autenticacion/solicitar-recuperacion` | público | Envía el código al correo |
+| `POST /api/autenticacion/restablecer-contrasena` | público | Cambia la contraseña con el código |
+| `GET /api/permisos` | `permisos.editar` | Catálogo de permisos por módulo |
+| `GET /api/bitacora` | `bitacora.ver` | Auditoría, paginada y con filtros |
+| `GET /api/salud` | público | Comprobación del servicio |
+
+**Falta:** módulos de usuarios y roles, asignación de roles y permisos, funcionarios,
+expediente y documentos. Y todo el frontend.
 
 **Sobre el frontend:** la carpeta `frontend\` **todavía no existe**, el proyecto de Vite no se
 ha creado. Es a propósito: la pantalla de login no tiene contra qué autenticarse mientras no

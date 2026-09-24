@@ -231,6 +231,11 @@ SIGEL\
 │   └── src\
 │       ├── main.ts         arranque de la API
 │       ├── app.module.ts   módulo raíz
+│       ├── autenticacion\  login, sesión, permisos y contraseñas
+│       ├── bitacora\       registro de auditoría
+│       ├── comun\          piezas compartidas: paginación, errores, IP
+│       ├── correo\         salida de correo del sistema
+│       ├── permisos\       catálogo de permisos
 │       ├── prisma\         conexión a la base
 │       ├── salud\          endpoint de comprobación
 │       └── generated\      cliente de Prisma (se genera, no se sube)
@@ -253,6 +258,45 @@ SIGEL\
   backend**. La validación del frontend nunca es suficiente.
 - Las contraseñas se guardan con **Argon2id** y jamás se registran en la bitácora ni en
   los logs.
+- Los **imports relativos llevan extensión `.js`**, aunque el archivo sea `.ts`. NestJS 12
+  se distribuye como ESM y sin eso la compilación falla.
+- El **controlador no contiene reglas de negocio**: recibe, deja que el DTO valide y llama
+  al servicio. Toda la lógica vive en el servicio.
+- Toda consulta de Prisma usa **`select` explícito**. Nunca se devuelve la entidad completa,
+  para que datos como `contrasenaHash` no puedan escaparse por descuido.
+- Toda lista que pueda crecer se **pagina** con `PaginacionDto`, con un tope de 100 registros
+  por página que el cliente no puede aumentar.
+- Los errores se lanzan con **código propio**:
+  `throw new ForbiddenException({ codigo: 'SIN_PERMISO', message: '...' })`. El filtro global
+  se encarga del formato; el frontend se guía por `codigo`, nunca por el texto del mensaje.
+- Las operaciones importantes anotan en la **bitácora dentro de la misma transacción** que
+  hace el cambio, para que no pueda quedar el cambio sin su rastro.
+
+---
+
+## 7b. Endpoints disponibles
+
+Todos cuelgan de `/api`. La API está **cerrada por omisión**: si un endpoint no
+aparece marcado como público, exige sesión.
+
+| Método y ruta | Acceso | Para qué |
+|---|---|---|
+| `POST /autenticacion/iniciar-sesion` | público | Inicia sesión y deja la cookie de sesión |
+| `POST /autenticacion/cerrar-sesion` | público | Borra la cookie |
+| `GET /autenticacion/mi-sesion` | con sesión | Datos de la cuenta, roles y permisos efectivos |
+| `POST /autenticacion/cambiar-contrasena` | con sesión | Cambio propio y del primer ingreso |
+| `POST /autenticacion/solicitar-recuperacion` | público | Envía un código de 6 dígitos al correo |
+| `POST /autenticacion/restablecer-contrasena` | público | Cambia la contraseña con ese código |
+| `GET /permisos` | `permisos.editar` | Catálogo de permisos agrupado por módulo |
+| `GET /bitacora` | `bitacora.ver` | Auditoría, paginada y con filtros |
+| `GET /salud` | público | Comprobación del servicio y de la base |
+
+La sesión viaja en una cookie que el JavaScript de la página no puede leer, así que
+Postman y el navegador la manejan solos: basta con iniciar sesión una vez.
+
+Códigos de error más frecuentes: `CREDENCIALES_INVALIDAS`,
+`CUENTA_BLOQUEADA_TEMPORALMENTE`, `CONTRASENA_TEMPORAL`, `SIN_SESION`, `SIN_PERMISO`,
+`DATOS_INVALIDOS`, `JSON_INVALIDO`, `DEMASIADAS_PETICIONES`.
 
 ---
 
