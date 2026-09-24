@@ -215,6 +215,21 @@ npm run db:reset
 Borra los datos, vuelve a aplicar todas las migraciones y corre el seed. **Nunca** se
 usa contra la base de la Municipalidad.
 
+### Datos de prueba
+
+```powershell
+npm run db:datos-de-prueba
+```
+
+Crea seis funcionarios ficticios (Ana, Bruno, Carla, Diego, Elena y Fabián Prueba, con
+cédulas que empiezan en 9) y al final imprime sus identificadores y los de los roles, listos para copiar en
+Postman. Se puede correr las veces que se quiera sin duplicar nada. **Se niega a correr
+si la base no es local**, para que estos datos nunca lleguen a la de la Municipalidad.
+
+Úselo en lugar de cargar filas a mano en Prisma Studio: Studio no genera los UUID
+solo, y un funcionario con `id` inventado (por ejemplo `1`) no sirve, porque la API
+rechaza cualquier identificador que no sea UUID.
+
 ---
 
 ## 6. Estructura del repositorio
@@ -233,11 +248,12 @@ SIGEL\
 │       ├── app.module.ts   módulo raíz
 │       ├── autenticacion\  login, sesión, permisos y contraseñas
 │       ├── bitacora\       registro de auditoría
-│       ├── comun\          piezas compartidas: paginación, errores, IP
+│       ├── comun\          piezas compartidas: paginación, errores, IP, validación de ids
 │       ├── correo\         salida de correo del sistema
 │       ├── permisos\       catálogo de permisos
 │       ├── prisma\         conexión a la base
 │       ├── salud\          endpoint de comprobación
+│       ├── usuarios\       cuentas de usuario y su estado
 │       └── generated\      cliente de Prisma (se genera, no se sube)
 ├── frontend\               React + Vite (todavía no existe; se crea más adelante)
 └── docs\                   documentación del proyecto
@@ -271,6 +287,16 @@ SIGEL\
   se encarga del formato; el frontend se guía por `codigo`, nunca por el texto del mensaje.
 - Las operaciones importantes anotan en la **bitácora dentro de la misma transacción** que
   hace el cambio, para que no pueda quedar el cambio sin su rastro.
+- Todo decorador de validación de un DTO lleva **su mensaje en español**
+  (`@MaxLength(150, { message: '...' })`). Sin él, la librería responde en inglés.
+- Los identificadores que vienen en la ruta se validan con **`uuidValido('cosa')`** de
+  `comun/pipes/uuid.pipe.ts`, no con el `ParseUUIDPipe` de Nest a secas.
+- **Ningún nombre de rol se escribe en el código.** La autorización compara permisos, nunca
+  pregunta "¿es Súper Administrador?". Así, si se crea un rol nuevo desde el sistema, todo
+  sigue funcionando sin tocar código (ver sección 7c).
+- Las consultas que calculan acceso filtran las asignaciones vencidas con `soloVigentes()` y
+  combinan roles y permisos con `resolverAcceso()`, ambos en
+  `autenticacion/permisos-efectivos.ts`. No reescribir ese cálculo en otro lado.
 
 ---
 
@@ -289,14 +315,74 @@ aparece marcado como público, exige sesión.
 | `POST /autenticacion/restablecer-contrasena` | público | Cambia la contraseña con ese código |
 | `GET /permisos` | `permisos.editar` | Catálogo de permisos agrupado por módulo |
 | `GET /bitacora` | `bitacora.ver` | Auditoría, paginada y con filtros |
+| `GET /usuarios` | `usuarios.ver` | Lista de cuentas, con búsqueda y filtros por estado y rol |
+| `GET /usuarios/:id` | `usuarios.ver` | Detalle de una cuenta con sus roles y permisos |
+| `POST /usuarios` | `usuarios.crear` | Crea la cuenta de un funcionario |
+| `PATCH /usuarios/:id/estado` | `usuarios.cambiarEstado` | Activa, inactiva o bloquea una cuenta |
 | `GET /salud` | público | Comprobación del servicio y de la base |
+
+Ojo con `/usuarios/:id`: el `id` es el de la **cuenta**, no el del funcionario. Son dos
+registros distintos: el funcionario es la persona, la cuenta es su acceso al sistema.
 
 La sesión viaja en una cookie que el JavaScript de la página no puede leer, así que
 Postman y el navegador la manejan solos: basta con iniciar sesión una vez.
 
-Códigos de error más frecuentes: `CREDENCIALES_INVALIDAS`,
-`CUENTA_BLOQUEADA_TEMPORALMENTE`, `CONTRASENA_TEMPORAL`, `SIN_SESION`, `SIN_PERMISO`,
-`DATOS_INVALIDOS`, `JSON_INVALIDO`, `DEMASIADAS_PETICIONES`.
+Códigos de error más frecuentes:
+
+| Código | Qué significa |
+|---|---|
+| `CREDENCIALES_INVALIDAS` | Correo o contraseña incorrectos (no distingue cuál, a propósito) |
+| `CUENTA_BLOQUEADA_TEMPORALMENTE` | Tres intentos fallidos; trae `segundosRestantes` |
+| `CUENTA_INACTIVA` | RRHH inactivó la cuenta |
+| `CONTRASENA_TEMPORAL` | Debe cambiar la contraseña del primer ingreso antes de seguir |
+| `SIN_SESION` | No hay sesión o expiró |
+| `SIN_PERMISO` | Tiene sesión, pero no el permiso que exige el endpoint |
+| `DATOS_INVALIDOS` | Falló la validación; el detalle por campo viene en `detalles` |
+| `JSON_INVALIDO` | El cuerpo de la petición está mal escrito |
+| `IDENTIFICADOR_INVALIDO` | El id de la ruta no tiene forma de UUID |
+| `DEMASIADAS_PETICIONES` | Se pasó del límite de peticiones por IP |
+| `ROL_NO_ASIGNABLE` | Quiso asignar un rol con permisos que él no tiene |
+| `CUENTA_CON_MAYOR_ACCESO` | Quiso modificar una cuenta con más permisos que la suya |
+| `NO_PUEDE_MODIFICAR_SU_PROPIA_CUENTA` | Quiso cambiar su propio acceso |
+| `FUNCIONARIO_YA_TIENE_CUENTA` / `CORREO_EN_USO` | Duplicados al crear una cuenta |
+
+---
+
+## 7c. Cómo se reparte el acceso
+
+Esta es la parte del sistema que más conviene entender antes de tocar código.
+
+**Roles y permisos.** Cada operación del sistema exige un permiso con forma
+`modulo.accion` (`usuarios.crear`, `bitacora.ver`...). Los permisos se agrupan en
+**roles**, y cada cuenta tiene uno o varios roles. Además, a una cuenta se le pueden
+dar **permisos individuales** que conceden algo que su rol no da, o quitan algo que
+su rol sí da. El permiso individual siempre manda sobre el del rol.
+
+**Quién puede repartir acceso.** Solo quien tiene `usuarios.editar`, que son el rol
+Administrador (Recursos Humanos) y el Súper Administrador. Y aun así, bajo cinco reglas:
+
+1. **Solo se da lo que se tiene.** Para asignar un rol hay que tener todos sus
+   permisos; para conceder un permiso individual, hay que tenerlo.
+2. **Solo se quita lo que se tiene**, con el mismo criterio.
+3. **No se toca a quien tiene más acceso que uno.** Si la cuenta destino tiene algún
+   permiso que quien actúa no tiene, no se le puede cambiar nada.
+4. **Nadie cambia su propio acceso**: ni roles, ni permisos, ni estado.
+5. **Al editar un rol, solo se le agregan permisos que uno tenga.**
+
+En la práctica: RRHH puede dar los roles Administrador, Aprobador, Solicitante y
+Consulta, pero no puede crear Súper Administradores ni tocar sus cuentas, porque ese
+rol tiene permisos que RRHH no tiene (`bitacora.ver` y `permisos.editar`).
+
+**Suplencias con fecha de vencimiento.** Toda asignación de rol o de permiso puede
+llevar `fechaVencimiento`. Vacía, es permanente. Con fecha, **deja de contar sola**
+ese día, sin que nadie tenga que acordarse de quitarla. Es lo que se usa cuando una
+jefatura se incapacita y RRHH le da el rol Aprobador a otra persona hasta su regreso.
+Las asignaciones vencidas no se borran: quedan como historia de quién tuvo qué acceso.
+
+**Cuidado al agregar permisos nuevos.** Si en un sprint futuro se le agrega un permiso
+al rol Aprobador (por ejemplo `vacaciones.aprobar`), **hay que agregárselo también al
+rol Administrador** en el seed. Si no, por la regla 1, RRHH dejaría de poder asignar
+el rol Aprobador, que es justo lo que necesita para cubrir una ausencia.
 
 ---
 

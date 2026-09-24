@@ -238,6 +238,7 @@ Table usuarioRol {
   usuarioId char(36) [not null, ref: > usuario.id]
   rolId char(36) [not null, ref: > rol.id]
   fechaAsignacion datetime [not null, default: `now()`]
+  fechaVencimiento datetime [note: 'Nulo = permanente. Pasada esta fecha la asignacion deja de contar sola, sin que nadie tenga que quitarla. Pensado para suplencias temporales. Decision del 24/09/2026.']
   asignadoPorId char(36) [ref: > usuario.id]
   indexes {
     (usuarioId, rolId) [unique, name: 'uqUsuarioRol']
@@ -251,6 +252,7 @@ Table usuarioPermiso {
   permisoId char(36) [not null, ref: > permiso.id]
   otorgado boolean [not null, default: true, note: 'true = se concede aunque el rol no lo de. false = se revoca aunque el rol si lo de.']
   fechaAsignacion datetime [not null, default: `now()`]
+  fechaVencimiento datetime [note: 'Nulo = permanente. Pasada esta fecha la asignacion deja de contar sola, sin que nadie tenga que quitarla. Pensado para suplencias temporales. Decision del 24/09/2026.']
   asignadoPorId char(36) [ref: > usuario.id, note: 'Quien creo la excepcion']
   observacion varchar(255) [note: 'Motivo de la excepcion, util para auditoria']
   indexes {

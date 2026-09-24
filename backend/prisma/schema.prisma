@@ -155,6 +155,9 @@ model usuarioRol {
   usuarioId       String   @db.Char(36)
   rolId           String   @db.Char(36)
   fechaAsignacion DateTime @default(now())
+  /// Nulo = permanente. Pasada esta fecha la asignacion deja de contar
+  /// sola, sin que nadie tenga que quitarla. Pensado para suplencias.
+  fechaVencimiento DateTime?
   asignadoPorId   String?  @db.Char(36)
 
   usuario     usuario  @relation("rolesDelUsuario", fields: [usuarioId], references: [id], onDelete: Cascade)
@@ -173,6 +176,9 @@ model usuarioPermiso {
   /// true = se concede aunque el rol no lo de. false = se revoca aunque el rol si lo de.
   otorgado        Boolean  @default(true)
   fechaAsignacion DateTime @default(now())
+  /// Nulo = permanente. Pasada esta fecha la asignacion deja de contar
+  /// sola, sin que nadie tenga que quitarla. Pensado para suplencias.
+  fechaVencimiento DateTime?
   asignadoPorId   String?  @db.Char(36)
   observacion     String?  @db.VarChar(255)
 

@@ -9,7 +9,7 @@ import { EsContrasenaValida } from '../politica-contrasena.js';
  */
 export class RestablecerContrasenaDto {
   @IsEmail({}, { message: 'El correo no tiene un formato valido.' })
-  @MaxLength(150)
+  @MaxLength(150, { message: 'El correo no puede pasar de 150 caracteres.' })
   correo!: string;
 
   /** Exactamente 6 caracteres, como lo muestra la pantalla del prototipo. */

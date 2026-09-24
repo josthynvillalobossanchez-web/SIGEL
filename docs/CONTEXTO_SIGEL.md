@@ -38,37 +38,34 @@ expediente laboral, vacaciones, incapacidades, horas extra y reclutamiento (Tale
 > Para **cualquier entregable formal o académico** (informes, presentaciones) se usa **siempre** la
 > numeración del *Perfil del Proyecto*: Fase 1 a Fase 4, Sprint 1, Sprint 2, Sprint 3, Fase 5 a Fase 8.
 
-### Situación exacta hoy
+### Situación exacta hoy (25/09/2026)
 
-El 16/09/2026 **Joseph aprobó el prototipo v4 del Sprint 1 sin correcciones**. No dijo nada
-nuevo sobre `nombreUsuario` ni sobre el almacenamiento de archivos: esos dos siguen pendientes
-(§8) y Josthyn los plantea en la revisión de los martes.
-
-Decisión tomada el 16/09/2026: *el proyecto va atrasado respecto al cronograma*, por lo que
-**no se van a prototipar los Sprints 2 y 3**. **El desarrollo del Sprint 1 ya arrancó** y no habrá
-más prototipos: los Sprints 2 y 3 se programan directo, tomando el prototipo del Sprint 1 como
-referencia visual y de interacción y reusando los mismos tokens y componentes.
-
-Al **19/09/2026** el backend ya corre de punta a punta en la máquina de Josthyn: MySQL 8.4 en
-Docker, migración inicial aplicada, seed cargado y `GET /api/salud` respondiendo
-`{"sistema":"SIGEL","estado":"operativo","baseDeDatos":"conectada"}`. Ese mismo día el proyecto
-se versionó en GitHub (ver "Repositorio en GitHub" más abajo). La épica que sigue es la de
-autenticación.
+- **Diseño cerrado.** Joseph aprobó el prototipo v4 del Sprint 1 sin correcciones el 16/09. Por el
+  atraso del cronograma se decidió **no prototipar los Sprints 2 y 3**: se programan directo,
+  tomando el Sprint 1 como referencia visual y reusando sus tokens y componentes.
+- **Backend en marcha desde el 19/09**, versionado en GitHub (ver más abajo).
+- **Autenticación terminada el 24/09. Usuarios en curso** desde el 24/09.
+- **El Sprint 1 vencía el 25/09 según el cronograma y no está terminado.** Todo lo hecho hasta
+  hoy es backend: la épica de autenticación y usuarios va cerca del 70 %, las épicas de
+  funcionarios y de gestión documental están sin empezar, y el frontend también. El reacomodo de
+  fechas queda para conversarlo con Joseph.
 
 ### Lo que toca ahora, en orden
 
-1. ~~Épica de autenticación~~ **terminada el 24/09/2026** (ver "Estado del backend").
-2. **Resto del backend del Sprint 1**, en este orden: usuarios, roles, asignación de roles y
-   permisos individuales, funcionarios, expediente y documentos (baja lógica y archivos en el
-   servidor).
-3. **Frontend en React + Vite**, una vez que los endpoints respondan, reusando los tokens y
-   componentes del prototipo aprobado.
-4. **Informe de Avance Intermedio** (generado el 16/09 en
-   `Proyectos\Informe_Avance_Intermedio_SIGEL.docx`, entrega sábado 19/09/2026 por correo desde
-   la cuenta UNA, Word editable en Arial según la guía `EIF408-04-Guia Avance Intermedio`, con el
-   *Aval del Patrocinador* firmado). Le faltan las capturas de Jira/GitHub, las minutas y el
-   criterio de Joseph, que los aporta Josthyn.
-5. **Cerrar el pendiente §8-2**: la ruta concreta del servidor de archivos, que define TI.
+1. **Terminar usuarios**: editar el correo de una cuenta; asignar y quitar roles a una cuenta
+   existente; conceder, revocar y quitar permisos individuales. Quitar un rol o un permiso **no
+   borra la fila**: le pone la fecha de vencimiento en "hoy", para que quede la historia.
+2. **Módulo de roles**: listar, crear, editar y asignarle permisos a un rol (regla 5).
+3. **Arrancar el frontend en paralelo**, empezando por la pantalla de inicio de sesión, que ya
+   tiene todo su backend. La idea es tener algo funcionando que mostrarle a Joseph.
+4. **Épica 2**: catálogos (departamentos, puestos, profesiones), funcionarios con la casilla para
+   crear su cuenta, expediente, historial laboral y "Mi cuenta".
+5. **Épica 3**: tipos de documento, subir y descargar, baja lógica y restauración.
+6. **Informe de Avance Intermedio** (`Proyectos\Informe_Avance_Intermedio_SIGEL.docx`): las
+   capturas de Jira/GitHub, las minutas y el criterio de Joseph los aporta Josthyn.
+
+**Pendientes externos**, que dependen de Joseph o de TI: confirmar que habrá HTTPS, los datos del
+servidor de correo, y si la cuenta de Informática se asocia a Joseph.
 
 ### Entorno de desarrollo (armado el 17/09/2026)
 
@@ -140,6 +137,25 @@ contraseña temporal.
   del servidor de la Municipalidad.
 - Comando `npm run contrasena:restablecer` para recuperar una cuenta desde la terminal.
 
+**Usuarios y reparto de acceso (24–25/09), probado de punta a punta:**
+
+- **Listar cuentas**, paginado, con búsqueda por correo, cédula, nombre o apellidos, y filtros por
+  estado y por rol.
+- **Detalle de una cuenta**, con sus roles y permisos individuales; cada uno trae su fecha de
+  vencimiento y la marca `vigente`, así RRHH ve cuándo terminó una suplencia.
+- **Crear la cuenta de un funcionario.** La contraseña temporal la genera el sistema, se envía por
+  correo y se devuelve una sola vez en la respuesta; la cuenta queda obligada a cambiarla. Todo
+  ocurre en una transacción junto con la anotación en bitácora. La pieza que crea la cuenta está
+  separada para que el registro de funcionarios la reutilice.
+- **Cambiar el estado** de una cuenta (activo, inactivo, bloqueado), con motivo obligatorio al
+  inactivar o bloquear. El efecto es inmediato: la persona queda fuera en su siguiente petición.
+- **Reglas de reparto de acceso ya aplicadas**: la 1 al crear (solo se asignan roles cuyos
+  permisos uno tiene), y la 3 y la 4 al cambiar el estado (no se toca a quien tiene más acceso ni
+  la propia cuenta). La 2 y la 5 entran con los endpoints que faltan.
+- **Vencimiento de asignaciones** activo en todo cálculo de permisos: lo vencido deja de contar
+  solo.
+- Comando `npm run db:datos-de-prueba`, que crea seis funcionarios ficticios para probar.
+
 **Endpoints disponibles:**
 
 | Método y ruta | Permiso | Para qué |
@@ -152,10 +168,14 @@ contraseña temporal.
 | `POST /api/autenticacion/restablecer-contrasena` | público | Cambia la contraseña con el código |
 | `GET /api/permisos` | `permisos.editar` | Catálogo de permisos por módulo |
 | `GET /api/bitacora` | `bitacora.ver` | Auditoría, paginada y con filtros |
+| `GET /api/usuarios` | `usuarios.ver` | Lista de cuentas con búsqueda y filtros |
+| `GET /api/usuarios/:id` | `usuarios.ver` | Detalle con roles y permisos individuales |
+| `POST /api/usuarios` | `usuarios.crear` | Crea la cuenta de un funcionario |
+| `PATCH /api/usuarios/:id/estado` | `usuarios.cambiarEstado` | Activa, inactiva o bloquea |
 | `GET /api/salud` | público | Comprobación del servicio |
 
-**Falta:** módulos de usuarios y roles, asignación de roles y permisos, funcionarios,
-expediente y documentos. Y todo el frontend.
+**Falta:** el resto de usuarios (editar correo, asignar y quitar roles y permisos), el módulo
+de roles, funcionarios, expediente y documentos. Y todo el frontend.
 
 **Sobre el frontend:** la carpeta `frontend\` **todavía no existe**, el proyecto de Vite no se
 ha creado. Es a propósito: la pantalla de login no tiene contra qué autenticarse mientras no
@@ -401,6 +421,38 @@ Estas ya están validadas. **Trátelas como verdad** salvo que Josthyn diga lo c
   no pueda robarla. En desarrollo la marca `Secure` se apaga por `.env`, porque `localhost` no
   usa HTTPS. Si Joseph confirmara que no hay certificado, habría que rehacer el manejo de
   sesión completo.
+
+**Decididas por Josthyn el 24/09/2026:**
+
+- **Toda cuenta de usuario debe estar ligada a un funcionario.** Única excepción: la cuenta de
+  Informática que crea la semilla (`informatica@munipalmares.go.cr`, Súper Administrador). Josthyn
+  va a consultar si esa cuenta se asocia a Joseph; mientras tanto queda sin funcionario. Si aparece
+  otra excepción, la indica él. Esto **contradice el prototipo aprobado**, que ofrece "Cuenta
+  administrativa, sin expediente": queda para la v5 quitar esa opción.
+- **Crear la cuenta desde el registro del funcionario.** El asistente de registro llevará una
+  casilla para crear también la cuenta; funcionario y cuenta se crean en la misma transacción, o
+  ninguno. El correo de la cuenta se toma del institucional del funcionario. El módulo de usuarios
+  sigue existiendo para dar cuenta a un funcionario ya registrado.
+- **Quién reparte acceso.** Solo quien tiene `usuarios.editar`, que en el catálogo sembrado son
+  Administrador (Recursos Humanos) y Súper Administrador. Aprobador, Solicitante y Consulta no
+  pueden dar ni quitar nada. Y quien sí puede, lo hace bajo cinco reglas:
+  1. Solo se da lo que se tiene: asignar un rol exige tener todos sus permisos; conceder un
+     permiso individual exige tenerlo.
+  2. Solo se quita lo que se tiene, con el mismo criterio.
+  3. No se toca a quien tiene más acceso que uno: si la cuenta tiene algún permiso que yo no
+     tengo, no le puedo cambiar estado, roles ni permisos.
+  4. Nadie cambia su propio acceso: ni roles, ni permisos, ni estado.
+  5. Al editar un rol, solo se le agregan permisos que uno tenga.
+
+  Resultado con el catálogo actual: RRHH puede asignar Administrador, Aprobador, Solicitante y
+  Consulta, y conceder o quitar cualquier permiso salvo `bitacora.ver` y `permisos.editar`; no
+  puede crear Súper Administradores. Ningún nombre de rol queda escrito en el código: si se crea
+  un rol nuevo, la regla se aplica sola.
+- **Suplencias con fecha de vencimiento.** Las asignaciones de rol y de permiso individual
+  pueden tener `fechaVencimiento`. Vacía = permanente. Al vencer, dejan de contar solas, sin que
+  nadie tenga que quitarlas; quedan en la base como historia. Caso de uso: una jefatura
+  incapacitada y RRHH le da el rol Aprobador a otra persona hasta su regreso. Migración
+  `20260924210839_vencimiento_asignaciones`.
 
 **Decisiones anteriores:**
 

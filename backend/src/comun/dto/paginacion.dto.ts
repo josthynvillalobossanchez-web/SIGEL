@@ -30,7 +30,7 @@ export class PaginacionDto {
   @IsOptional()
   @Type(() => Number)
   @IsInt({ message: 'El tamano de pagina debe ser un numero entero.' })
-  @Min(1)
+  @Min(1, { message: 'El tamano de pagina debe ser al menos 1.' })
   @Max(TAMANO_MAXIMO_PAGINA, { message: `No se pueden pedir mas de ${TAMANO_MAXIMO_PAGINA} registros por pagina.` })
   tamano: number = 20;
 }

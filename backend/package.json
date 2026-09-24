@@ -14,7 +14,8 @@
     "prisma:studio": "prisma studio",
     "db:seed": "prisma db seed",
     "db:reset": "prisma migrate reset",
-    "contrasena:restablecer": "tsx prisma/restablecer-contrasena.ts"
+    "contrasena:restablecer": "tsx prisma/restablecer-contrasena.ts",
+    "db:datos-de-prueba": "tsx prisma/datos-de-prueba.ts"
   },
   "dependencies": {
     "@nestjs/common": "^12.0.0",

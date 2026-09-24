@@ -8,6 +8,6 @@ import { IsEmail, MaxLength } from 'class-validator';
  */
 export class SolicitarRecuperacionDto {
   @IsEmail({}, { message: 'El correo no tiene un formato valido.' })
-  @MaxLength(150)
+  @MaxLength(150, { message: 'El correo no puede pasar de 150 caracteres.' })
   correo!: string;
 }

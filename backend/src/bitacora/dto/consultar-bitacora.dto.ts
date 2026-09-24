@@ -28,8 +28,8 @@ export class ConsultarBitacoraDto extends PaginacionDto {
 
   /** Sobre que tabla o concepto: "usuario", "documento", "funcionario"... */
   @IsOptional()
-  @IsString()
-  @MaxLength(60)
+  @IsString({ message: 'La entidad debe ser texto.' })
+  @MaxLength(60, { message: 'La entidad no puede pasar de 60 caracteres.' })
   entidad?: string;
 
   /** Para seguir la historia completa de un registro concreto. */

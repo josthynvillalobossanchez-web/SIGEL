@@ -19,10 +19,10 @@
  * hacer cualquier cosa con el sistema.
  */
 import 'dotenv/config';
-import { randomInt } from 'node:crypto';
 import * as argon2 from 'argon2';
 import { PrismaMariaDb } from '@prisma/adapter-mariadb';
 import { PrismaClient } from '../src/generated/prisma/client.js';
+import { generarContrasenaTemporal } from '../src/autenticacion/contrasena-temporal.js';
 import { configuracionDeConexion } from '../src/prisma/configuracion-conexion.js';
 
 const url = process.env.DATABASE_URL;
@@ -30,36 +30,6 @@ if (!url) {
   throw new Error('Falta DATABASE_URL en backend/.env');
 }
 const prisma = new PrismaClient({ adapter: new PrismaMariaDb(configuracionDeConexion(url)) });
-
-/**
- * Arma una contrasena al azar que cumple la politica del sistema: al menos
- * una minuscula, una mayuscula, un numero y un caracter especial.
- *
- * Se usa randomInt de node:crypto y no Math.random, que es predecible y no
- * sirve para nada relacionado con seguridad.
- */
-function generarContrasena(largo = 16): string {
-  const grupos = [
-    'abcdefghijkmnopqrstuvwxyz', // sin la ele minuscula, se confunde con el uno
-    'ABCDEFGHJKLMNPQRSTUVWXYZ', // sin I ni O, se confunden con 1 y 0
-    '23456789', // sin 0 ni 1
-    '.-_#@!$%+=',
-  ];
-
-  const todos = grupos.join('');
-  // Una de cada grupo, para garantizar que cumple la politica.
-  const obligatorios = grupos.map((grupo) => grupo[randomInt(grupo.length)]);
-  const resto = Array.from({ length: largo - grupos.length }, () => todos[randomInt(todos.length)]);
-  const caracteres = [...obligatorios, ...resto];
-
-  // Se mezclan para que los obligatorios no queden siempre al principio.
-  for (let i = caracteres.length - 1; i > 0; i--) {
-    const j = randomInt(i + 1);
-    [caracteres[i], caracteres[j]] = [caracteres[j], caracteres[i]];
-  }
-
-  return caracteres.join('');
-}
 
 async function main(): Promise<void> {
   const correo = process.argv[2]?.trim().toLowerCase();
@@ -83,7 +53,7 @@ async function main(): Promise<void> {
     return;
   }
 
-  const contrasena = indicada ?? generarContrasena();
+  const contrasena = indicada ?? generarContrasenaTemporal(16);
 
   await prisma.usuario.update({
     where: { id: usuario.id },

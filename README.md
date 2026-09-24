@@ -85,7 +85,7 @@ comunes, está en [`docs/GUIA_DESARROLLO.md`](docs/GUIA_DESARROLLO.md).
 
 Sprint 1 en desarrollo: autenticación y usuarios, funcionarios y expediente, y gestión documental. Las fases de análisis, diseño y prototipado están concluidas y el prototipo de interfaces fue aprobado por el supervisor.
 
-Al 24 de setiembre de 2026 el backend tiene terminado el módulo de autenticación y seguridad: inicio de sesión con Argon2id, sesión en cookie protegida, bloqueo por intentos fallidos, límite de peticiones por dirección IP, autorización por permisos granulares aplicada a toda la API, cambio obligatorio de contraseña en el primer ingreso, recuperación por correo, manejo uniforme de errores y bitácora de auditoría. Lo siguiente son los módulos de usuarios y roles.
+Al 25 de setiembre de 2026 el backend tiene terminado el módulo de autenticación y seguridad (inicio de sesión con Argon2id, sesión en cookie protegida, bloqueo por intentos fallidos, límite de peticiones por IP, autorización por permisos granulares, cambio obligatorio de contraseña, recuperación por correo, manejo uniforme de errores y bitácora de auditoría) y avanzada la gestión de usuarios: consulta, creación de cuentas ligadas a funcionarios, cambio de estado y reparto de acceso con suplencias que vencen solas. Siguen el resto de usuarios, el módulo de roles y el frontend.
 
 ## Proyecto
 

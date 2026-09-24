@@ -10,6 +10,7 @@ import type { CambiarContrasenaDto } from './dto/cambiar-contrasena.dto.js';
 import type { RestablecerContrasenaDto } from './dto/restablecer-contrasena.dto.js';
 import type { SolicitarRecuperacionDto } from './dto/solicitar-recuperacion.dto.js';
 import type { IniciarSesionDto } from './dto/iniciar-sesion.dto.js';
+import { resolverAcceso, soloVigentes } from './permisos-efectivos.js';
 import type { UsuarioAutenticado } from './tipos.js';
 
 /** Intentos fallidos seguidos que bloquean la cuenta. */
@@ -442,6 +443,13 @@ export class AutenticacionService {
    * caso el guard corta la sesion.
    */
   async cargarUsuarioAutenticado(usuarioId: string): Promise<UsuarioAutenticado | null> {
+    /**
+     * Solo cuentan las asignaciones vigentes. Las vencidas se quedan en la
+     * base, porque son historia de quien tuvo que acceso, pero dejan de dar
+     * permisos en el mismo instante en que vencen, sin que nadie las quite.
+     */
+    const vigente = soloVigentes();
+
     const usuario = await this.prisma.usuario.findUnique({
       where: { id: usuarioId },
       select: {
@@ -451,6 +459,7 @@ export class AutenticacionService {
         funcionarioId: true,
         debeCambiarContrasena: true,
         roles: {
+          where: vigente,
           select: {
             rol: {
               select: {
@@ -462,6 +471,7 @@ export class AutenticacionService {
           },
         },
         permisos: {
+          where: vigente,
           select: { otorgado: true, permiso: { select: { clave: true, activo: true } } },
         },
       },
@@ -471,25 +481,9 @@ export class AutenticacionService {
       return null;
     }
 
-    const permisos = new Set<string>();
-    const roles: string[] = [];
-
-    for (const asignacion of usuario.roles) {
-      if (!asignacion.rol.activo) continue;
-      roles.push(asignacion.rol.nombre);
-      for (const suyo of asignacion.rol.permisos) {
-        if (suyo.permiso.activo) permisos.add(suyo.permiso.clave);
-      }
-    }
-
-    for (const individual of usuario.permisos) {
-      if (!individual.permiso.activo) continue;
-      if (individual.otorgado) {
-        permisos.add(individual.permiso.clave);
-      } else {
-        permisos.delete(individual.permiso.clave);
-      }
-    }
+    // El calculo vive en permisos-efectivos.ts, compartido con la gestion
+    // de usuarios para que los dos lados resuelvan el acceso igual.
+    const { roles, permisos } = resolverAcceso(usuario.roles, usuario.permisos);
 
     return {
       id: usuario.id,
@@ -497,7 +491,7 @@ export class AutenticacionService {
       funcionarioId: usuario.funcionarioId,
       debeCambiarContrasena: usuario.debeCambiarContrasena,
       roles,
-      permisos: [...permisos].sort(),
+      permisos,
     };
   }
 

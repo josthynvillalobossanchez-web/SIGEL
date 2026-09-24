@@ -73,6 +73,37 @@ function esJsonMalFormado(mensaje: string): boolean {
 }
 
 /**
+ * Traduce al espaniol el aviso que genera la libreria de validacion cuando
+ * llega un campo que el DTO no declara.
+ *
+ * Ese mensaje no lo escribe nuestro codigo, asi que viene en ingles
+ * ("property id should not exist") y no se puede cambiar desde el DTO. Se
+ * traduce aqui, que es el unico punto por donde pasan todos los errores.
+ */
+function traducirDetalle(detalle: string): string {
+  const campoDeMas = /^property (.+) should not exist$/i.exec(detalle);
+
+  if (campoDeMas) {
+    return `El campo "${campoDeMas[1]}" no corresponde a esta operacion.`;
+  }
+
+  /**
+   * Cuando se valida una lista de objetos (por ejemplo los roles de una
+   * cuenta), la libreria antepone la ruta del campo al mensaje:
+   * "roles.0.El rol indicado no es valido." Se reescribe contando desde 1,
+   * como lo contaria una persona: "roles, elemento 1: El rol indicado...".
+   */
+  const anidado = /^(\w+)\.(\d+)\.(.+)$/.exec(detalle);
+
+  if (anidado) {
+    const [, campo, posicion, mensaje] = anidado;
+    return `${campo}, elemento ${Number(posicion) + 1}: ${traducirDetalle(mensaje)}`;
+  }
+
+  return detalle;
+}
+
+/**
  * Atrapa TODO lo que salga mal en la API y lo devuelve con la misma forma.
  *
  * Dos razones para tenerlo:
@@ -160,7 +191,7 @@ export class FiltroDeExcepciones implements ExceptionFilter {
           statusCode: estado,
           codigo: 'DATOS_INVALIDOS',
           message: 'Revise los datos enviados.',
-          detalles: deNest.message,
+          detalles: deNest.message.map(traducirDetalle),
           ruta,
         };
       }

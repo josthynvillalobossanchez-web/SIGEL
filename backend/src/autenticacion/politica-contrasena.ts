@@ -45,7 +45,7 @@ const TIENE_ESPECIAL = /[^\p{L}\p{N}]/u;
  */
 export function EsContrasenaValida(): PropertyDecorator {
   return applyDecorators(
-    IsString(),
+    IsString({ message: 'La contrasena debe ser texto.' }),
     MinLength(LARGO_MINIMO_CONTRASENA, {
       message: `La contrasena debe tener al menos ${LARGO_MINIMO_CONTRASENA} caracteres.`,
     }),
