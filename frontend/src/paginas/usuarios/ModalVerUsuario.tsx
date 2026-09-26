@@ -12,10 +12,10 @@
  * (mismas vistas que Funcionarios y Mi cuenta); se piden aparte y solo si
  * quien mira tiene funcionarios.ver (son datos personales).
  */
-import { useEffect, useState } from 'react';
-import { Link } from 'react-router';
-import { textoDelError } from '../../api/cliente';
-import { consultarCuenta, type DetalleDeCuenta } from '../../api/usuarios';
+import { useState } from 'react';
+import { Link, useNavigate } from 'react-router';
+import { useConsulta } from '../../utilidades/useConsulta';
+import { consultarCuenta } from '../../api/usuarios';
 import { consultarFuncionario, type DetalleDeFuncionario } from '../../api/funcionarios';
 import { DatosLaboralesVista, DatosPersonalesVista } from '../funcionarios/DatosDeFuncionario';
 import { useSesion } from '../../sesion/SesionProveedor';
@@ -27,6 +27,7 @@ import { formatearFecha, formatearFechaHora } from '../../utilidades/fechas';
 import { nombreCompleto, nombreDeModulo } from '../../utilidades/texto';
 import { ChipDeEstadoDeCuenta } from './ChipDeEstadoDeCuenta';
 import { motivoDeBloqueo } from './motivos';
+import { motivoParaExpediente } from '../funcionarios/motivos';
 
 export function ModalVerUsuario({
   usuarioId,
@@ -40,27 +41,17 @@ export function ModalVerUsuario({
 }) {
   const { tienePermisos } = useSesion();
   const prefijo = usePrefijoDePestanas();
-  const [cuenta, setCuenta] = useState<DetalleDeCuenta | null>(null);
-  const [error, setError] = useState<string | null>(null);
   const [pestana, setPestana] = useState('resumen');
   const puedeVerFuncionarios = tienePermisos('funcionarios.ver');
-  const [ficha, setFicha] = useState<DetalleDeFuncionario | null>(null);
-  const [errorFicha, setErrorFicha] = useState<string | null>(null);
-
-  useEffect(() => {
-    consultarCuenta(usuarioId)
-      .then(setCuenta)
-      .catch((e) => setError(textoDelError(e)));
-  }, [usuarioId]);
+  const irA = useNavigate();
+  const { datos: cuenta, error } = useConsulta(() => consultarCuenta(usuarioId), [usuarioId]);
 
   // Datos del funcionario de la cuenta (si tiene y si quien mira puede verlos).
   const funcionarioId = cuenta?.funcionario?.id;
-  useEffect(() => {
-    if (!funcionarioId || !puedeVerFuncionarios) return;
-    consultarFuncionario(funcionarioId)
-      .then(setFicha)
-      .catch((e) => setErrorFicha(textoDelError(e)));
-  }, [funcionarioId, puedeVerFuncionarios]);
+  const { datos: ficha, error: errorFicha } = useConsulta(
+    funcionarioId && puedeVerFuncionarios ? () => consultarFuncionario(funcionarioId) : null,
+    [funcionarioId],
+  );
 
   /** Contenido de las pestanas de datos del funcionario. */
   function datosDelFuncionario(vista: (f: DetalleDeFuncionario) => React.ReactNode) {
@@ -181,6 +172,25 @@ export function ModalVerUsuario({
                 </dd>
               </div>
             </dl>
+            {/* Enlaces entre modulos: de la cuenta a la persona. */}
+            {cuenta.funcionario && (
+              <div className="acciones-en-linea">
+                <BotonConAyuda
+                  icono="personas"
+                  texto="Ver ficha del funcionario"
+                  ayuda="Abrir su ficha en Funcionarios"
+                  bloqueadoPor={puedeVerFuncionarios ? null : 'su cuenta no tiene permiso para ver funcionarios.'}
+                  alHacerClic={() => irA(`/funcionarios?ver=${cuenta.funcionario!.id}`)}
+                />
+                <BotonConAyuda
+                  icono="carpeta"
+                  texto="Abrir expediente"
+                  ayuda="Abrir su expediente laboral (la apertura queda en la bitácora)"
+                  bloqueadoPor={motivoParaExpediente({ esPropio: cuenta.motivoNoModificable === 'CUENTA_PROPIA' }, tienePermisos)}
+                  alHacerClic={() => irA(`/funcionarios/${cuenta.funcionario!.id}/expediente`)}
+                />
+              </div>
+            )}
           </PanelDePestana>
 
           {cuenta.funcionario && (

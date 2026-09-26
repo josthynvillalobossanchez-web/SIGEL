@@ -12,13 +12,14 @@
  *
  * Filtros y ficha abierta en la URL (?busqueda=&estado=&departamento=&pagina=&ver=).
  */
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
+import { Paginacion } from '../../componentes/Paginacion';
+import { useBusquedaDiferida } from '../../utilidades/useBusquedaDiferida';
+import { useConsulta } from '../../utilidades/useConsulta';
 import { useNavigate } from 'react-router';
 import { useParametrosEnUrl } from '../../utilidades/parametrosEnUrl';
-import { textoDelError } from '../../api/cliente';
 import { consultarFuncionarios, type EstadoDeFuncionario, type FuncionarioEnLista } from '../../api/funcionarios';
-import { consultarCatalogos, type ElementoDeCatalogo } from '../../api/catalogos';
-import type { Pagina } from '../../api/usuarios';
+import { consultarCatalogos } from '../../api/catalogos';
 import { Icono } from '../../componentes/Icono';
 import { Mensaje } from '../../componentes/Mensaje';
 import { BotonConAyuda, BotonIcono } from '../../componentes/Botones';
@@ -51,52 +52,35 @@ export function ListaDeFuncionarios() {
   const pagina = Math.max(1, Number(parametros.get('pagina')) || 1);
   const verId = parametros.get('ver');
 
-  const [textoBuscado, setTextoBuscado] = useState(busquedaEnUrl);
-  const [resultado, setResultado] = useState<Pagina<FuncionarioEnLista> | null>(null);
-  const [departamentos, setDepartamentos] = useState<ElementoDeCatalogo[]>([]);
-  const [cargando, setCargando] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [textoBuscado, setTextoBuscado] = useBusquedaDiferida(busquedaEnUrl, (busqueda) => cambiar({ busqueda }));
   const [aviso, setAviso] = useState<string | null>(null);
   const [ventana, setVentana] = useState<Ventana>(null);
-  const [recarga, setRecarga] = useState(0);
 
+  // Departamentos para el filtro (si fallan, el filtro queda vacio y la lista sigue).
+  const departamentos = useConsulta(consultarCatalogos, []).datos?.departamentos ?? [];
 
-  useEffect(() => {
-    consultarCatalogos()
-      .then((c) => setDepartamentos(c.departamentos))
-      .catch(() => setDepartamentos([]));
-  }, []);
-
-  // Busca un momento despues de dejar de escribir.
-  useEffect(() => {
-    if (textoBuscado.trim() === busquedaEnUrl) return;
-    const espera = window.setTimeout(() => cambiar({ busqueda: textoBuscado.trim() }), 450);
-    return () => window.clearTimeout(espera);
-  }, [textoBuscado, busquedaEnUrl, cambiar]);
-
-  useEffect(() => {
-    let vigente = true;
-    setCargando(true);
-    setError(null);
-    consultarFuncionarios({
-      pagina,
-      tamano: TAMANO_DE_PAGINA,
-      busqueda: busquedaEnUrl || undefined,
-      estado: estado || undefined,
-      departamentoId: departamentoId || undefined,
-    })
-      .then((d) => vigente && setResultado(d))
-      .catch((e) => vigente && setError(textoDelError(e)))
-      .finally(() => vigente && setCargando(false));
-    return () => {
-      vigente = false;
-    };
-  }, [pagina, busquedaEnUrl, estado, departamentoId, recarga]);
+  // Consulta cada vez que cambian los filtros (y con recargar(), al guardar).
+  const {
+    datos: resultado,
+    error,
+    cargando,
+    recargar,
+  } = useConsulta(
+    () =>
+      consultarFuncionarios({
+        pagina,
+        tamano: TAMANO_DE_PAGINA,
+        busqueda: busquedaEnUrl || undefined,
+        estado: estado || undefined,
+        departamentoId: departamentoId || undefined,
+      }),
+    [pagina, busquedaEnUrl, estado, departamentoId],
+  );
 
   function alGuardar(texto: string) {
     setVentana(null);
     setAviso(texto);
-    setRecarga((n) => n + 1);
+    recargar();
   }
 
   const bloqueoRegistrar = tienePermisos('funcionarios.crear') ? null : 'su cuenta no tiene permiso para registrar funcionarios.';
@@ -270,12 +254,7 @@ export function ListaDeFuncionarios() {
               </tbody>
             </table>
           </div>
-          <Paginacion
-            pagina={resultado.pagina}
-            totalPaginas={resultado.totalPaginas}
-            total={resultado.total}
-            tamano={resultado.tamano}
-            alCambiar={(n) => cambiar({ pagina: String(n) })}
+          <Paginacion resultado={resultado} nombre={['funcionario', 'funcionarios']} alCambiar={(n) => cambiar({ pagina: String(n) })}
           />
         </>
       )}
@@ -308,29 +287,5 @@ export function ListaDeFuncionarios() {
         />
       )}
     </section>
-  );
-}
-
-function Paginacion(props: { pagina: number; totalPaginas: number; total: number; tamano: number; alCambiar: (pagina: number) => void }) {
-  const { pagina, totalPaginas, total, tamano, alCambiar } = props;
-  const desde = (pagina - 1) * tamano + 1;
-  const hasta = Math.min(pagina * tamano, total);
-  return (
-    <nav className="paginacion" aria-label="Paginación de la lista de funcionarios">
-      <span aria-live="polite">
-        Mostrando {desde}–{hasta} de {total} funcionario{total === 1 ? '' : 's'}
-      </span>
-      <div className="paginas">
-        <button className="pag-btn" type="button" disabled={pagina <= 1} onClick={() => alCambiar(pagina - 1)} data-ayuda="Página anterior">
-          Anterior
-        </button>
-        <span className="pag-btn" aria-current="page" aria-label={`Página ${pagina} de ${totalPaginas}`}>
-          {pagina} / {totalPaginas}
-        </span>
-        <button className="pag-btn" type="button" disabled={pagina >= totalPaginas} onClick={() => alCambiar(pagina + 1)} data-ayuda="Página siguiente">
-          Siguiente
-        </button>
-      </div>
-    </nav>
   );
 }

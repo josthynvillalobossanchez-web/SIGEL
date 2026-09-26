@@ -12,10 +12,10 @@
  *
  * No se borra nada: se inactiva (ver backend/src/catalogos/catalogos.service.ts).
  */
-import { useCallback, useEffect, useState } from 'react';
-import { textoDelError } from '../../api/cliente';
+import { useState } from 'react';
+import { useConsulta } from '../../utilidades/useConsulta';
 import { useParametrosEnUrl } from '../../utilidades/parametrosEnUrl';
-import { consultarCatalogos, type CatalogosCompletos, type ElementoDeCatalogo, type TipoDeCatalogo } from '../../api/catalogos';
+import { consultarCatalogos, type ElementoDeCatalogo, type TipoDeCatalogo } from '../../api/catalogos';
 import { Icono } from '../../componentes/Icono';
 import { Mensaje } from '../../componentes/Mensaje';
 import { BotonConAyuda, BotonIcono } from '../../componentes/Botones';
@@ -44,32 +44,20 @@ export function Catalogos() {
   const estado = (parametros.get('estado') ?? '') as FiltroDeEstado;
   const t = TEXTOS[pestana];
 
-  const [datos, setDatos] = useState<CatalogosCompletos | null>(null);
+  const { datos, error, recargar } = useConsulta(consultarCatalogos, []);
   const [busqueda, setBusqueda] = useState('');
-  const [error, setError] = useState<string | null>(null);
   const [aviso, setAviso] = useState<string | null>(null);
   const [ventana, setVentana] = useState<Ventana>(null);
   /** Fila recien creada o editada (se resalta un momento). */
   const [resaltada, setResaltada] = useState<string | null>(null);
 
-  const cargar = useCallback(async () => {
-    try {
-      setDatos(await consultarCatalogos());
-    } catch (e) {
-      setError(textoDelError(e));
-    }
-  }, []);
-
-  useEffect(() => {
-    void cargar();
-  }, [cargar]);
 
 
   function alGuardar(texto: string, id?: string) {
     setVentana(null);
     setAviso(texto);
     mostrar(id);
-    void cargar();
+    recargar();
   }
 
   /**
@@ -246,7 +234,7 @@ export function Catalogos() {
             if (sigueAbierta) {
               mostrar(guardado.id);
               setAviso(null);
-              void cargar();
+              recargar();
             } else alGuardar(`${accion} «${guardado.nombre}».`, guardado.id);
           }}
         />

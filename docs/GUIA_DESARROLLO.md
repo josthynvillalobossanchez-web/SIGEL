@@ -503,9 +503,9 @@ Otros comandos: `npm run revisar-tipos` (TypeScript sin compilar) y `npm run bui
 | `sesion/` | `SesionProveedor` (quién está conectado, sus permisos) y las guardias de rutas |
 | `diseno/` | El marco (barra superior + menú) y `menu.ts`, la lista de opciones con sus permisos |
 | `paginas/` | Una carpeta por módulo |
-| `componentes/` | Piezas reutilizables: campo de contraseña, mensajes, iconos, botón de tema |
+| `componentes/` | Piezas reutilizables (ver la tabla de abajo) |
 | `estilos/` | `sigel.css` es **copia del prototipo** (no tocar salvo para mantenerlo igual); lo propio va en `ajustes.css` |
-| `utilidades/` | Tema claro/oscuro, política de contraseñas (copia de la del backend), textos, fechas en hora de Costa Rica |
+| `utilidades/` | Hooks propios (`useConsulta`, `useFormularioDeCambios`, `useBusquedaDiferida`, `useParametrosEnUrl`, `useTema`), `validaciones.ts` (reglas de datos iguales al backend), política de contraseñas, textos y fechas en hora de Costa Rica |
 
 **Regla de pantallas**: consultar = **ventana** (con pestañas); crear o editar = **página
 aparte por pasos** (`FormularioPorPasos`), con subsección en el menú (`diseno/menu.ts`) y migas.
@@ -516,7 +516,7 @@ Nada de páginas largas con scroll en PC.
 | Ruta | Permiso | Qué hace |
 |---|---|---|
 | `/iniciar-sesion`, `/recuperar-contrasena`, `/primer-ingreso` | sin sesión / temporal | Acceso |
-| `/` | con sesión | Inicio con accesos directos |
+| `/` | con sesión | Inicio: saludo, aviso de datos personales faltantes, resumen para RRHH (cifras que llevan a la lista filtrada) y accesos directos (los mismos del menú) |
 | `/usuarios` (`?ver=<id>`, `?permisos=<id>`) | `usuarios.ver` | Lista; ventanas Ver usuario, Permisos individuales, Cambiar estado |
 | `/usuarios/nuevo` | `usuarios.crear` | Crear usuario (Cuenta · Roles · Revisar) |
 | `/usuarios/:id/editar` | `usuarios.editar` | Editar usuario (mismos pasos, se puede saltar entre ellos) |
@@ -547,6 +547,22 @@ Nada de páginas largas con scroll en PC.
 | `BotonIcono`, `BotonConAyuda` | Botones con ayuda y **bloqueo explicado** (`bloqueadoPor="motivo"`) |
 | `ModalExito` | "Se hizo con éxito" + Aceptar (y la página vuelve a la lista) |
 | `GestorDeAyudas` | Muestra el globo de cualquier elemento con `data-ayuda="texto"` |
+| `TarjetaDePerfil` | Tarjeta con degradado (foto/iniciales, nombre, chips, acciones, datos rápidos): Mi cuenta y expediente |
+| `Paginacion` | "Mostrando 1–20 de 57 …" y Anterior/Siguiente de las listas |
+| `PieDeGuardado` | Pie Descartar / Guardar cambios de un formulario de edición en pestaña |
+| `CamposDeFormulario` | `Texto` y `Lista` con etiqueta, obligatorio y ayuda |
+
+**Hooks propios** (en `utilidades/`), para no repetir lógica en cada pantalla:
+
+| Hook | Para qué |
+|---|---|
+| `useConsulta(pedir, deps)` | Pedir datos al abrir: `{ datos, error, cargando, recargar, cambiarDatos }`. Descarta respuestas viejas; `pedir = null` = no pedir (falta permiso) |
+| `useFormularioDeCambios(original, { revisar, enviar, alGuardar })` | Formulario que edita y guarda solo lo que cambió (Mi cuenta) |
+| `useBusquedaDiferida(busquedaEnUrl, alBuscar)` | Buscador que espera a que se deje de escribir y pasa el texto a la URL |
+| `useParametrosEnUrl()` | Filtros en la URL sin perder cambios rápidos |
+
+**Reglas de datos**: `utilidades/validaciones.ts` (nombres, teléfono, correos, cédula, edad mínima,
+fechas de ingreso). Si una regla cambia, se cambia ahí y en el backend, nunca en la pantalla.
 
 **Para hacer una página de edición nueva** (p. ej. "Registrar funcionario"):
 1. Página con `FormularioPorPasos` (mirar `paginas/roles/PaginaRol.tsx`, es la más corta).

@@ -6,9 +6,10 @@
  *   - ModalEstadoDeRol: activar o inactivar (confirmacion corta).
  * Crear y editar un rol son PAGINAS aparte: PaginaRol.tsx.
  */
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { textoDelError } from '../../api/cliente';
-import { cambiarEstadoDeRol, consultarRol, type DetalleDeRol, type ModuloDePermisos, type RolResumido } from '../../api/roles';
+import { cambiarEstadoDeRol, consultarRol, type ModuloDePermisos, type RolResumido } from '../../api/roles';
+import { useConsulta } from '../../utilidades/useConsulta';
 import { Modal } from '../../componentes/Modal';
 import { Mensaje } from '../../componentes/Mensaje';
 import { BotonConAyuda } from '../../componentes/Botones';
@@ -34,15 +35,8 @@ export function ModalVerRol({
   alEditar: () => void;
 }) {
   const prefijo = usePrefijoDePestanas();
-  const [rol, setRol] = useState<DetalleDeRol | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const { datos: rol, error } = useConsulta(() => consultarRol(rolId), [rolId]);
   const [pestana, setPestana] = useState('resumen');
-
-  useEffect(() => {
-    consultarRol(rolId)
-      .then(setRol)
-      .catch((e) => setError(textoDelError(e)));
-  }, [rolId]);
 
   const marcados = new Set(rol?.permisos.filter((p) => p.activo).map((p) => p.id) ?? []);
 

@@ -24,7 +24,7 @@ import { ProveedorDeCambiosSinGuardar, useClicSeguro, useSalirSiSePuede } from '
 import { useSesion } from '../sesion/SesionProveedor';
 import { Icono } from '../componentes/Icono';
 import { BotonTema } from '../componentes/BotonTema';
-import { MENU } from './menu';
+import { MENU, puedeVerOpcion } from './menu';
 import { inicialesDesdeCorreo } from '../utilidades/texto';
 import logoParaBarra from '../recursos/logo-oscuro.png';
 
@@ -100,7 +100,7 @@ function MarcoInterno() {
   const gruposVisibles = MENU.map((grupo) => ({
     ...grupo,
     opciones: grupo.opciones
-      .filter((o) => tienePermisos(...o.permisos) && (!o.requiereFuncionario || usuario.funcionarioId !== null))
+      .filter((o) => puedeVerOpcion(o, tienePermisos, usuario.funcionarioId !== null))
       .map((o) => {
         const permitidas = (o.subopciones ?? []).filter((sub) => tienePermisos(...sub.permisos));
         return {

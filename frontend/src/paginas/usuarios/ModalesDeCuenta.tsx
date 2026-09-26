@@ -10,18 +10,18 @@
  * enviar (el backend valida todo otra vez), muestra el error sin cerrarse y
  * al salir bien llama alGuardar(textoDelAviso).
  */
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router';
 import { textoDelError } from '../../api/cliente';
+import { useConsulta } from '../../utilidades/useConsulta';
 import {
   cambiarEstadoDeCuenta,
   consultarCuenta,
   quitarPermisoIndividual,
-  type DetalleDeCuenta,
   type EstadoDeCuenta,
   type PermisoIndividual,
 } from '../../api/usuarios';
-import { consultarCatalogoDePermisos, type ModuloDePermisos } from '../../api/roles';
+import { consultarCatalogoDePermisos } from '../../api/roles';
 import { Modal } from '../../componentes/Modal';
 import { Mensaje } from '../../componentes/Mensaje';
 import { BotonConAyuda, BotonIcono } from '../../componentes/Botones';
@@ -164,21 +164,13 @@ export function ModalPermisosIndividuales({
 }) {
   const { tienePermisos } = useSesion();
   const irA = useNavigate();
-  const [detalle, setDetalle] = useState<DetalleDeCuenta | null>(null);
-  const [catalogo, setCatalogo] = useState<ModuloDePermisos[] | null>(null);
+  const { datos: detalle, error: errorDeCarga, cambiarDatos: setDetalle } = useConsulta(() => consultarCuenta(usuarioId), [usuarioId]);
+  const { datos: catalogo, error: errorDeCatalogo } = useConsulta(consultarCatalogoDePermisos, []);
   const [porEliminar, setPorEliminar] = useState<string | null>(null);
   const [aviso, setAviso] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [errorAlEliminar, setError] = useState<string | null>(null);
   const [ocupado, setOcupado] = useState(false);
-
-  useEffect(() => {
-    consultarCuenta(usuarioId)
-      .then(setDetalle)
-      .catch((e) => setError(textoDelError(e)));
-    consultarCatalogoDePermisos()
-      .then(setCatalogo)
-      .catch((e) => setError(textoDelError(e)));
-  }, [usuarioId]);
+  const error = errorAlEliminar ?? errorDeCarga ?? errorDeCatalogo;
 
   const vigentes = detalle?.permisos.filter((p) => p.vigente) ?? [];
   const asignables = useMemo(() => new Set(catalogo?.flatMap((m) => m.permisos.filter((p) => p.asignable).map((p) => p.clave))), [catalogo]);

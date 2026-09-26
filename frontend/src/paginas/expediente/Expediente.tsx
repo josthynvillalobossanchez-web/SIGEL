@@ -16,16 +16,16 @@
  * Documentos llega con la gestion documental (epica 3) y Capacitaciones en
  * el Sprint 2: por ahora muestran su explicacion.
  */
-import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router';
-import { textoDelError } from '../../api/cliente';
-import { abrirExpediente, type Expediente } from '../../api/expedientes';
+import { useConsulta } from '../../utilidades/useConsulta';
+import { abrirExpediente } from '../../api/expedientes';
 import { NOMBRES_DE_NOMBRAMIENTO, nombreDeRegimen } from '../../api/funcionarios';
 import { BotonConAyuda } from '../../componentes/Botones';
 import { Icono } from '../../componentes/Icono';
 import { Mensaje } from '../../componentes/Mensaje';
 import { Migas } from '../../componentes/Migas';
 import { PanelDePestana, Pestanas } from '../../componentes/Pestanas';
+import { TarjetaDePerfil } from '../../componentes/TarjetaDePerfil';
 import { useSesion } from '../../sesion/SesionProveedor';
 import { useParametrosEnUrl } from '../../utilidades/parametrosEnUrl';
 import { inicialesDeFuncionario, nombreCompleto } from '../../utilidades/texto';
@@ -60,16 +60,8 @@ function VistaDeExpediente({ funcionarioId }: { funcionarioId?: string }) {
   const pedida = parametros.get('pestana');
   const pestana = PESTANAS.some((p) => p.id === pedida) ? pedida! : 'personal';
 
-  const [expediente, setExpediente] = useState<Expediente | null>(null);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    setExpediente(null);
-    setError(null);
-    abrirExpediente(funcionarioId)
-      .then(setExpediente)
-      .catch((e) => setError(textoDelError(e)));
-  }, [funcionarioId]);
+  // Abrir el expediente queda en la bitacora: se pide una sola vez por persona.
+  const { datos: expediente, error } = useConsulta(() => abrirExpediente(funcionarioId), [funcionarioId]);
 
   const f = expediente?.funcionario;
   const desdeFuncionarios = funcionarioId !== undefined;
@@ -106,47 +98,57 @@ function VistaDeExpediente({ funcionarioId }: { funcionarioId?: string }) {
       {migas && <Migas migas={migas} />}
 
       {/* ---------------- Perfil del funcionario ---------------- */}
-      <section className="perfil perfil-compacto" aria-label="Datos del funcionario">
-        <div className="perfil-foto" aria-hidden="true">
-          {inicialesDeFuncionario(f)}
-        </div>
-        <h1>{nombreCompleto(f)}</h1>
-        <p className="ident">
-          Cédula {f.cedula}
-          {f.numeroEmpleado ? ` · Código ${f.numeroEmpleado}` : ''}
-        </p>
-        <div className="chips">
-          <ChipDeFuncionario estado={f.estado} />
-          <span className="chip chip-neutro">{NOMBRES_DE_NOMBRAMIENTO[f.tipoNombramiento]}</span>
-          <span className="chip chip-info">Régimen {nombreDeRegimen(f.regimenVacaciones.nombre).toLowerCase()}</span>
-        </div>
-        <div className="acc">
-          {propio ? (
-            <BotonConAyuda
-              icono="editar"
-              texto="Editar mis datos"
-              ayuda="Sus datos personales (y los laborales, si es de Recursos Humanos) se cambian en Mi cuenta"
-              alHacerClic={() => navegar('/mi-cuenta')}
-            />
-          ) : (
-            tienePermisos('funcionarios.editar') && (
+      <TarjetaDePerfil
+        etiqueta="Datos del funcionario"
+        iniciales={inicialesDeFuncionario(f)}
+        titulo={nombreCompleto(f)}
+        identificacion={`Cédula ${f.cedula}${f.numeroEmpleado ? ` · Código ${f.numeroEmpleado}` : ''}`}
+        chips={
+          <>
+            <ChipDeFuncionario estado={f.estado} />
+            <span className="chip chip-neutro">{NOMBRES_DE_NOMBRAMIENTO[f.tipoNombramiento]}</span>
+            <span className="chip chip-info">Régimen {nombreDeRegimen(f.regimenVacaciones.nombre).toLowerCase()}</span>
+          </>
+        }
+        acciones={
+          <>
+            {propio ? (
               <BotonConAyuda
                 icono="editar"
-                texto="Editar funcionario"
-                ayuda="Corregir sus datos personales o laborales (se abre la página de edición)"
-                bloqueadoPor={motivoParaEditar(f, tienePermisos)}
-                alHacerClic={() => navegar(`/funcionarios/${f.id}/editar`)}
+                texto="Editar mis datos"
+                ayuda="Sus datos personales (y los laborales, si es de Recursos Humanos) se cambian en Mi cuenta"
+                alHacerClic={() => navegar('/mi-cuenta')}
               />
-            )
-          )}
-          <BotonConAyuda
-            clase="btn btn-primario"
-            icono="mas"
-            texto="Subir documento"
-            bloqueadoPor="la carga de documentos llega con la gestión documental (épica 3)."
-          />
-        </div>
-      </section>
+            ) : (
+              tienePermisos('funcionarios.editar') && (
+                <BotonConAyuda
+                  icono="editar"
+                  texto="Editar funcionario"
+                  ayuda="Corregir sus datos personales o laborales (se abre la página de edición)"
+                  bloqueadoPor={motivoParaEditar(f, tienePermisos)}
+                  alHacerClic={() => navegar(`/funcionarios/${f.id}/editar`)}
+                />
+              )
+            )}
+            {/* Enlace entre modulos: de la persona a su cuenta de acceso. */}
+            {!propio && tienePermisos('usuarios.ver') && (
+              <BotonConAyuda
+                icono="usuarios"
+                texto="Ver su cuenta"
+                ayuda="Abrir su cuenta de acceso en Usuarios (roles, estado, permisos)"
+                bloqueadoPor={f.cuenta ? null : 'no tiene cuenta de acceso. Se le puede crear desde Usuarios → «Crear usuario».'}
+                alHacerClic={() => f.cuenta && navegar(`/usuarios?ver=${f.cuenta.id}`)}
+              />
+            )}
+            <BotonConAyuda
+              clase="btn btn-primario"
+              icono="mas"
+              texto="Subir documento"
+              bloqueadoPor="la carga de documentos llega con la gestión documental (épica 3)."
+            />
+          </>
+        }
+      />
 
       <div className="aviso" style={{ marginTop: 12 }}>
         <Icono nombre="candado" />

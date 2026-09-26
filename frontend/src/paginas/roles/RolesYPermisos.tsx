@@ -17,11 +17,11 @@
  *
  * La pestana y el rol abierto van en la URL (?pestana=permisos, ?rol=<id>).
  */
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
+import { useConsulta } from '../../utilidades/useConsulta';
 import { useNavigate } from 'react-router';
-import { textoDelError } from '../../api/cliente';
 import { useParametrosEnUrl } from '../../utilidades/parametrosEnUrl';
-import { consultarCatalogoDePermisos, consultarRoles, type ModuloDePermisos, type RolResumido } from '../../api/roles';
+import { consultarCatalogoDePermisos, consultarRoles, type RolResumido } from '../../api/roles';
 import { useSesion } from '../../sesion/SesionProveedor';
 import { Mensaje } from '../../componentes/Mensaje';
 import { BotonConAyuda, BotonIcono } from '../../componentes/Botones';
@@ -37,25 +37,11 @@ export function RolesYPermisos() {
   const pestana = parametros.get('pestana') === 'permisos' ? 'permisos' : 'roles';
   const verId = parametros.get('rol');
 
-  const [roles, setRoles] = useState<RolResumido[] | null>(null);
-  const [catalogo, setCatalogo] = useState<ModuloDePermisos[] | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const { datos, error, recargar } = useConsulta(() => Promise.all([consultarRoles(), consultarCatalogoDePermisos()]), []);
+  const [roles, catalogo] = datos ?? [null, null];
   const [aviso, setAviso] = useState<string | null>(null);
   const [estadoDe, setEstadoDe] = useState<RolResumido | null>(null);
 
-  const cargar = useCallback(async () => {
-    try {
-      const [listaDeRoles, cat] = await Promise.all([consultarRoles(), consultarCatalogoDePermisos()]);
-      setRoles(listaDeRoles);
-      setCatalogo(cat);
-    } catch (e) {
-      setError(textoDelError(e));
-    }
-  }, []);
-
-  useEffect(() => {
-    void cargar();
-  }, [cargar]);
 
 
   const puedeAdministrar = tienePermisos('roles.editar');
@@ -254,8 +240,7 @@ export function RolesYPermisos() {
           alGuardar={(texto) => {
             setEstadoDe(null);
             setAviso(texto);
-            setError(null);
-            void cargar();
+            recargar();
           }}
         />
       )}

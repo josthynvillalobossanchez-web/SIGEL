@@ -472,3 +472,18 @@ input.solo-lectura { background: var(--neutro-bg); color: var(--texto-sec); curs
    claro, el icono del calendario se pintaba blanco sobre blanco (28/09). */
 :root[data-theme="light"] { color-scheme: light; }
 :root[data-theme="dark"] { color-scheme: dark; }
+
+/* Inicio: titulos de seccion y cifras del resumen (cada una lleva a la lista filtrada). */
+.inicio-titulo { font-size: 13px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--texto-sec); margin: 18px 0 10px; }
+.inicio-cifras { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 14px; }
+.inicio-cifra {
+  display: flex; flex-direction: column; gap: 2px; padding: 14px 18px; border-radius: var(--radio-lg);
+  background: var(--card); border: 1px solid var(--borde); color: var(--texto); text-decoration: none;
+}
+.inicio-cifra:hover { border-color: var(--accion); box-shadow: var(--sombra-sm); }
+.inicio-cifra:focus-visible { outline: 3px solid var(--foco); outline-offset: 2px; }
+.inicio-cifra b { font-size: 28px; font-weight: 800; line-height: 1.1; }
+.inicio-cifra span { font-size: 13.5px; color: var(--texto-sec); }
+
+/* Botones de enlace dentro de una ventana (p. ej. "Ver su cuenta en Usuarios"). */
+.acciones-en-linea { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 14px; }

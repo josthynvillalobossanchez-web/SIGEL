@@ -27,8 +27,9 @@
  * Al terminar: ventana "...con exito" -> Aceptar -> vuelve a la lista.
  */
 import { useEffect, useMemo, useState } from 'react';
-import { useNavigate, useParams } from 'react-router';
+import { useNavigate, useParams, useSearchParams } from 'react-router';
 import { textoDelError } from '../../api/cliente';
+import { useConsulta } from '../../utilidades/useConsulta';
 import {
   buscarFuncionariosDisponibles,
   consultarCuenta,
@@ -38,7 +39,7 @@ import {
   type DetalleDeCuenta,
   type FuncionarioDisponible,
 } from '../../api/usuarios';
-import { consultarRoles, type RolResumido } from '../../api/roles';
+import { consultarRoles } from '../../api/roles';
 import { useSesion } from '../../sesion/SesionProveedor';
 import { FormularioPorPasos, type PasoDeFormulario } from '../../componentes/FormularioPorPasos';
 import { useCambiosSinGuardar, useIrSeguro } from '../../componentes/CambiosSinGuardar';
@@ -69,14 +70,7 @@ export function PaginaCrearUsuario() {
 export function PaginaEditarUsuario() {
   const { id = '' } = useParams();
   const { tienePermisos } = useSesion();
-  const [cuenta, setCuenta] = useState<DetalleDeCuenta | null>(null);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    consultarCuenta(id)
-      .then(setCuenta)
-      .catch((e) => setError(textoDelError(e)));
-  }, [id]);
+  const { datos: cuenta, error } = useConsulta(() => consultarCuenta(id), [id]);
 
   const bloqueo = cuenta ? motivoDeBloqueo('editar', cuenta.motivoNoModificable, tienePermisos) : null;
 
@@ -128,11 +122,15 @@ function FormularioDeUsuario({ cuenta }: { cuenta?: DetalleDeCuenta }) {
   }, [cuenta]);
 
   const [paso, setPaso] = useState(0);
-  const [busqueda, setBusqueda] = useState('');
+  // Desde la ficha de un funcionario sin cuenta se llega con ?cedula=...:
+  // se busca a esa persona y, si aparece, queda elegida.
+  const [parametros] = useSearchParams();
+  const cedulaPedida = editando ? '' : (parametros.get('cedula') ?? '');
+  const [busqueda, setBusqueda] = useState(cedulaPedida);
   const [funcionarios, setFuncionarios] = useState<FuncionarioDisponible[] | null>(null);
   const [elegido, setElegido] = useState<FuncionarioDisponible | null>(null);
   const [correo, setCorreo] = useState(cuenta?.correo ?? '');
-  const [roles, setRoles] = useState<RolResumido[] | null>(null);
+  const { datos: roles, error: errorDeRoles } = useConsulta(consultarRoles, []);
   const [marcados, setMarcados] = useState<RolesMarcados>(iniciales);
   const [ocupado, setOcupado] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -145,20 +143,23 @@ function FormularioDeUsuario({ cuenta }: { cuenta?: DetalleDeCuenta }) {
     let vigente = true;
     const espera = window.setTimeout(() => {
       buscarFuncionariosDisponibles(busqueda.trim())
-        .then((lista) => vigente && setFuncionarios(lista))
+        .then((lista) => {
+          if (!vigente) return;
+          setFuncionarios(lista);
+          const pedido = cedulaPedida ? lista.find((f) => f.cedula === cedulaPedida) : undefined;
+          if (pedido && busqueda === cedulaPedida) {
+            setElegido((actual) => actual ?? pedido);
+            setCorreo((actual) => actual || (pedido.correoInstitucional ?? ''));
+          }
+        })
         .catch((e) => vigente && setError(textoDelError(e)));
     }, 350);
     return () => {
       vigente = false;
       window.clearTimeout(espera);
     };
-  }, [busqueda, editando]);
+  }, [busqueda, editando, cedulaPedida]);
 
-  useEffect(() => {
-    consultarRoles()
-      .then(setRoles)
-      .catch((e) => setError(textoDelError(e)));
-  }, []);
 
   const nombreDeRol = (id: string) => roles?.find((r) => r.id === id)?.nombre ?? 'Rol';
   const correoLimpio = correo.trim().toLowerCase();
@@ -261,7 +262,7 @@ function FormularioDeUsuario({ cuenta }: { cuenta?: DetalleDeCuenta }) {
         textoGuardar={editando ? 'Guardar cambios' : 'Crear usuario'}
         bloqueoGuardar={editando && !hayCambios ? 'no hay cambios que guardar.' : null}
         ocupado={ocupado}
-        error={error}
+        error={error ?? errorDeRoles}
         claveDeDatos={JSON.stringify([elegido?.id, correo, marcados])}
       >
         {/* ---------------- Paso 1: cuenta ---------------- */}

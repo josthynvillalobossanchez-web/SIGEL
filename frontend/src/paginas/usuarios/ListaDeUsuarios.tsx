@@ -18,11 +18,13 @@
  * ?ver=<id> y ?permisos=<id>): el boton "atras" funciona y las paginas de
  * edicion pueden volver a la ventana de la que salieron.
  */
-import { useCallback, useEffect, useState } from 'react';
+import { useState } from 'react';
+import { Paginacion } from '../../componentes/Paginacion';
+import { useBusquedaDiferida } from '../../utilidades/useBusquedaDiferida';
+import { useConsulta } from '../../utilidades/useConsulta';
 import { useNavigate } from 'react-router';
 import { useParametrosEnUrl } from '../../utilidades/parametrosEnUrl';
-import { textoDelError } from '../../api/cliente';
-import { consultarCuentas, type CuentaEnLista, type EstadoDeCuenta, type Pagina } from '../../api/usuarios';
+import { consultarCuentas, type CuentaEnLista, type EstadoDeCuenta } from '../../api/usuarios';
 import { Icono } from '../../componentes/Icono';
 import { Mensaje } from '../../componentes/Mensaje';
 import { BotonConAyuda, BotonIcono } from '../../componentes/Botones';
@@ -59,37 +61,20 @@ export function ListaDeUsuarios() {
   /** Cuenta abierta en "Permisos individuales" (va en la URL). */
   const permisosId = parametros.get('permisos');
 
-  const [textoBuscado, setTextoBuscado] = useState(busquedaEnUrl);
-  const [resultado, setResultado] = useState<Pagina<CuentaEnLista> | null>(null);
-  const [cargando, setCargando] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [textoBuscado, setTextoBuscado] = useBusquedaDiferida(busquedaEnUrl, (busqueda) => cambiarParametros({ busqueda }));
   const [aviso, setAviso] = useState<string | null>(null);
   const [ventana, setVentana] = useState<Ventana>(null);
-  /** Cambia para forzar que la lista se vuelva a pedir. */
-  const [recarga, setRecarga] = useState(0);
-  const recargar = useCallback(() => setRecarga((n) => n + 1), []);
 
-
-  // Busca medio segundo despues de dejar de escribir.
-  useEffect(() => {
-    if (textoBuscado.trim() === busquedaEnUrl) return;
-    const espera = window.setTimeout(() => cambiarParametros({ busqueda: textoBuscado.trim() }), 450);
-    return () => window.clearTimeout(espera);
-  }, [textoBuscado, busquedaEnUrl, cambiarParametros]);
-
-  // Consulta cada vez que cambian los filtros o se pide recargar.
-  useEffect(() => {
-    let vigente = true; // evita que una respuesta vieja pise a una nueva
-    setCargando(true);
-    setError(null);
-    consultarCuentas({ pagina, tamano: TAMANO_DE_PAGINA, busqueda: busquedaEnUrl || undefined, estado: estado || undefined })
-      .then((datos) => vigente && setResultado(datos))
-      .catch((e) => vigente && setError(textoDelError(e)))
-      .finally(() => vigente && setCargando(false));
-    return () => {
-      vigente = false;
-    };
-  }, [pagina, busquedaEnUrl, estado, recarga]);
+  // Consulta cada vez que cambian los filtros (y con recargar(), al guardar).
+  const {
+    datos: resultado,
+    error,
+    cargando,
+    recargar,
+  } = useConsulta(
+    () => consultarCuentas({ pagina, tamano: TAMANO_DE_PAGINA, busqueda: busquedaEnUrl || undefined, estado: estado || undefined }),
+    [pagina, busquedaEnUrl, estado],
+  );
 
   function cuentaDeFila(c: CuentaEnLista): CuentaDeFila {
     return { id: c.id, correo: c.correo, estado: c.estado, nombre: nombreCompleto(c.funcionario) };
@@ -196,12 +181,7 @@ export function ListaDeUsuarios() {
               </tbody>
             </table>
           </div>
-          <Paginacion
-            pagina={resultado.pagina}
-            totalPaginas={resultado.totalPaginas}
-            total={resultado.total}
-            tamano={resultado.tamano}
-            alCambiar={(n) => cambiarParametros({ pagina: String(n) })}
+          <Paginacion resultado={resultado} nombre={['cuenta', 'cuentas']} alCambiar={(n) => cambiarParametros({ pagina: String(n) })}
           />
         </>
       )}
@@ -296,29 +276,5 @@ function FilaDeCuenta({
         />
       </td>
     </tr>
-  );
-}
-
-function Paginacion(props: { pagina: number; totalPaginas: number; total: number; tamano: number; alCambiar: (pagina: number) => void }) {
-  const { pagina, totalPaginas, total, tamano, alCambiar } = props;
-  const desde = (pagina - 1) * tamano + 1;
-  const hasta = Math.min(pagina * tamano, total);
-  return (
-    <nav className="paginacion" aria-label="Paginación de la lista de usuarios">
-      <span aria-live="polite">
-        {desde}–{hasta} de {total} cuenta{total === 1 ? '' : 's'}
-      </span>
-      <div className="paginas">
-        <button className="pag-btn" type="button" disabled={pagina <= 1} onClick={() => alCambiar(pagina - 1)} data-ayuda="Página anterior">
-          Anterior
-        </button>
-        <span className="pag-btn" aria-current="page" aria-label={`Página ${pagina} de ${totalPaginas}`}>
-          {pagina} / {totalPaginas}
-        </span>
-        <button className="pag-btn" type="button" disabled={pagina >= totalPaginas} onClick={() => alCambiar(pagina + 1)} data-ayuda="Página siguiente">
-          Siguiente
-        </button>
-      </div>
-    </nav>
   );
 }

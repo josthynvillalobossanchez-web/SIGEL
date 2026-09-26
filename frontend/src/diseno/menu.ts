@@ -38,6 +38,8 @@ export interface OpcionDeMenu {
   permisos: string[];
   /** Solo para cuentas ligadas a un funcionario (no la cuenta tecnica). */
   requiereFuncionario?: boolean;
+  /** Texto corto de la tarjeta de acceso directo en Inicio. */
+  descripcion?: string;
   subopciones?: SubopcionDeMenu[];
 }
 
@@ -60,6 +62,7 @@ export const MENU: GrupoDeMenu[] = [
         ruta: '/funcionarios',
         icono: 'personas',
         permisos: ['funcionarios.ver'],
+        descripcion: 'Buscar funcionarios, registrarlos por pasos, corregir sus datos, abrir su expediente y registrar salidas o reingresos.',
         subopciones: [
           { texto: 'Registrar funcionario', ruta: '/funcionarios/nuevo', permisos: ['funcionarios.crear'] },
           { texto: 'Editar funcionario', patron: /^\/funcionarios\/[^/]+\/editar$/, permisos: ['funcionarios.editar'] },
@@ -76,6 +79,7 @@ export const MENU: GrupoDeMenu[] = [
         ruta: '/usuarios',
         icono: 'usuarios',
         permisos: ['usuarios.ver'],
+        descripcion: 'Cuentas de acceso: crear, editar roles y suplencias, permisos individuales y estado.',
         subopciones: [
           { texto: 'Crear usuario', ruta: '/usuarios/nuevo', permisos: ['usuarios.crear'] },
           { texto: 'Editar usuario', patron: /^\/usuarios\/[^/]+\/editar$/, permisos: ['usuarios.editar'] },
@@ -88,6 +92,7 @@ export const MENU: GrupoDeMenu[] = [
         ruta: '/roles',
         icono: 'roles',
         permisos: ['usuarios.ver'],
+        descripcion: 'Qué permisos da cada rol, roles propios de la Municipalidad y catálogo de permisos.',
         subopciones: [
           { texto: 'Crear rol', ruta: '/roles/nuevo', permisos: ['roles.editar'] },
           { texto: 'Editar rol', patron: /^\/roles\/[^/]+\/editar$/, permisos: ['roles.editar'] },
@@ -98,15 +103,39 @@ export const MENU: GrupoDeMenu[] = [
   {
     // Mismo grupo del prototipo. En la epica 3 se agrega "Tipos de documento".
     titulo: 'Catálogos',
-    opciones: [{ texto: 'Catálogos de personal', ruta: '/catalogos', icono: 'carpeta', permisos: ['catalogos.editar'] }],
+    opciones: [
+      {
+        texto: 'Catálogos de personal',
+        ruta: '/catalogos',
+        icono: 'carpeta',
+        permisos: ['catalogos.editar'],
+        descripcion: 'Departamentos, puestos y profesiones que se eligen al registrar a un funcionario.',
+      },
+    ],
   },
   {
     titulo: 'Mi acceso',
     opciones: [
       // Cada persona ve su propio expediente (solo lectura). La cuenta tecnica
       // de Informatica no tiene funcionario: no le aparece (requiereFuncionario).
-      { texto: 'Mi expediente', ruta: '/mi-expediente', icono: 'carpeta', permisos: ['expediente.ver'], requiereFuncionario: true },
-      { texto: 'Mi cuenta', ruta: '/mi-cuenta', icono: 'cuenta', permisos: [] },
+      {
+        texto: 'Mi expediente',
+        ruta: '/mi-expediente',
+        icono: 'carpeta',
+        permisos: ['expediente.ver'],
+        requiereFuncionario: true,
+        descripcion: 'Su expediente laboral: información personal y laboral, e historial de movimientos.',
+      },
+      { texto: 'Mi cuenta', ruta: '/mi-cuenta', icono: 'cuenta', permisos: [], descripcion: 'Sus datos personales, sus datos laborales, sus roles y su contraseña.' },
     ],
   },
 ];
+
+/**
+ * Si una opcion se le muestra a la cuenta: tiene TODOS sus permisos y, si la
+ * opcion lo pide, la cuenta esta ligada a un funcionario. La usan el menu
+ * lateral (Marco) y las tarjetas de Inicio, para que siempre coincidan.
+ */
+export function puedeVerOpcion(opcion: OpcionDeMenu, tienePermisos: (...claves: string[]) => boolean, tieneFuncionario: boolean): boolean {
+  return tienePermisos(...opcion.permisos) && (!opcion.requiereFuncionario || tieneFuncionario);
+}

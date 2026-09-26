@@ -48,7 +48,6 @@ export function HistorialLaboral({ funcionarioId }: { funcionarioId: string }) {
 
   useEffect(() => {
     void cargar(1);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [funcionarioId]);
 
   if (error && movimientos.length === 0) return <Mensaje tipo="error">{error}</Mensaje>;

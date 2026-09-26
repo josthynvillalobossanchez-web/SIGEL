@@ -20,10 +20,18 @@
  * Al editar se guarda todo junto (PATCH /roles/:id) o nada.
  * Al terminar: ventana de exito -> Aceptar -> vuelve a la lista de roles.
  */
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
+import { useConsulta } from '../../utilidades/useConsulta';
 import { useNavigate, useParams } from 'react-router';
 import { textoDelError } from '../../api/cliente';
-import { consultarCatalogoDePermisos, consultarRoles, crearRol, editarRol, type ModuloDePermisos, type RolResumido } from '../../api/roles';
+import {
+  consultarCatalogoDePermisos,
+  consultarRoles,
+  crearRol,
+  editarRol,
+  type ModuloDePermisos,
+  type RolResumido,
+} from '../../api/roles';
 import { useSesion } from '../../sesion/SesionProveedor';
 import { FormularioPorPasos, type PasoDeFormulario } from '../../componentes/FormularioPorPasos';
 import { SelectorPorModulos } from '../../componentes/SelectorPorModulos';
@@ -42,18 +50,8 @@ export function PaginaRol() {
   const { id } = useParams();
   const { usuario, tienePermisos } = useSesion();
   const navegar = useNavigate();
-  const [roles, setRoles] = useState<RolResumido[] | null>(null);
-  const [catalogo, setCatalogo] = useState<ModuloDePermisos[] | null>(null);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    Promise.all([consultarRoles(), consultarCatalogoDePermisos()])
-      .then(([r, c]) => {
-        setRoles(r);
-        setCatalogo(c);
-      })
-      .catch((e) => setError(textoDelError(e)));
-  }, []);
+  const { datos, error } = useConsulta(() => Promise.all([consultarRoles(), consultarCatalogoDePermisos()]), []);
+  const [roles, catalogo] = datos ?? [null, null];
 
   const bloqueos = useMemo(
     () =>

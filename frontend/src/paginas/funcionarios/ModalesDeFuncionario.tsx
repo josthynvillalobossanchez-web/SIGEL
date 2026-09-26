@@ -8,8 +8,10 @@
  *   - ModalReingreso: la persona vuelve (nueva fecha de ingreso).
  * Salida y reingreso son confirmaciones cortas: por eso van en ventana.
  */
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
+import { useNavigate } from 'react-router';
 import { textoDelError } from '../../api/cliente';
+import { useConsulta } from '../../utilidades/useConsulta';
 import {
   consultarFuncionario,
   NOMBRES_DE_NOMBRAMIENTO,
@@ -20,6 +22,7 @@ import {
 import { Modal } from '../../componentes/Modal';
 import { Mensaje } from '../../componentes/Mensaje';
 import { BotonConAyuda } from '../../componentes/Botones';
+import { useSesion } from '../../sesion/SesionProveedor';
 import { CampoFecha } from '../../componentes/CampoFecha';
 import { revisarFechasDeVencimiento } from '../../componentes/CampoFechaDeVencimiento';
 import { PanelDePestana, Pestanas, usePrefijoDePestanas } from '../../componentes/Pestanas';
@@ -50,15 +53,10 @@ export function ModalFicha({
   alVerExpediente: () => void;
 }) {
   const prefijo = usePrefijoDePestanas();
-  const [f, setF] = useState<DetalleDeFuncionario | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const { datos: f, error } = useConsulta(() => consultarFuncionario(funcionarioId), [funcionarioId]);
+  const { tienePermisos } = useSesion();
+  const irA = useNavigate();
   const [pestana, setPestana] = useState('personales');
-
-  useEffect(() => {
-    consultarFuncionario(funcionarioId)
-      .then(setF)
-      .catch((e) => setError(textoDelError(e)));
-  }, [funcionarioId]);
 
   return (
     <Modal
@@ -134,17 +132,44 @@ export function ModalFicha({
           </PanelDePestana>
           <PanelDePestana id="cuenta" actual={pestana} prefijo={prefijo}>
             {f.cuenta ? (
-              <dl className="info-rejilla vista-datos compacto">
-                <Dato titulo="Correo de ingreso" valor={f.cuenta.correo} />
-                <Dato
-                  titulo="Estado de la cuenta"
-                  valor={f.cuenta.estado === 'activo' ? 'Activa' : f.cuenta.estado === 'bloqueado' ? 'Bloqueada' : 'Inactiva'}
-                />
-              </dl>
+              <>
+                <dl className="info-rejilla vista-datos compacto">
+                  <Dato titulo="Correo de ingreso" valor={f.cuenta.correo} />
+                  <Dato
+                    titulo="Estado de la cuenta"
+                    valor={f.cuenta.estado === 'activo' ? 'Activa' : f.cuenta.estado === 'bloqueado' ? 'Bloqueada' : 'Inactiva'}
+                  />
+                </dl>
+                {/* Enlace entre modulos: de la persona a su cuenta. */}
+                <div className="acciones-en-linea">
+                  <BotonConAyuda
+                    icono="usuarios"
+                    texto="Ver su cuenta en Usuarios"
+                    ayuda="Abrir la cuenta: roles, suplencias, permisos individuales y estado"
+                    bloqueadoPor={tienePermisos('usuarios.ver') ? null : 'su cuenta no tiene permiso para ver usuarios.'}
+                    alHacerClic={() => irA(`/usuarios?ver=${f.cuenta!.id}`)}
+                  />
+                </div>
+              </>
             ) : (
-              <p className="nota-modal">
-                No tiene cuenta de acceso al sistema. Se le puede crear desde Usuarios → «Crear usuario».
-              </p>
+              <>
+                <p className="nota-modal">No tiene cuenta de acceso al sistema.</p>
+                <div className="acciones-en-linea">
+                  <BotonConAyuda
+                    icono="mas"
+                    texto="Crearle una cuenta"
+                    ayuda="Ir a «Crear usuario» con esta persona ya elegida"
+                    bloqueadoPor={
+                      !tienePermisos('usuarios.crear')
+                        ? 'su cuenta no tiene permiso para crear cuentas de usuario.'
+                        : f.estado !== 'activo'
+                          ? 'la persona ya no trabaja en la Municipalidad (está inactiva).'
+                          : null
+                    }
+                    alHacerClic={() => irA(`/usuarios/nuevo?cedula=${encodeURIComponent(f.cedula)}`)}
+                  />
+                </div>
+              </>
             )}
           </PanelDePestana>
         </>

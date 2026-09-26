@@ -23,9 +23,10 @@
  * Al terminar: ventana de exito -> Aceptar -> vuelve a la lista con la
  * ventana "Permisos individuales" de esa cuenta abierta (de donde vino).
  */
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router';
 import { textoDelError } from '../../api/cliente';
+import { useConsulta } from '../../utilidades/useConsulta';
 import { ajustarVariosPermisos, consultarCuenta, type DetalleDeCuenta, type PermisoIndividual } from '../../api/usuarios';
 import { consultarCatalogoDePermisos, type ModuloDePermisos } from '../../api/roles';
 import { useSesion } from '../../sesion/SesionProveedor';
@@ -47,18 +48,8 @@ export function PaginaExcepcion() {
   const { id = '', permisoId } = useParams();
   const { tienePermisos } = useSesion();
   const navegar = useNavigate();
-  const [cuenta, setCuenta] = useState<DetalleDeCuenta | null>(null);
-  const [catalogo, setCatalogo] = useState<ModuloDePermisos[] | null>(null);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    Promise.all([consultarCuenta(id), consultarCatalogoDePermisos()])
-      .then(([c, cat]) => {
-        setCuenta(c);
-        setCatalogo(cat);
-      })
-      .catch((e) => setError(textoDelError(e)));
-  }, [id]);
+  const { datos, error } = useConsulta(() => Promise.all([consultarCuenta(id), consultarCatalogoDePermisos()]), [id]);
+  const [cuenta, catalogo] = datos ?? [null, null];
 
   const editando = Boolean(permisoId);
   const existente = cuenta?.permisos.find((p) => p.id === permisoId && p.vigente) ?? null;
