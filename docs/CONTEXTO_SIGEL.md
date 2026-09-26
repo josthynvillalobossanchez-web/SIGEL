@@ -209,15 +209,18 @@ contraseña temporal.
 | `PATCH /api/catalogos/:tipo/:id/estado` | `catalogos.editar` | Inactiva o reactiva (se puede aunque esté en uso) |
 | `GET /api/funcionarios` | `funcionarios.ver` | Lista paginada; busca por cédula, nombre o correo (varias palabras), filtra por estado y departamento |
 | `GET /api/funcionarios/opciones` | `funcionarios.ver` | Listas activas para los formularios (catálogos, regímenes, jefaturas, nombramientos) |
-| `GET /api/funcionarios/:id` | `funcionarios.ver` | Ficha completa (no se audita; el expediente sí se auditará) |
+| `GET /api/funcionarios/:id` | `funcionarios.ver` | Ficha completa (no se audita; el expediente sí) |
 | `POST /api/funcionarios` | `funcionarios.crear` | Registra; con `cuenta` crea también la cuenta (pide `usuarios.crear`), todo junto |
 | `PATCH /api/funcionarios/:id` | `funcionarios.editar` | Corrige datos (no la cédula ni el estado) |
 | `POST /api/funcionarios/:id/salida` | `funcionarios.editar` | Salida con fecha y motivo; inactiva su cuenta a la vez |
 | `POST /api/funcionarios/:id/reingreso` | `funcionarios.editar` | Vuelve a quedar activo (la cuenta se reactiva aparte) |
 | `GET /api/usuarios/funcionarios-disponibles` | `usuarios.crear` | Funcionarios activos sin cuenta (para crear una) |
+| `GET /api/expedientes/propio` | `expediente.ver` | Mi expediente (se anota en la bitácora) |
+| `GET /api/expedientes/:funcionarioId` | `expediente.ver` (+ `expediente.verTodos` si no es el propio) | Abre un expediente (se anota en la bitácora) |
+| `GET /api/expedientes/:funcionarioId/historial` | igual que el anterior | Historial laboral paginado, lo más reciente primero |
 | `GET /api/salud` | público | Comprobación del servicio |
 
-**Falta en backend:** expediente, historial laboral y documentos.
+**Falta en backend:** documentos (épica 3).
 
 ### Estado del frontend (desde el 25/09)
 
@@ -319,7 +322,11 @@ Decisiones de funcionarios (27/09; se pueden revertir):
 - Cada cambio va a la bitácora con el **antes y el después legibles** (nombre del puesto, no su id):
   de ahí saldrá el historial laboral.
 
-Pendiente: expediente e historial laboral (épica 2) y la épica 3.
+Expediente (28/09): página `/funcionarios/:id/expediente` y `/mi-expediente` como `pgExpediente` (perfil, aviso de información
+sensible, pestañas Información personal · Información laboral · Documentos · Capacitaciones · Historial laboral).
+Documentos y Capacitaciones muestran su explicación hasta la épica 3 y el Sprint 2.
+
+Pendiente: la épica 3.
 
 ### Repositorio en GitHub (versionado el 19/09/2026)
 
@@ -708,6 +715,18 @@ Estas ya están validadas. **Trátelas como verdad** salvo que Josthyn diga lo c
 - **Quién ve Funcionarios y Usuarios**: RRHH y administradores. **Aprobador solo ve funcionarios
   (no cambiar)**. Solicitante no ve ninguno. **Consulta** (Auditoría Interna) se deja como está:
   ve funcionarios, expedientes y usuarios, sin editar.
+
+- **Expediente (28/09)**: cada persona abre el SUYO, solo para ver (`expediente.ver`, en todos los
+  roles; menú "Mi expediente"). El de otra persona, **solo Recursos Humanos**
+  (`expediente.verTodos`, en Administrador y SA). Ni la jefatura (Aprobador) ni Consulta abren
+  expedientes ajenos: son documentos delicados (`EXPEDIENTE_AJENO`). Cada apertura queda en la
+  bitácora, también la propia.
+- **Documentos del expediente (reafirmado 28/09)**: cada persona sube documentos a su propio
+  expediente y da de baja solo los que ella misma subió; lo que subió RRHH no lo puede quitar.
+  RRHH puede dar de baja cualquier documento, en expedientes propios y ajenos.
+- **Historial laboral**: sale de la bitácora (sin tabla ni migración): ingreso, cambios de datos
+  laborales (de qué a qué y quién), salida y reingreso. Los cambios de datos personales no se
+  muestran ahí.
 
 ### Convenciones de la base de datos
 

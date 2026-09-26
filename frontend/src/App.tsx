@@ -6,6 +6,8 @@
  *   Con sesion (marco):   /, /mi-cuenta y "no encontrada", mas:
  *     /funcionarios                              lista (ventanas: ficha, salida, reingreso)
  *     /funcionarios/nuevo, /funcionarios/:id/editar  Registrar / Editar funcionario
+ *     /funcionarios/:id/expediente               Expediente laboral (el propio, o RRHH cualquiera)
+ *     /mi-expediente                             Mi expediente (solo lectura)
  *     /usuarios                                  lista (ventanas: ver, permisos, estado)
  *     /usuarios/nuevo                            Crear usuario
  *     /usuarios/:id/editar                       Editar usuario
@@ -16,7 +18,9 @@
  *     /catalogos                                 departamentos, puestos, profesiones (ventanas cortas)
  *
  * Regla (26/09): consultar = ventana; crear o editar = pagina aparte por
- * pasos, con su subseccion en el menu (diseno/menu.ts).
+ * pasos, con su subseccion en el menu (diseno/menu.ts). El expediente es la
+ * excepcion de consulta: tiene tantas pestanas que va en pagina propia (como
+ * pgExpediente del prototipo).
  * /usuarios/:id y /roles/:id (sin "editar") abren la ventana de consulta
  * (?ver=<id> o ?rol=<id>) para que ningun enlace se rompa.
  *
@@ -37,6 +41,7 @@ import { PaginaCrearUsuario, PaginaEditarUsuario } from './paginas/usuarios/Pagi
 import { PaginaExcepcion } from './paginas/usuarios/PaginaExcepcion';
 import { RolesYPermisos } from './paginas/roles/RolesYPermisos';
 import { PaginaRol } from './paginas/roles/PaginaRol';
+import { PaginaExpediente, PaginaMiExpediente } from './paginas/expediente/Expediente';
 import { MiCuenta } from './paginas/cuenta/MiCuenta';
 import { Catalogos } from './paginas/catalogos/Catalogos';
 import { ListaDeFuncionarios } from './paginas/funcionarios/ListaDeFuncionarios';
@@ -89,6 +94,14 @@ export function App() {
                 element={
                   <ConPermisos permisos={['funcionarios.ver', 'funcionarios.editar']}>
                     <PaginaEditarFuncionario />
+                  </ConPermisos>
+                }
+              />
+              <Route
+                path="/funcionarios/:id/expediente"
+                element={
+                  <ConPermisos permisos={['expediente.ver']}>
+                    <PaginaExpediente />
                   </ConPermisos>
                 }
               />
@@ -168,6 +181,14 @@ export function App() {
                 }
               />
               <Route path="/mi-cuenta" element={<MiCuenta />} />
+              <Route
+                path="/mi-expediente"
+                element={
+                  <ConPermisos permisos={['expediente.ver']}>
+                    <PaginaMiExpediente />
+                  </ConPermisos>
+                }
+              />
               <Route path="*" element={<PaginaNoEncontrada />} />
             </Route>
           </Route>

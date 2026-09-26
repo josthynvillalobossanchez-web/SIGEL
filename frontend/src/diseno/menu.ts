@@ -36,6 +36,8 @@ export interface OpcionDeMenu {
   icono: NombreDeIcono;
   /** Permisos necesarios. Lista vacia = cualquiera con sesion. */
   permisos: string[];
+  /** Solo para cuentas ligadas a un funcionario (no la cuenta tecnica). */
+  requiereFuncionario?: boolean;
   subopciones?: SubopcionDeMenu[];
 }
 
@@ -61,6 +63,7 @@ export const MENU: GrupoDeMenu[] = [
         subopciones: [
           { texto: 'Registrar funcionario', ruta: '/funcionarios/nuevo', permisos: ['funcionarios.crear'] },
           { texto: 'Editar funcionario', patron: /^\/funcionarios\/[^/]+\/editar$/, permisos: ['funcionarios.editar'] },
+          { texto: 'Expediente laboral', patron: /^\/funcionarios\/[^/]+\/expediente$/, permisos: ['expediente.verTodos'] },
         ],
       },
     ],
@@ -99,6 +102,11 @@ export const MENU: GrupoDeMenu[] = [
   },
   {
     titulo: 'Mi acceso',
-    opciones: [{ texto: 'Mi cuenta', ruta: '/mi-cuenta', icono: 'cuenta', permisos: [] }],
+    opciones: [
+      // Cada persona ve su propio expediente (solo lectura). La cuenta tecnica
+      // de Informatica no tiene funcionario: no le aparece (requiereFuncionario).
+      { texto: 'Mi expediente', ruta: '/mi-expediente', icono: 'carpeta', permisos: ['expediente.ver'], requiereFuncionario: true },
+      { texto: 'Mi cuenta', ruta: '/mi-cuenta', icono: 'cuenta', permisos: [] },
+    ],
   },
 ];

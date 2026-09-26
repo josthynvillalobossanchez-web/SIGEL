@@ -35,7 +35,11 @@ const PERMISOS: { clave: string; modulo: string; descripcion: string }[] = [
   { clave: 'funcionarios.ver', modulo: 'funcionarios', descripcion: 'Consultar funcionarios y su ficha resumida' },
   { clave: 'funcionarios.crear', modulo: 'funcionarios', descripcion: 'Registrar un funcionario nuevo' },
   { clave: 'funcionarios.editar', modulo: 'funcionarios', descripcion: 'Modificar la información de un funcionario' },
-  { clave: 'expediente.ver', modulo: 'expediente', descripcion: 'Abrir el expediente laboral' },
+  // Expediente (decision de Josthyn, 28/09): cada persona abre el SUYO
+  // (expediente.ver, en todos los roles); el de otra persona, solo Recursos
+  // Humanos (expediente.verTodos). Son documentos delicados.
+  { clave: 'expediente.ver', modulo: 'expediente', descripcion: 'Abrir su propio expediente laboral' },
+  { clave: 'expediente.verTodos', modulo: 'expediente', descripcion: 'Abrir el expediente laboral de cualquier funcionario (Recursos Humanos)' },
   { clave: 'documentos.crear', modulo: 'documentos', descripcion: 'Subir documentos al expediente' },
   { clave: 'documentos.descargar', modulo: 'documentos', descripcion: 'Ver y descargar documentos' },
   { clave: 'documentos.darDeBaja', modulo: 'documentos', descripcion: 'Dar de baja cualquier documento, sin eliminarlo' },
@@ -102,6 +106,7 @@ const ROLES: { nombre: string; descripcion: string; permisos: string[] | 'todos'
       'funcionarios.crear',
       'funcionarios.editar',
       'expediente.ver',
+      'expediente.verTodos',
       'documentos.crear',
       'documentos.descargar',
       'documentos.darDeBaja',
@@ -133,7 +138,7 @@ const ROLES: { nombre: string; descripcion: string; permisos: string[] | 'todos'
   },
   {
     nombre: 'Consulta',
-    descripcion: 'Solo lectura de funcionarios y expedientes, sin ningún permiso de escritura. Auditoría Interna.',
+    descripcion: 'Solo lectura de funcionarios y usuarios, sin ningún permiso de escritura (abre solo su propio expediente). Auditoría Interna.',
     permisos: ['funcionarios.ver', 'expediente.ver', 'documentos.descargar', 'usuarios.ver'],
   },
 ];

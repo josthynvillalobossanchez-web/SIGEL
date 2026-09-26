@@ -98,7 +98,7 @@ export const NOMBRES_DE_NOMBRAMIENTO: Record<TipoDeNombramiento, string> = {
 };
 
 /** Etiquetas de cada campo, para la bitacora y el historial laboral. */
-const ETIQUETAS: Record<string, string> = {
+export const ETIQUETAS: Record<string, string> = {
   nombre: 'nombre',
   primerApellido: 'primer apellido',
   segundoApellido: 'segundo apellido',

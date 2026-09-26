@@ -27,7 +27,6 @@ import { hoyEnCostaRica, sumarAnios } from '../../utilidades/fechas';
 import { inicialesDeFuncionario, nombreCompleto } from '../../utilidades/texto';
 import { ChipDeFuncionario } from './ChipDeFuncionario';
 import { Dato, DatosLaboralesVista, DatosPersonalesVista } from './DatosDeFuncionario';
-import { MOTIVO_EXPEDIENTE_PENDIENTE } from './motivos';
 
 /* ================================================================== */
 /* Ficha resumida                                                      */
@@ -36,14 +35,19 @@ import { MOTIVO_EXPEDIENTE_PENDIENTE } from './motivos';
 export function ModalFicha({
   funcionarioId,
   bloqueoEditar,
+  bloqueoExpediente,
   alCerrar,
   alEditar,
+  alVerExpediente,
 }: {
   funcionarioId: string;
   /** Por que no se puede editar (null = si se puede); se calcula con el detalle. */
   bloqueoEditar: (f: DetalleDeFuncionario) => string | null;
+  /** Por que no se puede abrir su expediente (null = si se puede). */
+  bloqueoExpediente: (f: DetalleDeFuncionario) => string | null;
   alCerrar: () => void;
   alEditar: () => void;
+  alVerExpediente: () => void;
 }) {
   const prefijo = usePrefijoDePestanas();
   const [f, setF] = useState<DetalleDeFuncionario | null>(null);
@@ -100,7 +104,14 @@ export function ModalFicha({
                 bloqueadoPor={bloqueoEditar(f)}
                 alHacerClic={alEditar}
               />
-              <BotonConAyuda clase="btn btn-primario" texto="Ver expediente" bloqueadoPor={MOTIVO_EXPEDIENTE_PENDIENTE} />
+              <BotonConAyuda
+                clase="btn btn-primario"
+                icono="carpeta"
+                texto="Ver expediente"
+                ayuda="Abrir su expediente laboral completo (la apertura queda en la bitácora)"
+                bloqueadoPor={bloqueoExpediente(f)}
+                alHacerClic={alVerExpediente}
+              />
             </>
           )}
         </>

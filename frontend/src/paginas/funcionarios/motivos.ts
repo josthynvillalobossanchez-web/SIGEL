@@ -4,8 +4,6 @@
  */
 type TienePermisos = (...claves: string[]) => boolean;
 
-/** Mientras no exista la pantalla del expediente (siguiente parte de la epica 2). */
-export const MOTIVO_EXPEDIENTE_PENDIENTE = 'el expediente laboral se agrega en la siguiente parte de la épica 2.';
 
 /** Lo que hace falta saber del funcionario para decidir. */
 interface Afectado {
@@ -20,6 +18,16 @@ export function motivoParaEditar(f: Afectado, tienePermisos: TienePermisos): str
   if (!tienePermisos('funcionarios.editar')) return 'su cuenta no tiene permiso para editar funcionarios.';
   if (f.esPropio) return 'es su propio registro: sus datos personales y laborales se cambian en «Mi cuenta».';
   if (f.tieneMasAcceso) return MOTIVO_MAS_ACCESO;
+  return null;
+}
+
+/**
+ * Abrir el expediente: el propio siempre (expediente.ver); el de otra persona,
+ * solo Recursos Humanos (expediente.verTodos). Decision de Josthyn, 28/09.
+ */
+export function motivoParaExpediente(f: { esPropio: boolean }, tienePermisos: TienePermisos): string | null {
+  if (f.esPropio) return tienePermisos('expediente.ver') ? null : 'su cuenta no tiene permiso para ver su expediente.';
+  if (!tienePermisos('expediente.verTodos')) return 'solo Recursos Humanos puede abrir el expediente de otra persona (son documentos delicados).';
   return null;
 }
 

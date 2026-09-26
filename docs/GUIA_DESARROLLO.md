@@ -354,6 +354,9 @@ aparece marcado como público, exige sesión.
 | `PATCH /funcionarios/:id` | `funcionarios.editar` | Solo lo que cambia (no `cedula` ni `estado`) |
 | `POST /funcionarios/:id/salida` | `funcionarios.editar` | `{ fechaSalida, motivoSalida }` |
 | `POST /funcionarios/:id/reingreso` | `funcionarios.editar` | `{ fechaIngreso }` |
+| `GET /expedientes/propio` | `expediente.ver` | Expediente propio `{ funcionario, esPropio }`; se anota en la bitácora |
+| `GET /expedientes/:funcionarioId` | `expediente.ver` (+ `expediente.verTodos` si es de otra persona) | Abre un expediente; se anota en la bitácora |
+| `GET /expedientes/:funcionarioId/historial` | igual | `?pagina=&tamano=`; movimientos `{ tipo, titulo, fechaEfectiva, cambios[{campo, antes, despues}], detalle, quien }` |
 | `GET /usuarios/funcionarios-disponibles?busqueda=` | `usuarios.crear` | Funcionarios activos sin cuenta, máximo 20 |
 
 `GET /usuarios/:id` trae además `permisosEfectivos` (lo que la cuenta puede hacer de verdad),
@@ -403,6 +406,7 @@ Códigos de error más frecuentes:
 | `JEFATURA_NO_VALIDA` / `JEFATURA_CICLICA` | Jefatura inactiva, inexistente, la misma persona o sin el rol Aprobador permanente / crearía un ciclo |
 | `FECHA_NACIMIENTO_NO_VALIDA` / `FECHA_INGRESO_NO_VALIDA` / `FECHA_SALIDA_NO_VALIDA` | Fuera de rango (edad mínima 15, etc.) |
 | `FUNCIONARIO_PROPIO` | Nadie edita su propio registro desde Funcionarios (se hace en Mi cuenta) ni registra su propia salida |
+| `EXPEDIENTE_AJENO` | Quiso abrir el expediente de otra persona sin `expediente.verTodos` (solo RRHH) |
 | `FUNCIONARIO_YA_INACTIVO` / `FUNCIONARIO_YA_ACTIVO` | La salida o el reingreso ya estaban registrados |
 | `FUNCIONARIO_CON_PERSONAL_A_CARGO` | Tiene subordinados: primero se les cambia la jefatura |
 | `CUENTA_SIN_CORREO_INSTITUCIONAL` | Se pidió crear la cuenta sin correo institucional |
@@ -523,6 +527,7 @@ Nada de páginas largas con scroll en PC.
 | `/catalogos` (`?pestana=puestos`, `?estado=activos`) | `catalogos.editar` | Departamentos, puestos y profesiones; ventanas cortas de crear, editar e inactivar |
 | `/funcionarios` (`?ver=<id>`, `?estado=`, `?departamento=`) | `funcionarios.ver` | Lista; ventanas Ficha resumida, Registrar salida, Registrar reingreso |
 | `/funcionarios/nuevo`, `/funcionarios/:id/editar` | `funcionarios.crear` / `funcionarios.editar` | Registrar / Editar funcionario por pasos |
+| `/funcionarios/:id/expediente`, `/mi-expediente` | `expediente.ver` | Expediente laboral (página propia: tiene cinco pestañas) |
 | `/mi-cuenta` | con sesión | Perfil; pestañas Mis datos personales (editable), Datos laborales (editable solo con `funcionarios.editar`) y Acceso y seguridad |
 
 `/usuarios/:id` y `/roles/:id` (sin "editar") abren la ventana de consulta.

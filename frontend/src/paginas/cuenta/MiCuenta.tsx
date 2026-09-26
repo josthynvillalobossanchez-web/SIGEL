@@ -80,7 +80,7 @@ export function MiCuenta() {
   return (
     <section className="pagina">
       {/* ---------------- Tarjeta de perfil ---------------- */}
-      <section className="perfil mc-perfil" aria-label="Mi perfil">
+      <section className="perfil perfil-compacto" aria-label="Mi perfil">
         <div className="perfil-foto">
           <span aria-hidden="true">{iniciales}</span>
           <span className="solo-lector">{f ? 'Sin fotografía: se muestran sus iniciales.' : 'Cuenta técnica sin fotografía.'}</span>

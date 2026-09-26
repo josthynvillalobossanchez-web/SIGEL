@@ -9,7 +9,7 @@
  *     opciones={[{ id: 'roles', texto: 'Roles', cuenta: 7 }, ...]} />
  *   <PanelDePestana id="roles" actual={pestana}>...</PanelDePestana>
  */
-import { useId, useRef, type ReactNode } from 'react';
+import { useEffect, useId, useRef, type ReactNode } from 'react';
 
 export interface OpcionDePestana {
   id: string;
@@ -29,6 +29,19 @@ interface PropiedadesDePestanas {
 
 export function Pestanas({ opciones, actual, alCambiar, etiqueta, prefijo = 'pst' }: PropiedadesDePestanas) {
   const lista = useRef<HTMLDivElement>(null);
+
+  // En celular las pestanas no caben y se deslizan de lado: la elegida
+  // (p. ej. al entrar con ?pestana=historial) se trae a la vista. Solo se
+  // mueve la tira de pestanas, nunca la pagina.
+  useEffect(() => {
+    const tira = lista.current;
+    const elegida = tira?.querySelector<HTMLElement>('[aria-selected="true"]');
+    if (!tira || !elegida || tira.scrollWidth <= tira.clientWidth) return;
+    const izquierda = elegida.offsetLeft - tira.offsetLeft;
+    if (izquierda < tira.scrollLeft || izquierda + elegida.offsetWidth > tira.scrollLeft + tira.clientWidth) {
+      tira.scrollLeft = Math.max(0, izquierda - (tira.clientWidth - elegida.offsetWidth) / 2);
+    }
+  }, [actual]);
 
   function alTeclear(e: React.KeyboardEvent, indice: number) {
     let destino = -1;

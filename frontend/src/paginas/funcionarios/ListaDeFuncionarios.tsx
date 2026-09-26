@@ -26,7 +26,7 @@ import { useSesion } from '../../sesion/SesionProveedor';
 import { inicialesDeFuncionario, nombreCompleto } from '../../utilidades/texto';
 import { ChipDeFuncionario } from './ChipDeFuncionario';
 import { ModalFicha, ModalReingreso, ModalSalida } from './ModalesDeFuncionario';
-import { MOTIVO_EXPEDIENTE_PENDIENTE, motivoParaEditar, motivoParaSalida } from './motivos';
+import { motivoParaEditar, motivoParaExpediente, motivoParaSalida } from './motivos';
 
 const TAMANO_DE_PAGINA = 20;
 
@@ -256,7 +256,13 @@ export function ListaDeFuncionarios() {
                             alHacerClic={() => setVentana({ tipo: 'reingreso', f })}
                           />
                         )}
-                        <BotonIcono icono="carpeta" texto="Abrir expediente" sobre={nombre} bloqueadoPor={MOTIVO_EXPEDIENTE_PENDIENTE} />
+                        <BotonIcono
+                          icono="carpeta"
+                          texto="Abrir expediente"
+                          sobre={nombre}
+                          bloqueadoPor={motivoParaExpediente(f, tienePermisos)}
+                          alHacerClic={() => navegar(`/funcionarios/${f.id}/expediente`)}
+                        />
                       </td>
                     </tr>
                   );
@@ -281,8 +287,10 @@ export function ListaDeFuncionarios() {
         <ModalFicha
           funcionarioId={verId}
           bloqueoEditar={(f) => motivoParaEditar(f, tienePermisos)}
+          bloqueoExpediente={(f) => motivoParaExpediente(f, tienePermisos)}
           alCerrar={() => cambiar({ ver: '' })}
           alEditar={() => navegar(`/funcionarios/${verId}/editar`)}
+          alVerExpediente={() => navegar(`/funcionarios/${verId}/expediente`)}
         />
       )}
       {ventana?.tipo === 'salida' && (

@@ -100,7 +100,7 @@ function MarcoInterno() {
   const gruposVisibles = MENU.map((grupo) => ({
     ...grupo,
     opciones: grupo.opciones
-      .filter((o) => tienePermisos(...o.permisos))
+      .filter((o) => tienePermisos(...o.permisos) && (!o.requiereFuncionario || usuario.funcionarioId !== null))
       .map((o) => {
         const permitidas = (o.subopciones ?? []).filter((sub) => tienePermisos(...sub.permisos));
         return {
@@ -226,8 +226,8 @@ function MarcoInterno() {
           ))}
 
           <p style={{ marginTop: 'auto', padding: 12, fontSize: 11.5, color: 'var(--texto-sec)', lineHeight: 1.5 }}>
-            El expediente laboral llega en la siguiente entrega. Vacaciones, incapacidades, horas extra y Talent Pool
-            corresponden a los Sprints 2 y 3.
+            Vacaciones, incapacidades, horas extra y Talent Pool corresponden a los Sprints 2 y 3. Los documentos del
+            expediente llegan con la gestión documental.
           </p>
         </nav>
 
