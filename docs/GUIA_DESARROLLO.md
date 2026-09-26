@@ -337,6 +337,11 @@ aparece marcado como público, exige sesión.
 | `PATCH /roles/:id` | `roles.editar` | `{ nombre?, descripcion?, permisoIds? }`: todo junto o nada (página "Editar rol") |
 | `PUT /roles/:id/permisos` | `roles.editar` | Reemplaza la lista completa: `{ permisoIds[] }` |
 | `PATCH /roles/:id/estado` | `roles.editar` | Activa o inactiva: `{ activo }` |
+| `GET /catalogos` | con sesión | `{ departamentos, puestos, profesiones }`; `?soloActivos=true` para los formularios |
+| `GET /catalogos/:tipo` | con sesión | Un catálogo: `departamentos`, `puestos` o `profesiones` |
+| `POST /catalogos/:tipo` | `catalogos.editar` | `{ nombre, descripcion? }` |
+| `PATCH /catalogos/:tipo/:id` | `catalogos.editar` | `{ nombre?, descripcion? }` ("" quita la descripción) |
+| `PATCH /catalogos/:tipo/:id/estado` | `catalogos.editar` | `{ activo }` |
 | `GET /usuarios/funcionarios-disponibles?busqueda=` | `usuarios.crear` | Funcionarios activos sin cuenta, máximo 20 |
 
 `GET /usuarios/:id` trae además `permisosEfectivos` (lo que la cuenta puede hacer de verdad),
@@ -378,6 +383,9 @@ Códigos de error más frecuentes:
 | `FECHA_NO_VALIDA` | La fecha no es "AAAA-MM-DD" o ese día no existe (31 de febrero) |
 | `FECHA_VENCIMIENTO_MUY_LEJANA` | La fecha pasa de 5 años (usar permanente) |
 | `PERMISO_REPETIDO` | Un mismo permiso viene dos veces en la lista |
+| `CATALOGO_NO_EXISTE` | El `:tipo` no es departamentos, puestos ni profesiones (404) |
+| `ELEMENTO_NO_ENCONTRADO` | No hay un departamento/puesto/profesión con ese id (404) |
+| `NOMBRE_DUPLICADO` | Ya hay uno con ese nombre en ese catálogo (sin importar mayúsculas ni tildes) |
 | `ROL_DE_SISTEMA` | Los 5 roles de sistema no se modifican desde la API |
 | `ROL_CON_MAYOR_ACCESO` | Quiso modificar un rol con permisos que él no tiene |
 | `ROL_PROPIO` | Quiso cambiar permisos o estado de un rol que él mismo tiene (regla 4) |
@@ -492,6 +500,7 @@ Nada de páginas largas con scroll en PC.
 | `/usuarios/:id/excepciones/:permisoId/editar` | `usuarios.editar` | Editar excepción |
 | `/roles` (`?rol=<id>`, `?pestana=permisos`) | `usuarios.ver` | Pestañas Roles (tabla con acciones) y Catálogo; ventanas Ver rol y Activar/Inactivar |
 | `/roles/nuevo`, `/roles/:id/editar` | `roles.editar` | Crear / Editar rol (Datos · Permisos · Revisar) |
+| `/catalogos` (`?pestana=puestos`, `?estado=activos`) | `catalogos.editar` | Departamentos, puestos y profesiones; ventanas cortas de crear, editar e inactivar |
 | `/mi-cuenta` | con sesión | Perfil; pestañas Mis datos personales y Acceso y seguridad |
 
 `/usuarios/:id` y `/roles/:id` (sin "editar") abren la ventana de consulta.

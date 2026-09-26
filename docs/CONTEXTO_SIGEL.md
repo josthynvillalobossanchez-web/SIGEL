@@ -56,10 +56,13 @@ expediente laboral, vacaciones, incapacidades, horas extra y reclutamiento (Tale
 
 ### Lo que toca ahora, en orden
 
-1. **Probar la épica 1 completa** en la PC y hacer el commit.
-2. **Épica 2**: catálogos (departamentos, puestos, profesiones), funcionarios (con la casilla
-   "crear también su cuenta", que reutiliza `crearCuentaEnTransaccion`), expediente e
-   historial laboral.
+1. ~~Épica 1~~: terminada y en GitHub (commit `e860270`).
+2. **Épica 2**, por partes completas (backend + pantallas + pruebas, un commit cada una):
+   - ✔ **Catálogos** de departamentos, puestos y profesiones (27/09).
+   - **Funcionarios**: lista, "Registrar funcionario" por pasos (con la casilla "crear también su
+     cuenta", que reutiliza `crearCuentaEnTransaccion`) y "Editar funcionario".
+   - **Expediente**: ficha con pestañas e historial laboral.
+   - Enlaces entre módulos, inicio, menú y documentación.
 3. **Épica 3**: tipos de documento, subir y descargar, baja lógica y restauración.
 4. **Informe de Avance Intermedio** (`Proyectos\Informe_Avance_Intermedio_SIGEL.docx`): las
    capturas de Jira/GitHub, las minutas y el criterio de Joseph los aporta Josthyn.
@@ -199,6 +202,11 @@ contraseña temporal.
 | `PATCH /api/roles/:id` | `roles.editar` | Página "Editar rol": nombre, descripción y/o lista completa de permisos, todo junto |
 | `PUT /api/roles/:id/permisos` | `roles.editar` | Reemplaza la lista de permisos |
 | `PATCH /api/roles/:id/estado` | `roles.editar` | Activa o inactiva |
+| `GET /api/catalogos` (`?soloActivos=true`) | con sesión | Departamentos, puestos y profesiones de una vez, con cuántos funcionarios activos usan cada uno |
+| `GET /api/catalogos/:tipo` | con sesión | Uno solo (`departamentos`, `puestos` o `profesiones`) |
+| `POST /api/catalogos/:tipo` | `catalogos.editar` | Crea (nombre único sin importar mayúsculas ni tildes) |
+| `PATCH /api/catalogos/:tipo/:id` | `catalogos.editar` | Nombre y/o descripción |
+| `PATCH /api/catalogos/:tipo/:id/estado` | `catalogos.editar` | Inactiva o reactiva (se puede aunque esté en uso) |
 | `GET /api/usuarios/funcionarios-disponibles` | `usuarios.crear` | Funcionarios activos sin cuenta (para crear una) |
 | `GET /api/salud` | público | Comprobación del servicio |
 
@@ -265,7 +273,19 @@ usuario) y migas de pan arriba. Siempre por encima de todo: la comodidad de la p
   pantalla con el motivo de cada bloqueo, campos obligatorios marcados, errores ligados a su
   campo, avisos en regiones vivas.
 
-Pendiente: todo lo de las épicas 2 y 3.
+**Catálogos de personal** (`/catalogos`, 27/09): pestañas Departamentos, Puestos y Profesiones
+con el diseño de `pgTipos` del prototipo (tabla con Nombre, Descripción, Funcionarios, Estado y
+Acciones). Crear, editar e inactivar/reactivar son **ventanas cortas** (uno o dos campos). Crear
+tiene "Guardar y crear otro" para la carga inicial. Menú: grupo **Catálogos** del prototipo (ahí
+irá también "Tipos de documento" en la épica 3).
+
+Decisiones de catálogos: no se borran, se **inactivan**, y **sí** se pueden
+inactivar aunque haya funcionarios con ellos (lo conservan, pero no se puede elegir para nadie más:
+p. ej. un departamento que cierra). A diferencia de un rol, no le quita acceso a nadie. Las listas
+las puede leer cualquiera con sesión (las usan los formularios); administrarlas pide
+`catalogos.editar`. Los regímenes de vacaciones quedan para el Sprint 2.
+
+Pendiente: funcionarios, expediente e historial (épica 2) y la épica 3.
 
 ### Repositorio en GitHub (versionado el 19/09/2026)
 

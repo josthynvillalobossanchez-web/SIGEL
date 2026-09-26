@@ -77,6 +77,11 @@ export const MENU: GrupoDeMenu[] = [
     ],
   },
   {
+    // Mismo grupo del prototipo. En la epica 3 se agrega "Tipos de documento".
+    titulo: 'Catálogos',
+    opciones: [{ texto: 'Catálogos de personal', ruta: '/catalogos', icono: 'carpeta', permisos: ['catalogos.editar'] }],
+  },
+  {
     titulo: 'Mi acceso',
     opciones: [{ texto: 'Mi cuenta', ruta: '/mi-cuenta', icono: 'cuenta', permisos: [] }],
   },

@@ -11,6 +11,7 @@
  *     /usuarios/:id/excepciones/:permisoId/editar  Editar excepcion
  *     /roles                                     roles y catalogo (ventanas: ver, estado)
  *     /roles/nuevo, /roles/:id/editar            Crear rol / Editar rol
+ *     /catalogos                                 departamentos, puestos, profesiones (ventanas cortas)
  *
  * Regla (26/09): consultar = ventana; crear o editar = pagina aparte por
  * pasos, con su subseccion en el menu (diseno/menu.ts).
@@ -35,6 +36,7 @@ import { PaginaExcepcion } from './paginas/usuarios/PaginaExcepcion';
 import { RolesYPermisos } from './paginas/roles/RolesYPermisos';
 import { PaginaRol } from './paginas/roles/PaginaRol';
 import { MiCuenta } from './paginas/cuenta/MiCuenta';
+import { Catalogos } from './paginas/catalogos/Catalogos';
 import { PaginaNoEncontrada } from './paginas/SinPermiso';
 import { GestorDeAyudas } from './componentes/Ayudas';
 
@@ -128,6 +130,14 @@ export function App() {
                 }
               />
               <Route path="/roles/:id" element={<Redirigir a="/roles" parametro="rol" />} />
+              <Route
+                path="/catalogos"
+                element={
+                  <ConPermisos permisos={['catalogos.editar']}>
+                    <Catalogos />
+                  </ConPermisos>
+                }
+              />
               <Route path="/mi-cuenta" element={<MiCuenta />} />
               <Route path="*" element={<PaginaNoEncontrada />} />
             </Route>

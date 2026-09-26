@@ -320,3 +320,12 @@ a.nav-sub-item { text-decoration: none; }
 .chip-rol.agregado { background: var(--exito-bg); color: var(--exito-fg); }
 .chip-rol.quitado { background: var(--advert-bg); color: var(--advert-fg); text-decoration: line-through; }
 .permisos-agrupados > div > .sec-dato { display: block; margin-bottom: 4px; }
+
+/* ============================================================
+   27/09 · Catalogos de personal
+   ============================================================ */
+/* Fila recien creada o editada: se resalta un momento para ubicarla. */
+tr[data-resaltada="si"] td { animation: resaltar 2.4s ease-out; }
+@keyframes resaltar { from { background: var(--accion-tinte); } to { background: transparent; } }
+@media (prefers-reduced-motion: reduce) { tr[data-resaltada="si"] td { animation: none; background: var(--accion-tinte); } }
+.pagina .nota-pagina + .herramientas { margin-top: 4px; }

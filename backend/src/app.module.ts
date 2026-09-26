@@ -4,6 +4,7 @@ import { APP_GUARD } from '@nestjs/core';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { AutenticacionModule } from './autenticacion/autenticacion.module.js';
 import { BitacoraModule } from './bitacora/bitacora.module.js';
+import { CatalogosModule } from './catalogos/catalogos.module.js';
 import { CorreoModule } from './correo/correo.module.js';
 import { PermisosModule } from './permisos/permisos.module.js';
 import { PrismaModule } from './prisma/prisma.module.js';
@@ -29,6 +30,7 @@ import { SaludController } from './salud/salud.controller.js';
     UsuariosModule,
     RolesModule,
     MiCuentaModule,
+    CatalogosModule,
     // Aqui se iran agregando los demas modulos del Sprint 1:
     // FuncionariosModule, ExpedienteModule, DocumentosModule.
   ],

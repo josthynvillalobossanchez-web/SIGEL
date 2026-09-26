@@ -12,6 +12,7 @@ import { Icono } from '../componentes/Icono';
 const DESCRIPCIONES: Record<string, string> = {
   '/usuarios': 'Cuentas de acceso: crear, editar roles y suplencias, permisos individuales y estado.',
   '/roles': 'Qué permisos da cada rol, roles propios de la Municipalidad y catálogo de permisos.',
+  '/catalogos': 'Departamentos, puestos y profesiones que se eligen al registrar a un funcionario.',
   '/mi-cuenta': 'Sus datos personales, sus roles y su contraseña.',
 };
 
