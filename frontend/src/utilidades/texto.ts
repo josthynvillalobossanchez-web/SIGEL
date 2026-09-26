@@ -20,7 +20,7 @@ export function minutosYSegundos(totalSegundos: number): string {
   return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
 }
 
-/** Nombre completo de un funcionario; "Cuenta técnica" si la cuenta no tiene funcionario. */
+/** Nombre completo de un funcionario; "Cuenta tecnica" si la cuenta no tiene funcionario. */
 export function nombreCompleto(
   f: { nombre: string; primerApellido: string; segundoApellido: string | null } | null | undefined,
 ): string {
@@ -50,8 +50,54 @@ const NOMBRES_DE_MODULO: Record<string, string> = {
   catalogos: 'Catálogos',
   bitacora: 'Bitácora',
   perfilPropio: 'Perfil propio',
+  solicitudes: 'Solicitudes',
 };
 
 export function nombreDeModulo(modulo: string): string {
   return NOMBRES_DE_MODULO[modulo] ?? modulo;
 }
+
+/**
+ * Misma regla que el backend (funcionarios/cedula.ts): la cedula nacional
+ * de 9 digitos se muestra "2-0678-0432"; otras identificaciones, en
+ * mayusculas y sin espacios.
+ */
+export function normalizarCedula(texto: string): string {
+  const limpia = texto.replace(/\s+/g, '').toUpperCase();
+  const digitos = limpia.replace(/-/g, '');
+  if (/^\d{9}$/.test(digitos) && /^[\d-]+$/.test(limpia)) return `${digitos[0]}-${digitos.slice(1, 5)}-${digitos.slice(5)}`;
+  return limpia;
+}
+
+/**
+ * Telefono de Costa Rica (misma regla que el backend, comun/validadores.ts):
+ * 8 digitos, el primero 2, 4, 5, 6, 7 u 8. Acepta espacios, guion,
+ * parentesis y +506. Devuelve "8712-4408", o null si no es valido.
+ */
+export function normalizarTelefono(texto: string): string | null {
+  let digitos = texto.replace(/[\s()-]/g, '');
+  if (digitos.startsWith('+506')) digitos = digitos.slice(4);
+  else if (digitos.length === 11 && digitos.startsWith('506')) digitos = digitos.slice(3);
+  return /^[245678]\d{7}$/.test(digitos) ? `${digitos.slice(0, 4)}-${digitos.slice(4)}` : null;
+}
+
+export const MENSAJE_TELEFONO = 'El teléfono debe ser un número de Costa Rica de 8 dígitos (por ejemplo 8712-4408).';
+
+/**
+ * Revisa un nombre o apellido con las mismas reglas del backend
+ * (comun/validadores.ts): largo, caracteres, palabras y sin 3 letras
+ * iguales seguidas ("iii"). Devuelve el problema o null.
+ */
+export function problemaDeNombre(texto: string, campo: string, largoMaximo: number, palabrasMaximas: number): string | null {
+  const limpio = texto.trim().replace(/\s{2,}/g, ' ');
+  if (limpio.length < 2) return `${campo} debe tener al menos 2 letras.`;
+  if (limpio.length > largoMaximo) return `${campo} no puede pasar de ${largoMaximo} caracteres.`;
+  if (!/^[\p{L} .'-]+$/u.test(limpio)) return `${campo} solo puede tener letras, espacios, apóstrofos y guiones.`;
+  if (/(\p{L})\1{2,}/iu.test(limpio)) return `${campo} tiene la misma letra repetida tres veces o más. Revise que esté bien escrito.`;
+  if (limpio.split(' ').length > palabrasMaximas) return `${campo} no puede tener más de ${palabrasMaximas} palabras.`;
+  return null;
+}
+
+/** Largos maximos de nombre y apellidos (iguales al backend). */
+export const LARGO_NOMBRE = 50;
+export const LARGO_APELLIDO = 40;

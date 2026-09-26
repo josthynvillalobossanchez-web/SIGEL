@@ -1,4 +1,5 @@
 import { Transform } from 'class-transformer';
+import { MENSAJE_TELEFONO, normalizarTelefono, TELEFONO_DE_COSTA_RICA } from '../../comun/validadores.js';
 import { IsEmail, IsOptional, IsString, IsUUID, Matches, MaxLength, ValidateIf } from 'class-validator';
 
 /** Quita espacios; un texto vacio se toma como "sin dato" (null). */
@@ -19,8 +20,9 @@ const limpiar = ({ value }: { value: unknown }): unknown => {
 export class ActualizarDatosPersonalesDto {
   @IsOptional()
   @Transform(limpiar)
+  @Transform(({ value }) => normalizarTelefono(value))
   @ValidateIf((_o, valor) => valor !== null)
-  @Matches(/^[0-9 +()-]{7,30}$/, { message: 'El teléfono solo puede tener números, espacios y los signos + ( ) -.' })
+  @Matches(TELEFONO_DE_COSTA_RICA, { message: MENSAJE_TELEFONO })
   telefonoPersonal?: string | null;
 
   /** Obligatorio en la base: es el canal de respaldo de las notificaciones. */

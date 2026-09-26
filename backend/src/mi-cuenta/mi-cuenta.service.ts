@@ -1,3 +1,4 @@
+import { aFechaSola } from '../comun/fechas.js';
 import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import type { UsuarioAutenticado } from '../autenticacion/tipos.js';
 import { BitacoraService } from '../bitacora/bitacora.service.js';
@@ -42,9 +43,15 @@ export class MiCuentaService {
             direccion: true,
             fotoRuta: true,
             fechaIngreso: true,
+            fechaNacimiento: true,
+            numeroEmpleado: true,
+            tipoNombramiento: true,
+            estado: true,
             profesion: { select: { id: true, nombre: true } },
             puesto: { select: { nombre: true } },
             departamento: { select: { nombre: true } },
+            jefatura: { select: { nombre: true, primerApellido: true, segundoApellido: true } },
+            regimenVacaciones: { select: { nombre: true, descripcion: true } },
           },
         },
       },
@@ -78,10 +85,18 @@ export class MiCuentaService {
             correoPersonal: f.correoPersonal,
             correoInstitucional: f.correoInstitucional,
             direccion: f.direccion,
-            fechaIngreso: f.fechaIngreso,
+            // Columna DATE: se devuelve "AAAA-MM-DD" (ver comun/fechas.ts).
+            fechaIngreso: aFechaSola(f.fechaIngreso),
             profesion: f.profesion,
             puesto: f.puesto?.nombre ?? null,
             departamento: f.departamento?.nombre ?? null,
+            // Datos laborales: la persona los VE en "Mi cuenta" pero no los cambia.
+            fechaNacimiento: aFechaSola(f.fechaNacimiento),
+            numeroEmpleado: f.numeroEmpleado,
+            tipoNombramiento: f.tipoNombramiento,
+            estado: f.estado,
+            jefatura: f.jefatura ? [f.jefatura.nombre, f.jefatura.primerApellido, f.jefatura.segundoApellido].filter(Boolean).join(' ') : null,
+            regimenVacaciones: f.regimenVacaciones,
             // La ruta del archivo no sale del backend; la foto se servira por
             // un endpoint propio cuando exista la carga de archivos (epica 3).
             tieneFoto: Boolean(f.fotoRuta),

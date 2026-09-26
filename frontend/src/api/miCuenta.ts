@@ -4,6 +4,7 @@
  */
 import { pedirAlServidor } from './cliente';
 import type { EstadoDeCuenta } from './usuarios';
+import type { TipoDeNombramiento } from './funcionarios';
 
 export interface PerfilPropio {
   cuenta: {
@@ -29,6 +30,14 @@ export interface PerfilPropio {
     puesto: string | null;
     departamento: string | null;
     tieneFoto: boolean;
+    // Datos laborales (solo lectura: los cambia Recursos Humanos).
+    fechaNacimiento: string | null;
+    numeroEmpleado: string | null;
+    tipoNombramiento: TipoDeNombramiento;
+    estado: 'activo' | 'inactivo';
+    /** Nombre completo; null = tope de la jerarquia. */
+    jefatura: string | null;
+    regimenVacaciones: { nombre: string; descripcion: string | null };
   } | null;
   profesiones: { id: string; nombre: string }[];
   /** Tiene perfilPropio.editar. */

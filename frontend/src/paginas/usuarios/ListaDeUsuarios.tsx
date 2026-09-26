@@ -19,7 +19,8 @@
  * edicion pueden volver a la ventana de la que salieron.
  */
 import { useCallback, useEffect, useState } from 'react';
-import { useNavigate, useSearchParams } from 'react-router';
+import { useNavigate } from 'react-router';
+import { useParametrosEnUrl } from '../../utilidades/parametrosEnUrl';
 import { textoDelError } from '../../api/cliente';
 import { consultarCuentas, type CuentaEnLista, type EstadoDeCuenta, type Pagina } from '../../api/usuarios';
 import { Icono } from '../../componentes/Icono';
@@ -49,7 +50,7 @@ type Ventana = { tipo: 'estado'; cuenta: CuentaDeFila } | null;
 export function ListaDeUsuarios() {
   const { tienePermisos } = useSesion();
   const navegar = useNavigate();
-  const [parametros, setParametros] = useSearchParams();
+  const [parametros, cambiarParametros] = useParametrosEnUrl({ reiniciaPagina: true, salvo: ['ver', 'permisos'] });
   const busquedaEnUrl = parametros.get('busqueda') ?? '';
   const estado = (parametros.get('estado') ?? '') as EstadoDeCuenta | '';
   const pagina = Math.max(1, Number(parametros.get('pagina')) || 1);
@@ -68,21 +69,6 @@ export function ListaDeUsuarios() {
   const [recarga, setRecarga] = useState(0);
   const recargar = useCallback(() => setRecarga((n) => n + 1), []);
 
-  /** Cambia uno o varios parametros de la URL. Cambiar un filtro vuelve a la pagina 1. */
-  const cambiarParametros = useCallback(
-    (cambios: Record<string, string>) => {
-      setParametros((actuales) => {
-        const nuevos = new URLSearchParams(actuales);
-        for (const [clave, valor] of Object.entries(cambios)) {
-          if (valor) nuevos.set(clave, valor);
-          else nuevos.delete(clave);
-        }
-        if (!('pagina' in cambios) && !('ver' in cambios) && !('permisos' in cambios)) nuevos.delete('pagina');
-        return nuevos;
-      });
-    },
-    [setParametros],
-  );
 
   // Busca medio segundo despues de dejar de escribir.
   useEffect(() => {

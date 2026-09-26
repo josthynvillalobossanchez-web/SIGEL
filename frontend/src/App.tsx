@@ -4,6 +4,8 @@
  *   Sin sesion:           /iniciar-sesion, /recuperar-contrasena
  *   Contrasena temporal:  /primer-ingreso
  *   Con sesion (marco):   /, /mi-cuenta y "no encontrada", mas:
+ *     /funcionarios                              lista (ventanas: ficha, salida, reingreso)
+ *     /funcionarios/nuevo, /funcionarios/:id/editar  Registrar / Editar funcionario
  *     /usuarios                                  lista (ventanas: ver, permisos, estado)
  *     /usuarios/nuevo                            Crear usuario
  *     /usuarios/:id/editar                       Editar usuario
@@ -37,6 +39,8 @@ import { RolesYPermisos } from './paginas/roles/RolesYPermisos';
 import { PaginaRol } from './paginas/roles/PaginaRol';
 import { MiCuenta } from './paginas/cuenta/MiCuenta';
 import { Catalogos } from './paginas/catalogos/Catalogos';
+import { ListaDeFuncionarios } from './paginas/funcionarios/ListaDeFuncionarios';
+import { PaginaEditarFuncionario, PaginaRegistrarFuncionario } from './paginas/funcionarios/PaginaFuncionario';
 import { PaginaNoEncontrada } from './paginas/SinPermiso';
 import { GestorDeAyudas } from './componentes/Ayudas';
 
@@ -64,6 +68,31 @@ export function App() {
           <Route element={<RutaProtegida />}>
             <Route element={<Marco />}>
               <Route index element={<Inicio />} />
+              <Route
+                path="/funcionarios"
+                element={
+                  <ConPermisos permisos={['funcionarios.ver']}>
+                    <ListaDeFuncionarios />
+                  </ConPermisos>
+                }
+              />
+              <Route
+                path="/funcionarios/nuevo"
+                element={
+                  <ConPermisos permisos={['funcionarios.ver', 'funcionarios.crear']}>
+                    <PaginaRegistrarFuncionario />
+                  </ConPermisos>
+                }
+              />
+              <Route
+                path="/funcionarios/:id/editar"
+                element={
+                  <ConPermisos permisos={['funcionarios.ver', 'funcionarios.editar']}>
+                    <PaginaEditarFuncionario />
+                  </ConPermisos>
+                }
+              />
+              <Route path="/funcionarios/:id" element={<Redirigir a="/funcionarios" parametro="ver" />} />
               <Route
                 path="/usuarios"
                 element={

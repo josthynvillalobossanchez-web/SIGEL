@@ -10,6 +10,7 @@ import { Icono } from '../componentes/Icono';
 
 /** Descripcion corta de cada acceso directo (por ruta). */
 const DESCRIPCIONES: Record<string, string> = {
+  '/funcionarios': 'Buscar funcionarios, registrarlos por pasos, corregir sus datos y registrar salidas o reingresos.',
   '/usuarios': 'Cuentas de acceso: crear, editar roles y suplencias, permisos individuales y estado.',
   '/roles': 'Qué permisos da cada rol, roles propios de la Municipalidad y catálogo de permisos.',
   '/catalogos': 'Departamentos, puestos y profesiones que se eligen al registrar a un funcionario.',

@@ -72,3 +72,19 @@ export function problemaDeFechaDeVencimiento(valor: string): string | null {
   }
   return null;
 }
+
+/**
+ * Fecha de calendario que la API manda como "AAAA-MM-DD" (nacimiento,
+ * ingreso, salida) -> "dd/mm/aaaa". NO pasa por zonas horarias: si se
+ * convirtiera a hora de Costa Rica, mostraria el dia anterior.
+ */
+export function formatearFechaSola(texto: string | null | undefined): string {
+  if (!texto) return '—';
+  const [anio, mes, dia] = texto.slice(0, 10).split('-');
+  return `${dia}/${mes}/${anio}`;
+}
+
+/** "AAAA-MM-DD" mas (o menos) n anios, como "AAAA-MM-DD". Para min/max de los campos. */
+export function sumarAnios(texto: string, anios: number): string {
+  return `${Number(texto.slice(0, 4)) + anios}${texto.slice(4)}`;
+}

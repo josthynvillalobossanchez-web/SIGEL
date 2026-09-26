@@ -18,8 +18,9 @@
  * La pestana y el rol abierto van en la URL (?pestana=permisos, ?rol=<id>).
  */
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { useNavigate, useSearchParams } from 'react-router';
+import { useNavigate } from 'react-router';
 import { textoDelError } from '../../api/cliente';
+import { useParametrosEnUrl } from '../../utilidades/parametrosEnUrl';
 import { consultarCatalogoDePermisos, consultarRoles, type ModuloDePermisos, type RolResumido } from '../../api/roles';
 import { useSesion } from '../../sesion/SesionProveedor';
 import { Mensaje } from '../../componentes/Mensaje';
@@ -32,7 +33,7 @@ import { bloqueosDeRol } from './bloqueos';
 export function RolesYPermisos() {
   const { usuario, tienePermisos } = useSesion();
   const navegar = useNavigate();
-  const [parametros, setParametros] = useSearchParams();
+  const [parametros, cambiar] = useParametrosEnUrl();
   const pestana = parametros.get('pestana') === 'permisos' ? 'permisos' : 'roles';
   const verId = parametros.get('rol');
 
@@ -56,16 +57,6 @@ export function RolesYPermisos() {
     void cargar();
   }, [cargar]);
 
-  function cambiar(cambios: Record<string, string>) {
-    setParametros((actuales) => {
-      const nuevos = new URLSearchParams(actuales);
-      for (const [clave, valor] of Object.entries(cambios)) {
-        if (valor) nuevos.set(clave, valor);
-        else nuevos.delete(clave);
-      }
-      return nuevos;
-    });
-  }
 
   const puedeAdministrar = tienePermisos('roles.editar');
   const bloqueos = useMemo(

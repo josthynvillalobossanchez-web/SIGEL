@@ -135,6 +135,16 @@ const TRAZOS = {
       <path d="M12 7v5l3 2" />
     </>
   ),
+  // Flecha hacia abajo (desplegar subsecciones del menu).
+  flecha: <path d="m6 9 6 6 6-6" />,
+  // Del prototipo (grupo "Personal"): funcionarios.
+  personas: (
+    <>
+      <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+      <circle cx="9" cy="7" r="4" />
+      <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
+    </>
+  ),
   // Del prototipo (pgTipos): catalogo, desactivar y reactivar.
   carpeta: <path d="M4 4h7l2 2h7v13a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1z" />,
   desactivar: <path d="M18 6 6 18M6 6l12 12" />,

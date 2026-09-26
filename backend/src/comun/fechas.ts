@@ -94,3 +94,44 @@ export function formatearFechaCostaRica(fecha: Date): string {
     year: 'numeric',
   });
 }
+
+/**
+ * Fechas "de calendario" (sin hora): nacimiento, ingreso, salida.
+ *
+ * En la base son columnas DATE. Prisma las entrega como la medianoche UTC de
+ * ese dia; si la pantalla las pasara a hora de Costa Rica mostraria el dia
+ * ANTERIOR (medianoche UTC = 6 p. m. del dia antes en Costa Rica). Por eso
+ * la API las recibe y las devuelve siempre como texto "AAAA-MM-DD", sin hora.
+ */
+
+/** "AAAA-MM-DD" -> Date (medianoche UTC), o FECHA_NO_VALIDA si el dia no existe. */
+export function interpretarFechaSola(texto: string, deQue: string): Date {
+  const partes = /^(\d{4})-(\d{2})-(\d{2})$/.exec(texto);
+  const [anio, mes, dia] = partes ? partes.slice(1).map(Number) : [0, 0, 0];
+  const fecha = new Date(Date.UTC(anio, mes - 1, dia));
+  if (!partes || fecha.getUTCFullYear() !== anio || fecha.getUTCMonth() !== mes - 1 || fecha.getUTCDate() !== dia) {
+    throw new BadRequestException({
+      codigo: 'FECHA_NO_VALIDA',
+      message: `La fecha ${deQue} no es una fecha válida (día, mes y año completos).`,
+    });
+  }
+  return fecha;
+}
+
+/** Date de una columna DATE -> "AAAA-MM-DD" (o null). */
+export function aFechaSola(fecha: Date | null | undefined): string | null {
+  return fecha ? fecha.toISOString().slice(0, 10) : null;
+}
+
+/** Hoy en Costa Rica como Date de calendario (medianoche UTC de ese dia). */
+export function hoyEnCostaRica(): Date {
+  const texto = new Date(Date.now() + DESFASE_COSTA_RICA_MS).toISOString().slice(0, 10);
+  return new Date(`${texto}T00:00:00Z`);
+}
+
+/** Suma (o resta) anios a una fecha de calendario. */
+export function sumarAnios(fecha: Date, anios: number): Date {
+  const copia = new Date(fecha);
+  copia.setUTCFullYear(copia.getUTCFullYear() + anios);
+  return copia;
+}

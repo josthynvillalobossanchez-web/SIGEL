@@ -311,8 +311,12 @@ a.nav-sub-item { text-decoration: none; }
   .vigencia-rol { padding-left: 12px; }
   /* Pasos en una sola fila: numero y titulo (la explicacion corta se oculta). */
   .pagina-pasos .pasos { flex-wrap: nowrap; gap: 6px; }
-  .pagina-pasos .paso { flex: 1 1 0; min-width: 0; padding: 7px 8px; gap: 6px; font-size: 13px; }
+  .pagina-pasos .paso { flex: 0 0 auto; min-width: 0; padding: 7px 8px; gap: 6px; font-size: 13px; }
   .pagina-pasos .paso .sub { display: none; }
+  /* Solo el paso actual muestra su titulo; los demas, su numero (el lector
+     de pantalla igual los lee completos por su aria-label). */
+  .pagina-pasos .paso:not([aria-current="step"]) > span:last-child { display: none; }
+  .pagina-pasos .paso[aria-current="step"] { flex: 1 1 auto; }
   .pagina-pasos .paso > span:last-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 }
 
@@ -329,3 +333,65 @@ tr[data-resaltada="si"] td { animation: resaltar 2.4s ease-out; }
 @keyframes resaltar { from { background: var(--accion-tinte); } to { background: transparent; } }
 @media (prefers-reduced-motion: reduce) { tr[data-resaltada="si"] td { animation: none; background: var(--accion-tinte); } }
 .pagina .nota-pagina + .herramientas { margin-top: 4px; }
+
+/* ============================================================
+   27/09 · Funcionarios
+   ============================================================ */
+/* Filtro por departamento junto a los botones de estado. */
+.filtro-select select { padding: 8px 12px; border: 1px solid var(--borde); border-radius: var(--radio-md);
+  background: var(--card); color: var(--texto); font-size: 14px; max-width: 240px; }
+/* Casilla "Crear tambien su cuenta" (paso Cuenta de acceso). */
+.casilla-grande { border: 1px solid var(--borde); border-radius: var(--radio-md); padding: 14px; margin-bottom: 12px; }
+.casilla-grande .txt b { font-size: 15px; }
+/* Paso Revisar del registro: cuatro bloques en rejilla, sin bajar. */
+.revisar-bloques { display: grid; grid-template-columns: repeat(auto-fit, minmax(420px, 1fr)); gap: 12px; }
+.revisar-bloques .info-bloque { margin: 0; }
+.revisar-bloques .info-bloque > h3 { padding: 7px 16px; font-size: 12px; }
+.revisar-bloques .info-rejilla { padding: 10px 16px; gap: 8px 16px; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); }
+.revisar-bloques .dato dt { font-size: 10.5px; margin-bottom: 1px; }
+.revisar-bloques .dato dd { font-size: 13.5px; }
+/* Formularios largos de pagina (p. ej. Datos laborales): cuatro columnas en PC. */
+@media (min-width: 1200px) {
+  .pagina-pasos .panel-paso .campo-fila { grid-template-columns: repeat(auto-fit, minmax(215px, 1fr)); gap: 0 20px; }
+}
+@media (max-width: 719px) { .revisar-bloques { grid-template-columns: 1fr; } .filtro-select select { max-width: none; width: 100%; } }
+
+/* ============================================================
+   27/09 · Mi cuenta centrada y menu con subsecciones plegables
+   ============================================================ */
+/* Pestanas y contenido de "Mi cuenta": mismo ancho, al centro de la pantalla. */
+.mc-centro { max-width: 1080px; margin: 0 auto; }
+.mc-centro > .tabs { justify-content: center; }
+.mc-centro .cuenta-rejilla { justify-content: center; }
+/* Menu: seccion con su flecha para desplegar las subsecciones. */
+.nav-fila { display: flex; align-items: center; gap: 2px; }
+.nav-fila > .nav-item { flex: 1 1 auto; min-width: 0; }
+.nav-desplegar { flex: none; width: 30px; height: 30px; display: grid; place-items: center; border: 0; background: transparent;
+  color: var(--texto-sec); border-radius: var(--radio-md); cursor: pointer; }
+.nav-desplegar:hover { background: var(--neutro-bg); color: var(--texto); }
+.nav-desplegar svg { transition: transform .15s ease; transform: rotate(-90deg); }
+.nav-desplegar[aria-expanded="true"] svg { transform: none; }
+@media (prefers-reduced-motion: reduce) { .nav-desplegar svg { transition: none; } }
+
+/* Mi cuenta > Datos laborales: detalle del regimen en letra pequena, debajo. */
+.mc-detalle {
+  display: block;
+  font-size: 12.5px;
+  font-weight: 400;
+  margin-top: 2px;
+}
+.mc-nota {
+  text-align: center;
+  max-width: none;
+  margin: 8px 0 0;
+}
+
+/* Mi cuenta > Mis datos personales: 4 columnas en PC para que el formulario
+   quepa sin scroll a 1366x768; la direccion ocupa 3 columnas junto a la profesion. */
+@media (min-width: 1100px) {
+  .mc-centro .panel-paso .campo-fila.mc-campos { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0 20px; }
+  .mc-campos .campo.mc-direccion { grid-column: span 3; }
+}
+/* Dato que se ve pero no se edita aqui (p. ej. la fecha de nacimiento). */
+input.solo-lectura { background: var(--neutro-bg); color: var(--texto-sec); cursor: default; }
+.mc-centro .panel-paso { padding-top: 14px; padding-bottom: 2px; }

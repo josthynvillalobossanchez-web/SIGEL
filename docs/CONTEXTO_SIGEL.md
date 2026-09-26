@@ -58,9 +58,9 @@ expediente laboral, vacaciones, incapacidades, horas extra y reclutamiento (Tale
 
 1. ~~Épica 1~~: terminada y en GitHub (commit `e860270`).
 2. **Épica 2**, por partes completas (backend + pantallas + pruebas, un commit cada una):
-   - ✔ **Catálogos** de departamentos, puestos y profesiones (27/09).
-   - **Funcionarios**: lista, "Registrar funcionario" por pasos (con la casilla "crear también su
-     cuenta", que reutiliza `crearCuentaEnTransaccion`) y "Editar funcionario".
+   - ✔ **Catálogos** de departamentos, puestos y profesiones (27/09, commit `c05a357`).
+   - ✔ **Funcionarios** (27/09): lista, ficha resumida, "Registrar funcionario" por pasos (con
+     "crear también su cuenta"), "Editar funcionario", salida y reingreso.
    - **Expediente**: ficha con pestañas e historial laboral.
    - Enlaces entre módulos, inicio, menú y documentación.
 3. **Épica 3**: tipos de documento, subir y descargar, baja lógica y restauración.
@@ -207,10 +207,17 @@ contraseña temporal.
 | `POST /api/catalogos/:tipo` | `catalogos.editar` | Crea (nombre único sin importar mayúsculas ni tildes) |
 | `PATCH /api/catalogos/:tipo/:id` | `catalogos.editar` | Nombre y/o descripción |
 | `PATCH /api/catalogos/:tipo/:id/estado` | `catalogos.editar` | Inactiva o reactiva (se puede aunque esté en uso) |
+| `GET /api/funcionarios` | `funcionarios.ver` | Lista paginada; busca por cédula, nombre o correo (varias palabras), filtra por estado y departamento |
+| `GET /api/funcionarios/opciones` | `funcionarios.ver` | Listas activas para los formularios (catálogos, regímenes, jefaturas, nombramientos) |
+| `GET /api/funcionarios/:id` | `funcionarios.ver` | Ficha completa (no se audita; el expediente sí se auditará) |
+| `POST /api/funcionarios` | `funcionarios.crear` | Registra; con `cuenta` crea también la cuenta (pide `usuarios.crear`), todo junto |
+| `PATCH /api/funcionarios/:id` | `funcionarios.editar` | Corrige datos (no la cédula ni el estado) |
+| `POST /api/funcionarios/:id/salida` | `funcionarios.editar` | Salida con fecha y motivo; inactiva su cuenta a la vez |
+| `POST /api/funcionarios/:id/reingreso` | `funcionarios.editar` | Vuelve a quedar activo (la cuenta se reactiva aparte) |
 | `GET /api/usuarios/funcionarios-disponibles` | `usuarios.crear` | Funcionarios activos sin cuenta (para crear una) |
 | `GET /api/salud` | público | Comprobación del servicio |
 
-**Falta en backend:** funcionarios, catálogos, expediente, historial laboral y documentos.
+**Falta en backend:** expediente, historial laboral y documentos.
 
 ### Estado del frontend (desde el 25/09)
 
@@ -285,7 +292,34 @@ p. ej. un departamento que cierra). A diferencia de un rol, no le quita acceso a
 las puede leer cualquiera con sesión (las usan los formularios); administrarlas pide
 `catalogos.editar`. Los regímenes de vacaciones quedan para el Sprint 2.
 
-Pendiente: funcionarios, expediente e historial (épica 2) y la épica 3.
+**Funcionarios** (`/funcionarios`, 27/09): lista de `pgFuncionarios` con acciones por fila (ver
+ficha, editar, registrar salida o reingreso, expediente); tocar la fila abre la **ficha
+resumida** (`mdResumen`). **Registrar funcionario** (`/funcionarios/nuevo`) es la página por pasos
+de `pgAltaFuncionario`: Datos personales · Contacto · Datos laborales · **Cuenta de acceso** ·
+Revisar. **Editar funcionario** (`/funcionarios/:id/editar`), mismos pasos sin la cuenta. Salida y
+reingreso son ventanas cortas. Menú: grupo **Personal** del prototipo.
+
+Decisiones de funcionarios (27/09; se pueden revertir):
+- **Cédula**: la nacional de 9 dígitos se guarda siempre `2-0678-0432` (con o sin guiones al
+  escribir), para que la misma persona no quede dos veces; DIMEX o pasaporte, en mayúsculas.
+  No se repite y **no se edita**.
+- **Fechas**: edad mínima **15 años** (Código de Trabajo); ingreso después de cumplirlos, desde 1950
+  y hasta un año hacia adelante. Las fechas de calendario viajan como `AAAA-MM-DD` (esto corrigió
+  además "Mi cuenta", que mostraba la fecha de ingreso un día antes).
+- **Obligatorios** (como el prototipo): cédula, nombre, primer apellido, correo personal, puesto,
+  departamento, nombramiento, régimen y fecha de ingreso. Código de empleado opcional y único.
+- **Jefatura**: un funcionario activo, distinto de la persona y **sin ciclos**. Sin jefatura = tope.
+- **Cuenta desde el registro**: el correo de ingreso es el institucional; sin él, la casilla se
+  bloquea y la cuenta se crea después desde Usuarios. Se propone el rol Solicitante.
+- **Nadie edita su propio registro** ni registra su propia salida (los datos propios van en Mi cuenta).
+- **Salida**: queda inactivo con fecha y motivo, **su cuenta se inactiva a la vez**. No se permite
+  si tiene personal a cargo (primero se les cambia la jefatura) ni si su cuenta tiene más acceso
+  que quien la registra (regla 3). **Reingreso**: vuelve a activo con nueva fecha de ingreso; la
+  cuenta **no** se reactiva sola.
+- Cada cambio va a la bitácora con el **antes y el después legibles** (nombre del puesto, no su id):
+  de ahí saldrá el historial laboral.
+
+Pendiente: expediente e historial laboral (épica 2) y la épica 3.
 
 ### Repositorio en GitHub (versionado el 19/09/2026)
 
@@ -629,6 +663,31 @@ Estas ya están validadas. **Trátelas como verdad** salvo que Josthyn diga lo c
   `FECHA_VENCIMIENTO_PASADA`, `FECHA_VENCIMIENTO_MUY_LEJANA`.
 - **Excepciones de permisos**: el motivo es obligatorio al agregarlas desde la página (queda en la
   bitácora). Se pueden hacer varias a la vez.
+
+### Decisiones del 27/09/2026 (Josthyn)
+
+- **Jefatura inmediata = quien puede aprobar solicitudes** (permiso `solicitudes.aprobar`). Lo
+  tienen el rol **Aprobador** (las jefaturas), **Administrador** (RRHH: no para aprobar en el día
+  a día, sino para poder asignar el rol Aprobador en una emergencia o al crear el funcionario,
+  por la regla "solo se da lo que se tiene") y el Super Administrador. También se puede dar como
+  permiso individual. En el formulario solo aparecen esas personas; el backend lo revisa
+  (`JEFATURA_NO_VALIDA`).
+- **Todo usuario puede hacer solicitudes** (`solicitudes.crear`, en el autoservicio de
+  Solicitante; por lo tanto también en Aprobador y Administrador): vacaciones, permisos,
+  incapacidades con comprobante, capacitaciones que chocan con el horario. Es la razón principal
+  del sistema. Las pantallas llegan en el Sprint 2.
+- **El Aprobador incluye todo lo del Solicitante** (es jefatura y también pide sus vacaciones).
+- **Nombres realistas**: nombre hasta 50 caracteres y 5 palabras; cada apellido hasta 40 y 4
+  palabras; solo letras, espacios, apóstrofo, guion y punto; no se acepta la misma letra 3 veces
+  seguidas ("iiii"). Ningún nombre real cumple eso.
+- **Teléfono de Costa Rica**: 8 dígitos; empieza en 2 o 4 (fijo), 5 (servicios especiales/IP) o
+  6, 7, 8 (móvil). Se acepta con espacios, guion o +506 y se guarda como `8712-4408`.
+- **Mi cuenta** muestra todo: tarjeta con la cuenta, pestaña de datos personales (la fecha de
+  nacimiento en solo lectura), pestaña de **datos laborales** (solo lectura) y acceso. Pestañas
+  centradas.
+- **Menú**: las subsecciones fijas (Crear usuario, Crear rol…) se ven solo en la sección actual
+  o si se despliegan con la flecha; al cambiar de sección se pliegan las otras. Las de contexto
+  (Editar …) siguen apareciendo solo en su página. Las secciones nunca se ocultan.
 
 ### Convenciones de la base de datos
 

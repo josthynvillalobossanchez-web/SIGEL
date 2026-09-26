@@ -271,6 +271,10 @@ SIGEL\
 - Nombres en **español y camelCase**: variables, funciones, clases, tablas, columnas y
   endpoints.
 - **UUID** como identificador público en todas las tablas.
+- **Nombres de persona y teléfonos** se validan con `backend/src/comun/validadores.ts`
+  (`@NombreDePersona(campo, largo, palabras)` y `normalizarTelefono` + `TELEFONO_DE_COSTA_RICA`);
+  en el frontend, lo mismo en `utilidades/texto.ts` (`problemaDeNombre`, `normalizarTelefono`).
+  Todo campo de texto lleva `maxLength` igual al del backend.
 - **Baja lógica**, nunca borrado físico, en la información con historial.
 - Los archivos del expediente **no** se guardan en MySQL: se copian al servidor de
   archivos y la base guarda la ruta.
@@ -342,6 +346,13 @@ aparece marcado como público, exige sesión.
 | `POST /catalogos/:tipo` | `catalogos.editar` | `{ nombre, descripcion? }` |
 | `PATCH /catalogos/:tipo/:id` | `catalogos.editar` | `{ nombre?, descripcion? }` ("" quita la descripción) |
 | `PATCH /catalogos/:tipo/:id/estado` | `catalogos.editar` | `{ activo }` |
+| `GET /funcionarios` | `funcionarios.ver` | `?busqueda=&estado=activo&departamentoId=&pagina=&tamano=` |
+| `GET /funcionarios/opciones` | `funcionarios.ver` | Listas activas para los formularios; `jefaturas` = solo quienes tienen `solicitudes.aprobar` |
+| `GET /funcionarios/:id` | `funcionarios.ver` | Ficha completa; fechas como `AAAA-MM-DD` |
+| `POST /funcionarios` | `funcionarios.crear` | Datos personales, contacto y laborales; `cuenta?: { roles }` crea la cuenta en la misma transacción |
+| `PATCH /funcionarios/:id` | `funcionarios.editar` | Solo lo que cambia (no `cedula` ni `estado`) |
+| `POST /funcionarios/:id/salida` | `funcionarios.editar` | `{ fechaSalida, motivoSalida }` |
+| `POST /funcionarios/:id/reingreso` | `funcionarios.editar` | `{ fechaIngreso }` |
 | `GET /usuarios/funcionarios-disponibles?busqueda=` | `usuarios.crear` | Funcionarios activos sin cuenta, máximo 20 |
 
 `GET /usuarios/:id` trae además `permisosEfectivos` (lo que la cuenta puede hacer de verdad),
@@ -386,6 +397,14 @@ Códigos de error más frecuentes:
 | `CATALOGO_NO_EXISTE` | El `:tipo` no es departamentos, puestos ni profesiones (404) |
 | `ELEMENTO_NO_ENCONTRADO` | No hay un departamento/puesto/profesión con ese id (404) |
 | `NOMBRE_DUPLICADO` | Ya hay uno con ese nombre en ese catálogo (sin importar mayúsculas ni tildes) |
+| `CEDULA_EN_USO` / `NUMERO_EMPLEADO_EN_USO` | Otro funcionario ya tiene esa cédula / ese código |
+| `PUESTO_NO_VALIDO` / `DEPARTAMENTO_NO_VALIDO` / `REGIMEN_NO_VALIDO` | No existe o está inactivo |
+| `JEFATURA_NO_VALIDA` / `JEFATURA_CICLICA` | Jefatura inactiva, inexistente, la misma persona o sin permiso `solicitudes.aprobar` / crearía un ciclo |
+| `FECHA_NACIMIENTO_NO_VALIDA` / `FECHA_INGRESO_NO_VALIDA` / `FECHA_SALIDA_NO_VALIDA` | Fuera de rango (edad mínima 15, etc.) |
+| `FUNCIONARIO_PROPIO` | Nadie edita su propio registro ni registra su propia salida |
+| `FUNCIONARIO_YA_INACTIVO` / `FUNCIONARIO_YA_ACTIVO` | La salida o el reingreso ya estaban registrados |
+| `FUNCIONARIO_CON_PERSONAL_A_CARGO` | Tiene subordinados: primero se les cambia la jefatura |
+| `CUENTA_SIN_CORREO_INSTITUCIONAL` | Se pidió crear la cuenta sin correo institucional |
 | `ROL_DE_SISTEMA` | Los 5 roles de sistema no se modifican desde la API |
 | `ROL_CON_MAYOR_ACCESO` | Quiso modificar un rol con permisos que él no tiene |
 | `ROL_PROPIO` | Quiso cambiar permisos o estado de un rol que él mismo tiene (regla 4) |
@@ -501,6 +520,8 @@ Nada de páginas largas con scroll en PC.
 | `/roles` (`?rol=<id>`, `?pestana=permisos`) | `usuarios.ver` | Pestañas Roles (tabla con acciones) y Catálogo; ventanas Ver rol y Activar/Inactivar |
 | `/roles/nuevo`, `/roles/:id/editar` | `roles.editar` | Crear / Editar rol (Datos · Permisos · Revisar) |
 | `/catalogos` (`?pestana=puestos`, `?estado=activos`) | `catalogos.editar` | Departamentos, puestos y profesiones; ventanas cortas de crear, editar e inactivar |
+| `/funcionarios` (`?ver=<id>`, `?estado=`, `?departamento=`) | `funcionarios.ver` | Lista; ventanas Ficha resumida, Registrar salida, Registrar reingreso |
+| `/funcionarios/nuevo`, `/funcionarios/:id/editar` | `funcionarios.crear` / `funcionarios.editar` | Registrar / Editar funcionario por pasos |
 | `/mi-cuenta` | con sesión | Perfil; pestañas Mis datos personales y Acceso y seguridad |
 
 `/usuarios/:id` y `/roles/:id` (sin "editar") abren la ventana de consulta.

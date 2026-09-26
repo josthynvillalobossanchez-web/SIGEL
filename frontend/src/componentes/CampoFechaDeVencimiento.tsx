@@ -83,15 +83,24 @@ export function CampoFechaDeVencimiento({ id, etiqueta, valor, alCambiar, ayuda,
 }
 
 /**
- * Revisa todos los campos de vencimiento dentro de "raiz" antes de avanzar
+ * Revisa todos los campos de fecha dentro de "raiz" antes de avanzar
  * o guardar. Si alguno esta incompleto o fuera de rango, lo enfoca y
  * devuelve el texto del problema; si todo esta bien devuelve null.
  */
 export function revisarFechasDeVencimiento(raiz: HTMLElement | null): string | null {
   if (!raiz) return null;
-  const campos = raiz.querySelectorAll<HTMLInputElement>('input[data-fecha-vencimiento]');
+  // Vencimientos (se revisa tambien el rango) y fechas de calendario de
+  // CampoFecha (solo que esten completas; el rango lo revisa la pagina).
+  const campos = raiz.querySelectorAll<HTMLInputElement>('input[data-fecha-vencimiento], input[data-fecha-revisada]');
   for (const campo of campos) {
-    const problema = campo.validity.badInput ? TEXTO_INCOMPLETA : problemaDeFechaDeVencimiento(campo.value);
+    const esVencimiento = campo.hasAttribute('data-fecha-vencimiento');
+    const problema = campo.validity.badInput
+      ? esVencimiento
+        ? TEXTO_INCOMPLETA
+        : 'Fecha incompleta: complete el día, el mes y el año.'
+      : esVencimiento
+        ? problemaDeFechaDeVencimiento(campo.value)
+        : null;
     if (problema) {
       campo.focus();
       // Dispara el aviso rojo del propio campo.

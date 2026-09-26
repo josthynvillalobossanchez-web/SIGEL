@@ -13,8 +13,8 @@
  * No se borra nada: se inactiva (ver backend/src/catalogos/catalogos.service.ts).
  */
 import { useCallback, useEffect, useState } from 'react';
-import { useSearchParams } from 'react-router';
 import { textoDelError } from '../../api/cliente';
+import { useParametrosEnUrl } from '../../utilidades/parametrosEnUrl';
 import { consultarCatalogos, type CatalogosCompletos, type ElementoDeCatalogo, type TipoDeCatalogo } from '../../api/catalogos';
 import { Icono } from '../../componentes/Icono';
 import { Mensaje } from '../../componentes/Mensaje';
@@ -38,7 +38,7 @@ type Ventana =
   | null;
 
 export function Catalogos() {
-  const [parametros, setParametros] = useSearchParams();
+  const [parametros, cambiar] = useParametrosEnUrl();
   const pedida = parametros.get('pestana') as TipoDeCatalogo | null;
   const pestana: TipoDeCatalogo = pedida && TIPOS.includes(pedida) ? pedida : 'departamentos';
   const estado = (parametros.get('estado') ?? '') as FiltroDeEstado;
@@ -64,16 +64,6 @@ export function Catalogos() {
     void cargar();
   }, [cargar]);
 
-  function cambiar(cambios: Record<string, string>) {
-    setParametros((actuales) => {
-      const nuevos = new URLSearchParams(actuales);
-      for (const [clave, valor] of Object.entries(cambios)) {
-        if (valor) nuevos.set(clave, valor);
-        else nuevos.delete(clave);
-      }
-      return nuevos;
-    });
-  }
 
   function alGuardar(texto: string, id?: string) {
     setVentana(null);

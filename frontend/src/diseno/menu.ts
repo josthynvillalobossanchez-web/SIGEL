@@ -50,6 +50,22 @@ export const MENU: GrupoDeMenu[] = [
     opciones: [{ texto: 'Inicio', ruta: '/', icono: 'inicio', permisos: [] }],
   },
   {
+    // Mismo grupo del prototipo ("Personal").
+    titulo: 'Personal',
+    opciones: [
+      {
+        texto: 'Funcionarios',
+        ruta: '/funcionarios',
+        icono: 'personas',
+        permisos: ['funcionarios.ver'],
+        subopciones: [
+          { texto: 'Registrar funcionario', ruta: '/funcionarios/nuevo', permisos: ['funcionarios.crear'] },
+          { texto: 'Editar funcionario', patron: /^\/funcionarios\/[^/]+\/editar$/, permisos: ['funcionarios.editar'] },
+        ],
+      },
+    ],
+  },
+  {
     titulo: 'Seguridad',
     opciones: [
       {

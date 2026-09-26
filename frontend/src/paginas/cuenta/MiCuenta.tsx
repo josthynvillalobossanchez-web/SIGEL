@@ -4,10 +4,12 @@
  * Arriba, la tarjeta de perfil con el degradado: fotografia (o las iniciales
  * del nombre si no hay foto), nombre, cedula y correo, estado y roles, y los
  * datos rapidos (puesto, departamento, ingreso, ultimo acceso).
- * Debajo, dos pestanas:
- *   - Mis datos personales: telefono, correos, profesion y direccion, que la
- *     propia persona mantiene (permiso perfilPropio.editar). Los datos
- *     laborales solo los cambia Recursos Humanos.
+ * Debajo, tres pestanas, centradas en la pantalla (pedido de Josthyn, 27/09):
+ *   - Mis datos personales: identificacion (solo lectura) y telefono,
+ *     correos, profesion y direccion, que la propia persona mantiene
+ *     (permiso perfilPropio.editar).
+ *   - Datos laborales: puesto, departamento, jefatura, nombramiento,
+ *     regimen e ingreso. Solo lectura: los cambia Recursos Humanos.
  *   - Acceso y seguridad: datos de acceso, roles y cambio de contrasena.
  *
  * Todo es sobre la persona conectada: el backend toma su id de la sesion.
@@ -24,8 +26,10 @@ import { CampoContrasena } from '../../componentes/CampoContrasena';
 import { RequisitosDeContrasena } from '../../componentes/RequisitosDeContrasena';
 import { PanelDePestana, Pestanas } from '../../componentes/Pestanas';
 import { ChipDeEstadoDeCuenta } from '../usuarios/ChipDeEstadoDeCuenta';
-import { formatearFecha, formatearFechaHora } from '../../utilidades/fechas';
-import { inicialesDeFuncionario, inicialesDesdeCorreo, nombreCompleto } from '../../utilidades/texto';
+import { formatearFecha, formatearFechaHora, formatearFechaSola } from '../../utilidades/fechas';
+import { inicialesDeFuncionario, inicialesDesdeCorreo, MENSAJE_TELEFONO, nombreCompleto, normalizarTelefono } from '../../utilidades/texto';
+import { NOMBRES_DE_NOMBRAMIENTO, nombreDeRegimen } from '../../api/funcionarios';
+import { ChipDeFuncionario } from '../funcionarios/ChipDeFuncionario';
 import { revisarContrasenaNueva } from '../../utilidades/politica-contrasena';
 
 type Formulario = Required<{ [K in keyof DatosPersonales]: string }>;
@@ -99,7 +103,7 @@ export function MiCuenta() {
           </div>
           <div>
             <dt>Ingreso</dt>
-            <dd className="num">{f ? formatearFecha(f.fechaIngreso) : '—'}</dd>
+            <dd className="num">{f ? formatearFechaSola(f.fechaIngreso) : '—'}</dd>
           </div>
           <div>
             <dt>Último acceso</dt>
@@ -108,6 +112,8 @@ export function MiCuenta() {
         </dl>
       </section>
 
+      {/* Pestanas y su contenido, centrados con el mismo ancho de siempre. */}
+      <div className="mc-centro">
       <Pestanas
         prefijo="mc"
         etiqueta="Secciones de mi cuenta"
@@ -115,6 +121,7 @@ export function MiCuenta() {
         alCambiar={setPestana}
         opciones={[
           { id: 'datos', texto: 'Mis datos personales' },
+          { id: 'laborales', texto: 'Datos laborales' },
           { id: 'acceso', texto: 'Acceso y seguridad' },
         ]}
       />
@@ -128,6 +135,10 @@ export function MiCuenta() {
             setAviso('Sus datos personales se guardaron. El cambio quedó registrado en la bitácora.');
           }}
         />
+      </PanelDePestana>
+
+      <PanelDePestana id="laborales" actual={pestana} prefijo="mc">
+        <DatosLaboralesPropios perfil={perfil} />
       </PanelDePestana>
 
       <PanelDePestana id="acceso" actual={pestana} prefijo="mc">
@@ -183,6 +194,7 @@ export function MiCuenta() {
           </div>
         </div>
       </PanelDePestana>
+      </div>
 
       {cambiandoContrasena && (
         <ModalCambiarContrasena
@@ -223,6 +235,7 @@ function DatosPersonalesPropios({ perfil, alGuardar }: { perfil: PerfilPropio; a
 
   async function guardar() {
     if (!datos.correoPersonal.trim()) return setError('El correo personal es obligatorio: es el canal de respaldo de las notificaciones.');
+    if (datos.telefonoPersonal.trim() && !normalizarTelefono(datos.telefonoPersonal)) return setError(MENSAJE_TELEFONO);
     setOcupado(true);
     setError(null);
     try {
@@ -240,7 +253,6 @@ function DatosPersonalesPropios({ perfil, alGuardar }: { perfil: PerfilPropio; a
   return (
     <form
       className="card"
-      style={{ maxWidth: 1080 }}
       noValidate
       onSubmit={(e) => {
         e.preventDefault();
@@ -252,10 +264,42 @@ function DatosPersonalesPropios({ perfil, alGuardar }: { perfil: PerfilPropio; a
           <Mensaje tipo="info">Su cuenta no tiene permiso para editar sus datos personales. Solicítelo a Recursos Humanos.</Mensaje>
         )}
         {error && <Mensaje tipo="error">{error}</Mensaje>}
-        <div className="campo-fila">
+        {/* Nombre y cedula ya se ven arriba, en la tarjeta. La fecha de
+            nacimiento se muestra aqui en solo lectura: la corrige RRHH. */}
+        <div className="campo-fila mc-campos">
+          <div className="campo">
+            <label htmlFor="mcNac">Fecha de nacimiento</label>
+            <input
+              id="mcNac"
+              readOnly
+              className="solo-lectura"
+              value={perfil.funcionario.fechaNacimiento ? formatearFechaSola(perfil.funcionario.fechaNacimiento) : 'Sin registrar'}
+              aria-describedby="mcNacAyuda"
+            />
+            <span className="ayuda" id="mcNacAyuda">
+              La corrige Recursos Humanos.
+            </span>
+          </div>
           <div className="campo">
             <label htmlFor="mcTel">Teléfono</label>
-            <input id="mcTel" type="tel" value={datos.telefonoPersonal} onChange={poner('telefonoPersonal')} disabled={soloLectura} maxLength={30} style={{ fontVariantNumeric: 'tabular-nums' }} />
+            <input
+              id="mcTel"
+              type="tel"
+              value={datos.telefonoPersonal}
+              onChange={poner('telefonoPersonal')}
+              onBlur={() => {
+                const normal = normalizarTelefono(datos.telefonoPersonal);
+                if (normal) setDatos({ ...datos, telefonoPersonal: normal });
+              }}
+              disabled={soloLectura}
+              maxLength={16}
+              placeholder="8712-4408"
+              aria-describedby="mcTelAyuda"
+              style={{ fontVariantNumeric: 'tabular-nums' }}
+            />
+            <span className="ayuda" id="mcTelAyuda">
+              8 dígitos de Costa Rica.
+            </span>
           </div>
           <div className="campo">
             <label htmlFor="mcCorreoP">
@@ -278,7 +322,7 @@ function DatosPersonalesPropios({ perfil, alGuardar }: { perfil: PerfilPropio; a
               ))}
             </select>
           </div>
-          <div className="campo doble">
+          <div className="campo mc-direccion">
             <label htmlFor="mcDir">Dirección exacta</label>
             <textarea id="mcDir" rows={2} value={datos.direccion} onChange={poner('direccion')} disabled={soloLectura} maxLength={255} />
           </div>
@@ -286,8 +330,7 @@ function DatosPersonalesPropios({ perfil, alGuardar }: { perfil: PerfilPropio; a
       </div>
       <div className="pie-form">
         <span className="contador-paso">
-          Cada cambio queda en la bitácora. Los datos laborales (puesto, departamento, jefatura) solo los modifica
-          Recursos Humanos.
+          Cada cambio queda en la bitácora. Su nombre, cédula y fecha de nacimiento los corrige Recursos Humanos.
         </span>
         <div className="der">
           <BotonConAyuda
@@ -309,6 +352,53 @@ function DatosPersonalesPropios({ perfil, alGuardar }: { perfil: PerfilPropio; a
         </div>
       </div>
     </form>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* Pestana "Datos laborales" (solo lectura, pLaboral del prototipo)    */
+/* ------------------------------------------------------------------ */
+
+function DatosLaboralesPropios({ perfil }: { perfil: PerfilPropio }) {
+  const f = perfil.funcionario;
+  if (!f) {
+    return <Mensaje tipo="info">La cuenta técnica de Informática no está ligada a un funcionario: no tiene datos laborales.</Mensaje>;
+  }
+  const dato = (titulo: string, valor: string | null | undefined, num = false) => (
+    <div className="dato">
+      <dt>{titulo}</dt>
+      <dd className={valor ? (num ? 'num' : undefined) : 'vacio-dato'}>{valor || 'Sin registrar'}</dd>
+    </div>
+  );
+  // Un solo bloque de 4 columnas para que quepa sin scroll a 1366x768.
+  return (
+    <>
+      <section className="info-bloque">
+        <h3>Puesto y nombramiento</h3>
+        <dl className="info-rejilla mc-laborales">
+          {dato('Puesto', f.puesto)}
+          {dato('Departamento', f.departamento)}
+          {dato('Jefatura inmediata', f.jefatura ?? 'Sin jefatura asignada')}
+          {dato('Código de empleado', f.numeroEmpleado, true)}
+          {dato('Tipo de nombramiento', NOMBRES_DE_NOMBRAMIENTO[f.tipoNombramiento])}
+          <div className="dato">
+            <dt>Régimen de vacaciones</dt>
+            <dd>
+              {nombreDeRegimen(f.regimenVacaciones.nombre)}
+              {f.regimenVacaciones.descripcion && <span className="sec-dato mc-detalle">{f.regimenVacaciones.descripcion}</span>}
+            </dd>
+          </div>
+          {dato('Fecha de ingreso', formatearFechaSola(f.fechaIngreso), true)}
+          <div className="dato">
+            <dt>Estado</dt>
+            <dd>
+              <ChipDeFuncionario estado={f.estado} />
+            </dd>
+          </div>
+        </dl>
+      </section>
+      <p className="nota-pagina mc-nota">Estos datos solo los modifica Recursos Humanos. Si algo no está bien, avísele.</p>
+    </>
   );
 }
 

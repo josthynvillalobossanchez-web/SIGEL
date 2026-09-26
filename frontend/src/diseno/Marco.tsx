@@ -11,6 +11,10 @@
  *   - Subsecciones ("nav-sub"): las paginas de crear y editar aparecen
  *     debajo de su seccion (ver diseno/menu.ts). La seccion queda marcada
  *     como "en esta seccion" y la subseccion como pagina actual.
+ *     Para ahorrar espacio (27/09): las fijas (Crear usuario...) solo se
+ *     ven en la seccion en la que se esta, o si la persona las despliega con
+ *     la flecha de otra seccion. Al entrar a otra seccion se pliegan las
+ *     anteriores. Las de editar siguen apareciendo solo en su pagina.
  *   - Si la pagina tiene cambios sin guardar, el menu y "Salir" preguntan
  *     antes (componentes/CambiosSinGuardar.tsx).
  */
@@ -52,6 +56,18 @@ function MarcoInterno() {
   const [lateralOculto, setLateralOculto] = useState(lateralGuardadoOculto);
   const [menuMovilAbierto, setMenuMovilAbierto] = useState(false);
 
+  /**
+   * Subsecciones desplegadas a mano (ruta de la seccion -> abierta o no).
+   * Se reinicia al cambiar de SECCION: quedan abiertas solo las de la seccion
+   * nueva. Mientras se siga en la misma seccion, lo que la persona desplego
+   * de otras secciones se mantiene.
+   */
+  const [desplegadas, setDesplegadas] = useState<Record<string, boolean>>({});
+  const seccionActual = MENU.flatMap((g) => g.opciones).find(
+    (o) => o.ruta !== '/' && (ubicacion.pathname === o.ruta || ubicacion.pathname.startsWith(`${o.ruta}/`)),
+  )?.ruta ?? ubicacion.pathname;
+  useEffect(() => setDesplegadas({}), [seccionActual]);
+
   // Al cambiar de pagina se cierra el menu del celular.
   useEffect(() => setMenuMovilAbierto(false), [ubicacion.pathname]);
 
@@ -78,17 +94,23 @@ function MarcoInterno() {
   // Solo los grupos con al menos una opcion permitida, y en cada opcion
   // solo las subsecciones permitidas (las de contexto, si se esta en ellas).
   const ruta = ubicacion.pathname;
+  /** La seccion en la que se esta (p. ej. "/usuarios" en /usuarios/nuevo). */
+  const enSeccion = (rutaDeSeccion: string) =>
+    rutaDeSeccion !== '/' && (ruta === rutaDeSeccion || ruta.startsWith(`${rutaDeSeccion}/`));
   const gruposVisibles = MENU.map((grupo) => ({
     ...grupo,
     opciones: grupo.opciones
       .filter((o) => tienePermisos(...o.permisos))
-      .map((o) => ({
-        ...o,
-        subopciones: (o.subopciones ?? [])
-          .filter((sub) => tienePermisos(...sub.permisos))
-          .filter((sub) => sub.ruta || sub.patron?.test(ruta))
-          .map((sub) => ({ texto: sub.texto, ruta: sub.ruta ?? ruta })),
-      })),
+      .map((o) => {
+        const permitidas = (o.subopciones ?? []).filter((sub) => tienePermisos(...sub.permisos));
+        return {
+          ...o,
+          // Fijas (Crear usuario...): se pliegan y despliegan.
+          fijas: permitidas.filter((sub) => sub.ruta).map((sub) => ({ texto: sub.texto, ruta: sub.ruta! })),
+          // De contexto (Editar usuario...): solo mientras se esta en esa pagina.
+          deContexto: permitidas.filter((sub) => !sub.ruta && sub.patron?.test(ruta)).map((sub) => ({ texto: sub.texto, ruta })),
+        };
+      }),
   })).filter((grupo) => grupo.opciones.length > 0);
 
   const textoTirador = lateralOculto ? 'Mostrar el menú lateral' : 'Ocultar el menú lateral';
@@ -152,38 +174,60 @@ function MarcoInterno() {
           {gruposVisibles.map((grupo) => (
             <div className="nav-grupo" key={grupo.titulo}>
               <p className="nav-titulo">{grupo.titulo}</p>
-              {grupo.opciones.map((opcion) => (
-                <div key={opcion.ruta} style={{ display: 'contents' }}>
-                  {/* NavLink pone aria-current="page" en la opcion activa (el CSS la resalta).
-                      "end": la seccion solo es "la pagina actual" en su propia direccion; en
-                      sus subpaginas queda marcada con data-en-seccion. */}
-                  <NavLink
-                    className="nav-item"
-                    to={opcion.ruta}
-                    end
-                    data-en-seccion={ruta.startsWith(`${opcion.ruta}/`) && opcion.ruta !== '/' ? 'si' : undefined}
-                    onClick={(e) => clicSeguro(e, opcion.ruta)}
-                  >
-                    <Icono nombre={opcion.icono} clase="ico" />
-                    {opcion.texto}
-                  </NavLink>
-                  {opcion.subopciones.length > 0 && (
-                    <div className="nav-sub" role="group" aria-label={`Subsecciones de ${opcion.texto}`}>
-                      {opcion.subopciones.map((sub) => (
-                        <NavLink className="nav-sub-item" to={sub.ruta} end key={sub.texto} onClick={(e) => clicSeguro(e, sub.ruta)}>
-                          {sub.texto}
-                        </NavLink>
-                      ))}
+              {grupo.opciones.map((opcion) => {
+                const activa = enSeccion(opcion.ruta);
+                // Abierta: la seccion en la que se esta, o la que la persona desplego.
+                const abierta = desplegadas[opcion.ruta] ?? activa;
+                const subs = [...(abierta ? opcion.fijas : []), ...opcion.deContexto];
+                const idSubs = `sub-${opcion.ruta.replace(/\W/g, '')}`;
+                return (
+                  <div key={opcion.ruta} style={{ display: 'contents' }}>
+                    <div className="nav-fila">
+                      {/* NavLink pone aria-current="page" en la opcion activa (el CSS la resalta).
+                          "end": la seccion solo es "la pagina actual" en su propia direccion; en
+                          sus subpaginas queda marcada con data-en-seccion. */}
+                      <NavLink
+                        className="nav-item"
+                        to={opcion.ruta}
+                        end
+                        data-en-seccion={activa && ruta !== opcion.ruta ? 'si' : undefined}
+                        onClick={(e) => clicSeguro(e, opcion.ruta)}
+                      >
+                        <Icono nombre={opcion.icono} clase="ico" />
+                        {opcion.texto}
+                      </NavLink>
+                      {opcion.fijas.length > 0 && (
+                        <button
+                          type="button"
+                          className="nav-desplegar"
+                          aria-expanded={abierta}
+                          aria-controls={idSubs}
+                          aria-label={`${abierta ? 'Ocultar' : 'Mostrar'} las subsecciones de ${opcion.texto}`}
+                          data-ayuda={`${abierta ? 'Ocultar' : 'Mostrar'}: ${opcion.fijas.map((f) => f.texto).join(', ')}`}
+                          onClick={() => setDesplegadas((d) => ({ ...d, [opcion.ruta]: !abierta }))}
+                        >
+                          <Icono nombre="flecha" tamano={15} grosor={2.4} />
+                        </button>
+                      )}
                     </div>
-                  )}
-                </div>
-              ))}
+                    {subs.length > 0 && (
+                      <div className="nav-sub" id={idSubs} role="group" aria-label={`Subsecciones de ${opcion.texto}`}>
+                        {subs.map((sub) => (
+                          <NavLink className="nav-sub-item" to={sub.ruta} end key={sub.texto} onClick={(e) => clicSeguro(e, sub.ruta)}>
+                            {sub.texto}
+                          </NavLink>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           ))}
 
           <p style={{ marginTop: 'auto', padding: 12, fontSize: 11.5, color: 'var(--texto-sec)', lineHeight: 1.5 }}>
-            Los módulos de funcionarios, expediente, vacaciones, incapacidades, horas extra y Talent Pool se irán
-            agregando en los próximos sprints.
+            El expediente laboral llega en la siguiente entrega. Vacaciones, incapacidades, horas extra y Talent Pool
+            corresponden a los Sprints 2 y 3.
           </p>
         </nav>
 

@@ -38,6 +38,11 @@ interface PropiedadesDeModal {
   cabeceraExtra?: ReactNode;
   /** Reemplaza los botones del pie. */
   pie?: ReactNode;
+  /**
+   * Cabecera de ficha (mdResumen del prototipo): foto o iniciales a la
+   * izquierda y el titulo al lado. Si viene, reemplaza al icono.
+   */
+  foto?: ReactNode;
   children?: ReactNode;
 }
 
@@ -58,6 +63,7 @@ export function Modal({
   ancho,
   cabeceraExtra,
   pie,
+  foto,
   children,
 }: PropiedadesDeModal) {
   const idTitulo = useId();
@@ -109,16 +115,35 @@ export function Modal({
   const contenido = (
     <>
       <div className="modal-cab">
-        <h2 id={idTitulo}>
-          {icono && (
-            <span className="ic" aria-hidden="true">
-              <Icono nombre={icono} />
-            </span>
-          )}
-          {titulo}
-        </h2>
-        {descripcion && <p id={idDescripcion}>{descripcion}</p>}
-        {cabeceraExtra}
+        {foto ? (
+          <div className="resumen-cab" style={{ marginBottom: 0 }}>
+            <div className="foto" aria-hidden="true">
+              {foto}
+            </div>
+            <div>
+              <h2 id={idTitulo}>{titulo}</h2>
+              {descripcion && (
+                <p className="ced" id={idDescripcion}>
+                  {descripcion}
+                </p>
+              )}
+              {cabeceraExtra}
+            </div>
+          </div>
+        ) : (
+          <>
+            <h2 id={idTitulo}>
+              {icono && (
+                <span className="ic" aria-hidden="true">
+                  <Icono nombre={icono} />
+                </span>
+              )}
+              {titulo}
+            </h2>
+            {descripcion && <p id={idDescripcion}>{descripcion}</p>}
+            {cabeceraExtra}
+          </>
+        )}
       </div>
       {children && <div className="modal-cuerpo">{children}</div>}
       <div className="modal-pie">

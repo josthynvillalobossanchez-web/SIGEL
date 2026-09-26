@@ -55,6 +55,22 @@ const PERMISOS: { clave: string; modulo: string; descripcion: string }[] = [
   { clave: 'catalogos.editar', modulo: 'catalogos', descripcion: 'Administrar departamentos, puestos y profesiones' },
   { clave: 'bitacora.ver', modulo: 'bitacora', descripcion: 'Consultar la bitácora de auditoría' },
   { clave: 'perfilPropio.editar', modulo: 'perfilPropio', descripcion: 'Editar los datos personales y de contacto propios' },
+  // Solicitudes (Sprint 2: vacaciones, permisos, incapacidades con
+  // comprobante, capacitaciones que chocan con el horario). Se siembran desde
+  // ya porque deciden cosas de este sprint (decision de Josthyn, 27/09):
+  //   - solicitudes.crear: lo mas basico; lo tiene TODA cuenta (va en el
+  //     autoservicio del Solicitante, y por eso en Aprobador y Administrador).
+  //   - solicitudes.aprobar: quien lo tiene puede ser JEFATURA INMEDIATA.
+  //     Lo tienen las jefaturas (rol Aprobador) y Recursos Humanos
+  //     (Administrador), que ademas lo necesita para poder asignar el rol
+  //     Aprobador ("solo se da lo que se tiene"). Tambien se puede conceder
+  //     a una persona como permiso individual.
+  { clave: 'solicitudes.crear', modulo: 'solicitudes', descripcion: 'Hacer solicitudes propias: vacaciones, permisos, incapacidades y capacitaciones' },
+  {
+    clave: 'solicitudes.aprobar',
+    modulo: 'solicitudes',
+    descripcion: 'Aprobar o rechazar las solicitudes del personal a cargo (puede ser jefatura inmediata)',
+  },
 ];
 
 // ---------------------------------------------------------------------
@@ -63,6 +79,7 @@ const PERMISOS: { clave: string; modulo: string; descripcion: string }[] = [
 // una clave distinta de permiso.
 // ---------------------------------------------------------------------
 const AUTOSERVICIO = [
+  'solicitudes.crear',
   'perfilPropio.editar',
   'expediente.ver',
   'documentos.crear',
@@ -97,12 +114,16 @@ const ROLES: { nombre: string; descripcion: string; permisos: string[] | 'todos'
       'roles.editar',
       'catalogos.editar',
       'perfilPropio.editar',
+      'solicitudes.crear',
+      'solicitudes.aprobar',
     ],
   },
   {
     nombre: 'Aprobador',
     descripcion: 'Aprueba las solicitudes del personal a su cargo. Lo usan las jefaturas.',
-    permisos: [...AUTOSERVICIO, 'funcionarios.ver'],
+    // Incluye todo lo del Solicitante (AUTOSERVICIO): una jefatura tambien
+    // hace sus propias solicitudes.
+    permisos: [...AUTOSERVICIO, 'funcionarios.ver', 'solicitudes.aprobar'],
   },
   {
     nombre: 'Solicitante',
