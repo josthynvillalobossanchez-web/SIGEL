@@ -31,7 +31,7 @@ export class CorreoService {
       this.registro.warn(
         [
           '',
-          '--- CORREO SIMULADO (no se envio nada de verdad) ---',
+          '--- CORREO SIMULADO (no se envió nada de verdad) ---',
           `Para:   ${mensaje.para}`,
           `Asunto: ${mensaje.asunto}`,
           '',
@@ -49,8 +49,8 @@ export class CorreoService {
      * que el correo salio.
      */
     throw new Error(
-      `CORREO_TRANSPORTE="${transporte}" todavia no esta implementado. ` +
-        'Use "consola" mientras no esten los datos del servidor de correo.',
+      `CORREO_TRANSPORTE="${transporte}" todavía no está implementado. ` +
+        'Use "consola" mientras no estén los datos del servidor de correo.',
     );
   }
 }

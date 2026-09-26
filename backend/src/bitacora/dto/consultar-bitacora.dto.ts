@@ -23,7 +23,7 @@ const ACCIONES: AccionDeBitacora[] = [
 export class ConsultarBitacoraDto extends PaginacionDto {
   /** Quien hizo el movimiento. */
   @IsOptional()
-  @IsUUID(undefined, { message: 'El usuario indicado no es valido.' })
+  @IsUUID(undefined, { message: 'El usuario indicado no es válido.' })
   usuarioId?: string;
 
   /** Sobre que tabla o concepto: "usuario", "documento", "funcionario"... */
@@ -34,25 +34,25 @@ export class ConsultarBitacoraDto extends PaginacionDto {
 
   /** Para seguir la historia completa de un registro concreto. */
   @IsOptional()
-  @IsUUID(undefined, { message: 'El registro indicado no es valido.' })
+  @IsUUID(undefined, { message: 'El registro indicado no es válido.' })
   registroAfectadoId?: string;
 
   /** Todo lo que se hizo sobre el expediente de una persona. */
   @IsOptional()
-  @IsUUID(undefined, { message: 'El funcionario indicado no es valido.' })
+  @IsUUID(undefined, { message: 'El funcionario indicado no es válido.' })
   funcionarioAfectadoId?: string;
 
   @IsOptional()
-  @IsIn(ACCIONES, { message: 'La accion indicada no existe.' })
+  @IsIn(ACCIONES, { message: 'La acción indicada no existe.' })
   accion?: AccionDeBitacora;
 
   /** Fecha inicial, en formato ISO (2026-09-01 o 2026-09-01T08:00:00Z). */
   @IsOptional()
-  @IsDateString({}, { message: 'La fecha inicial no es valida.' })
+  @IsDateString({}, { message: 'La fecha inicial no es válida.' })
   desde?: string;
 
   /** Fecha final, inclusive. */
   @IsOptional()
-  @IsDateString({}, { message: 'La fecha final no es valida.' })
+  @IsDateString({}, { message: 'La fecha final no es válida.' })
   hasta?: string;
 }

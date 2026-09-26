@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import type { UsuarioAutenticado } from '../autenticacion/tipos.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 
 /** Un permiso tal como se le muestra a quien administra la seguridad. */
@@ -6,6 +7,8 @@ export interface PermisoDelCatalogo {
   id: string;
   clave: string;
   descripcion: string | null;
+  /** true si quien consulta tiene este permiso y por lo tanto puede darlo o quitarlo. */
+  asignable: boolean;
 }
 
 /** Los permisos de un mismo modulo, agrupados para pintarlos juntos. */
@@ -30,7 +33,9 @@ export class PermisosService {
    * dejo de usar y que no debe poder asignarse, aunque siga en la base para
    * no perder el historial de quien lo tuvo.
    */
-  async listarCatalogo(): Promise<ModuloDePermisos[]> {
+  async listarCatalogo(quienActua: UsuarioAutenticado): Promise<ModuloDePermisos[]> {
+    const propios = new Set(quienActua.permisos);
+
     const permisos = await this.prisma.permiso.findMany({
       where: { activo: true },
       // "select" explicito, como en todo el sistema: se pide lo que se
@@ -43,7 +48,12 @@ export class PermisosService {
 
     for (const permiso of permisos) {
       const lista = porModulo.get(permiso.modulo) ?? [];
-      lista.push({ id: permiso.id, clave: permiso.clave, descripcion: permiso.descripcion });
+      lista.push({
+        id: permiso.id,
+        clave: permiso.clave,
+        descripcion: permiso.descripcion,
+        asignable: propios.has(permiso.clave),
+      });
       porModulo.set(permiso.modulo, lista);
     }
 

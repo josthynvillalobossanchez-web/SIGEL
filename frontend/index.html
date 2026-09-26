@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="color-scheme" content="light dark" />
+    <link rel="icon" type="image/png" href="/favicon.png" />
+    <title>SIGEL · Municipalidad de Palmares</title>
+    <!-- Tipografia del prototipo. Si el servidor municipal no tiene salida a
+         internet, el navegador usa la fuente de respaldo definida en --fuente. -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <!-- Aplica el tema guardado ANTES de pintar, para que no parpadee en claro
+         cuando la persona eligio el oscuro. Misma clave que el prototipo. -->
+    <script>
+      try {
+        var tema = localStorage.getItem('sigel-tema');
+        if (tema === 'light' || tema === 'dark') document.documentElement.setAttribute('data-theme', tema);
+      } catch (e) {}
+    </script>
+  </head>
+  <body>
+    <div id="raiz"></div>
+    <noscript>SIGEL necesita JavaScript activado en el navegador.</noscript>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

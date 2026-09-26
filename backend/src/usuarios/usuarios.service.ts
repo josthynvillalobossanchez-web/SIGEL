@@ -13,12 +13,51 @@ import { permisosQueFaltan } from '../autenticacion/reparto-de-acceso.js';
 import type { UsuarioAutenticado } from '../autenticacion/tipos.js';
 import { BitacoraService } from '../bitacora/bitacora.service.js';
 import { armarPagina, type PaginaDeResultados } from '../comun/dto/paginacion.dto.js';
+import { formatearFechaCostaRica, interpretarFechaDeVencimiento, validarFechaDeVencimiento } from '../comun/fechas.js';
 import { CorreoService } from '../correo/correo.service.js';
 import type { Prisma } from '../generated/prisma/client.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import type { CambiarEstadoUsuarioDto } from './dto/cambiar-estado-usuario.dto.js';
 import type { ConsultarUsuariosDto, EstadoDeUsuario } from './dto/consultar-usuarios.dto.js';
 import type { CrearUsuarioDto, RolAsignadoDto } from './dto/crear-usuario.dto.js';
+import type { AjustarPermisoDto } from './dto/ajustar-permiso.dto.js';
+import type { AjustarVariosPermisosDto } from './dto/ajustar-varios-permisos.dto.js';
+import type { EditarUsuarioDto } from './dto/editar-usuario.dto.js';
+
+/* ------------------------------------------------------------------ */
+/* Ayudantes de fechas (solo de este archivo)                          */
+/* ------------------------------------------------------------------ */
+
+/** Una asignacion cuenta si no tiene vencimiento o si todavia no llega. */
+function estaVigente(vence: Date | null): boolean {
+  return vence === null || vence > new Date();
+}
+
+/** Compara dos fechas opcionales al milisegundo (null solo es igual a null). */
+function mismaFecha(a: Date | null, b: Date | null): boolean {
+  if (a === null || b === null) return a === b;
+  return a.getTime() === b.getTime();
+}
+
+/** Error de la regla "al menos un rol permanente" (pedido de Josthyn, 26/09). */
+function errorSinRolPermanente(): BadRequestException {
+  return new BadRequestException({
+    codigo: 'CUENTA_SIN_ROL_PERMANENTE',
+    message:
+      'La cuenta debe conservar al menos un rol permanente (sin fecha de vencimiento). ' +
+      'Si todos sus roles vencen, llegaría el día en que se queda sin acceso.',
+  });
+}
+
+/**
+ * Convierte el texto de una fecha de vencimiento en Date y exige que sea
+ * futura. Sin texto devuelve null (permanente). "2026-10-31" significa
+ * "hasta el final del 31 de octubre en Costa Rica" (ver comun/fechas.ts).
+ */
+function convertirEnFechaFutura(texto: string | undefined, deQue: string): Date | null {
+  if (!texto) return null;
+  return validarFechaDeVencimiento(texto, deQue);
+}
 
 /** Rol que ya paso todas las validaciones y se puede asignar. */
 interface RolValidado {
@@ -71,7 +110,7 @@ export class UsuariosService {
    * No hace falta indicar que no distinga mayusculas: la intercalacion por
    * omision de MySQL 8 ya ignora mayusculas y tildes al comparar.
    */
-  async consultar(filtros: ConsultarUsuariosDto): Promise<PaginaDeResultados<unknown>> {
+  async consultar(filtros: ConsultarUsuariosDto, quienActua?: UsuarioAutenticado): Promise<PaginaDeResultados<unknown>> {
     const { pagina, tamano } = filtros;
     const texto = filtros.busqueda?.trim();
 
@@ -127,17 +166,34 @@ export class UsuariosService {
           },
           roles: {
             where: vigente,
-            select: { rol: { select: { id: true, nombre: true } } },
+            select: {
+              rol: {
+                select: {
+                  id: true,
+                  nombre: true,
+                  activo: true,
+                  permisos: { select: { permiso: { select: { clave: true, activo: true } } } },
+                },
+              },
+            },
+          },
+          // Solo para calcular el acceso real (regla 3); no se devuelven.
+          permisos: {
+            where: vigente,
+            select: { otorgado: true, permiso: { select: { clave: true, activo: true } } },
           },
         },
       }),
     ]);
 
     // Se aplana la tabla intermedia: al frontend le llega una lista de roles,
-    // no una lista de asignaciones.
-    const datos = usuarios.map((usuario) => ({
+    // no una lista de asignaciones. Ademas, para cada cuenta se dice si quien
+    // consulta la puede modificar, asi la pantalla muestra los botones de
+    // accion habilitados o bloqueados con su explicacion.
+    const datos = usuarios.map(({ permisos, roles, ...usuario }) => ({
       ...usuario,
-      roles: usuario.roles.map((asignacion) => asignacion.rol),
+      roles: roles.map((asignacion) => ({ id: asignacion.rol.id, nombre: asignacion.rol.nombre })),
+      motivoNoModificable: this.motivoNoModificable(usuario.id, resolverAcceso(roles, permisos).permisos, quienActua),
     }));
 
     return armarPagina(datos, total, pagina, tamano);
@@ -155,7 +211,7 @@ export class UsuariosService {
    * bandera "otorgado", porque un permiso individual puede tanto conceder
    * algo que el rol no da como quitar algo que el rol si da.
    */
-  async consultarUno(usuarioId: string): Promise<unknown> {
+  async consultarUno(usuarioId: string, quienActua?: UsuarioAutenticado): Promise<unknown> {
     const usuario = await this.prisma.usuario.findUnique({
       where: { id: usuarioId },
       select: {
@@ -200,15 +256,23 @@ export class UsuariosService {
     if (!usuario) {
       throw new NotFoundException({
         codigo: 'USUARIO_NO_ENCONTRADO',
-        message: 'No se encontro la cuenta indicada.',
+        message: 'No se encontró la cuenta indicada.',
       });
     }
 
-    const ahora = new Date();
-    const estaVigente = (vence: Date | null): boolean => vence === null || vence > ahora;
+    // Acceso real de la cuenta (el mismo calculo del guard) y si quien
+    // consulta puede modificarla. La pantalla lo usa para mostrar u ocultar
+    // los botones; el backend igual lo vuelve a revisar en cada cambio.
+    const conAcceso = await this.cargarCuentaConAcceso(this.prisma, usuarioId);
+    const { permisos: permisosEfectivos } = resolverAcceso(conAcceso.roles, conAcceso.permisos);
+
+    const motivoNoModificable = this.motivoNoModificable(usuarioId, permisosEfectivos, quienActua);
 
     return {
       ...usuario,
+      permisosEfectivos,
+      puedoModificar: quienActua ? motivoNoModificable === null : false,
+      motivoNoModificable,
       roles: usuario.roles.map((asignacion) => ({
         ...asignacion.rol,
         fechaAsignacion: asignacion.fechaAsignacion,
@@ -224,6 +288,44 @@ export class UsuariosService {
         vigente: estaVigente(asignacion.fechaVencimiento),
       })),
     };
+  }
+
+  /**
+   * Funcionarios a los que se les puede crear una cuenta: activos y que
+   * todavia no tienen una. Maximo 20 resultados, ordenados por apellido.
+   *
+   * Existe para la pantalla "Crear usuario" (elegir a quien). No es el
+   * modulo de funcionarios: devuelve lo minimo para reconocer a la persona.
+   * Cuando exista el registro de funcionarios, la cuenta tambien se podra
+   * crear desde ahi (crearCuentaEnTransaccion).
+   */
+  async buscarFuncionariosDisponibles(busqueda?: string): Promise<unknown[]> {
+    const texto = busqueda?.trim();
+    return this.prisma.funcionario.findMany({
+      where: {
+        estado: 'activo',
+        usuario: { is: null },
+        OR: texto
+          ? [
+              { cedula: { contains: texto } },
+              { nombre: { contains: texto } },
+              { primerApellido: { contains: texto } },
+              { segundoApellido: { contains: texto } },
+              { correoInstitucional: { contains: texto } },
+            ]
+          : undefined,
+      },
+      orderBy: [{ primerApellido: 'asc' }, { nombre: 'asc' }],
+      take: 20,
+      select: {
+        id: true,
+        cedula: true,
+        nombre: true,
+        primerApellido: true,
+        segundoApellido: true,
+        correoInstitucional: true,
+      },
+    });
   }
 
   /**
@@ -281,7 +383,7 @@ export class UsuariosService {
     if (!funcionario) {
       throw new NotFoundException({
         codigo: 'FUNCIONARIO_NO_ENCONTRADO',
-        message: 'No se encontro el funcionario indicado.',
+        message: 'No se encontró el funcionario indicado.',
       });
     }
 
@@ -314,12 +416,16 @@ export class UsuariosService {
     if (ocupado) {
       throw new ConflictException({
         codigo: 'CORREO_EN_USO',
-        message: 'Ese correo ya esta en uso por otra cuenta.',
+        message: 'Ese correo ya está en uso por otra cuenta.',
       });
     }
 
     // ---- 3. Los roles existen y quien actua tiene derecho a darlos ----
     const roles = await this.validarRolesAsignables(tx, datos.roles, quienActua);
+
+    if (!roles.some((rol) => rol.fechaVencimiento === null)) {
+      throw errorSinRolPermanente();
+    }
 
     // ---- 4. Se crea la cuenta con sus roles ----
     const contrasenaTemporal = generarContrasenaTemporal();
@@ -359,7 +465,7 @@ export class UsuariosService {
             fechaVencimiento: rol.fechaVencimiento?.toISOString() ?? null,
           })),
         },
-        descripcion: `Creo la cuenta ${usuario.correo} para ${funcionario.nombre} ${funcionario.primerApellido}.`,
+        descripcion: `Creó la cuenta ${usuario.correo} para ${funcionario.nombre} ${funcionario.primerApellido}.`,
       },
       tx,
     );
@@ -387,14 +493,14 @@ export class UsuariosService {
         para: cuenta.correo,
         asunto: 'SIGEL - Su cuenta de acceso',
         cuerpo: [
-          'Buen dia,',
+          'Buen día,',
           '',
-          'Recursos Humanos creo su cuenta en SIGEL, el Sistema Integral de Gestion Laboral.',
+          'Recursos Humanos creó su cuenta en SIGEL, el Sistema Integral de Gestión Laboral.',
           '',
           `Correo de ingreso:     ${cuenta.correo}`,
-          `Contrasena temporal:   ${cuenta.contrasenaTemporal}`,
+          `Contraseña temporal:   ${cuenta.contrasenaTemporal}`,
           '',
-          'La primera vez que ingrese, el sistema le pedira cambiar esta contrasena por una propia.',
+          'La primera vez que ingrese, el sistema le pedirá cambiar esta contraseña por una propia.',
           '',
           'Municipalidad de Palmares',
         ].join('\n'),
@@ -427,7 +533,7 @@ export class UsuariosService {
     if (new Set(ids).size !== ids.length) {
       throw new BadRequestException({
         codigo: 'ROL_REPETIDO',
-        message: 'Un mismo rol aparece mas de una vez.',
+        message: 'Un mismo rol aparece más de una vez.',
       });
     }
 
@@ -457,7 +563,7 @@ export class UsuariosService {
       if (!rol.activo) {
         throw new BadRequestException({
           codigo: 'ROL_INACTIVO',
-          message: `El rol "${rol.nombre}" esta inactivo y no se puede asignar.`,
+          message: `El rol "${rol.nombre}" está inactivo y no se puede asignar.`,
         });
       }
 
@@ -476,16 +582,9 @@ export class UsuariosService {
       let fechaVencimiento: Date | null = null;
 
       if (pedido.fechaVencimiento) {
-        fechaVencimiento = new Date(pedido.fechaVencimiento);
-
-        // Una suplencia que ya vencio no tiene sentido: seria un rol que nace
-        // sin dar ningun permiso.
-        if (fechaVencimiento <= ahora) {
-          throw new BadRequestException({
-            codigo: 'FECHA_VENCIMIENTO_PASADA',
-            message: `La fecha de vencimiento del rol "${rol.nombre}" debe ser futura.`,
-          });
-        }
+        // "2026-10-31" = hasta el final de ese dia en Costa Rica. Una fecha
+        // pasada, imposible o a mas de 5 anios se rechaza (comun/fechas.ts).
+        fechaVencimiento = validarFechaDeVencimiento(pedido.fechaVencimiento, `del rol "${rol.nombre}"`);
       }
 
       return { id: rol.id, nombre: rol.nombre, fechaVencimiento };
@@ -529,7 +628,7 @@ export class UsuariosService {
       if (destino.estado === datos.estado) {
         throw new BadRequestException({
           codigo: 'ESTADO_SIN_CAMBIO',
-          message: `La cuenta ya esta en estado "${datos.estado}".`,
+          message: `La cuenta ya está en estado "${datos.estado}".`,
         });
       }
 
@@ -558,7 +657,7 @@ export class UsuariosService {
           datosAnteriores: { estado: destino.estado },
           datosNuevos: { estado: actualizada.estado, ...(motivo ? { motivo } : {}) },
           descripcion:
-            `Cambio el estado de la cuenta ${destino.correo} de "${destino.estado}" a "${actualizada.estado}"` +
+            `Cambió el estado de la cuenta ${destino.correo} de "${destino.estado}" a "${actualizada.estado}"` +
             (motivo ? `. Motivo: ${motivo}` : '.'),
         },
         tx,
@@ -566,6 +665,784 @@ export class UsuariosService {
 
       return actualizada;
     });
+  }
+
+  /**
+   * Edita una cuenta desde la ventana "Editar usuario": el correo de ingreso
+   * y/o el conjunto COMPLETO de sus roles (con su vigencia). Todo en una sola
+   * transaccion: o se guarda todo, o nada.
+   *
+   * Casos que se cuidan:
+   *   - Regla 4: la propia cuenta no se edita por aqui (sus datos personales
+   *     se cambian en "Mi cuenta"; su acceso lo cambia otra persona).
+   *   - Regla 3: no se toca a quien tiene mas acceso.
+   *   - Correo: no puede estar en uso por otra cuenta.
+   *   - Roles: ver aplicarConjuntoDeRoles (reglas 1 y 2, al menos un rol
+   *     permanente, cada cambio a la bitacora).
+   *   - Si no cambia nada, SIN_CAMBIOS en vez de "guardar" en vano.
+   *
+   * Si cambio el correo, despues de confirmar se avisa a la direccion
+   * anterior y a la nueva: si el cambio no lo pidio la persona, se entera.
+   */
+  async editar(
+    usuarioId: string,
+    datos: EditarUsuarioDto,
+    quienActua: UsuarioAutenticado,
+    direccionIp?: string,
+  ): Promise<unknown> {
+    this.impedirCambiosSobreSiMismo(usuarioId, quienActua);
+
+    if (datos.correo === undefined && datos.roles === undefined) {
+      throw new BadRequestException({
+        codigo: 'DATOS_INVALIDOS',
+        message: 'Indique el correo o los roles que quiere cambiar.',
+      });
+    }
+
+    const resultado = await this.prisma.$transaction(async (tx) => {
+      const destino = await this.cargarCuentaConAcceso(tx, usuarioId);
+      this.verificarQueNoTengaMasAcceso(destino, quienActua);
+
+      let cambioDeCorreo: { anterior: string; nuevo: string } | null = null;
+      const correoNuevo = datos.correo?.trim().toLowerCase();
+
+      if (correoNuevo && correoNuevo !== destino.correo) {
+        const ocupado = await tx.usuario.findUnique({ where: { correo: correoNuevo }, select: { id: true } });
+        if (ocupado) {
+          throw new ConflictException({
+            codigo: 'CORREO_EN_USO',
+            message: 'Ese correo ya está en uso por otra cuenta.',
+          });
+        }
+
+        await tx.usuario.update({ where: { id: destino.id }, data: { correo: correoNuevo } });
+        await this.bitacora.registrar(
+          {
+            usuarioId: quienActua.id,
+            entidad: 'usuario',
+            registroAfectadoId: destino.id,
+            accion: 'modificar',
+            funcionarioAfectadoId: destino.funcionarioId ?? undefined,
+            direccionIp,
+            datosAnteriores: { correo: destino.correo },
+            datosNuevos: { correo: correoNuevo },
+            descripcion: `Cambió el correo de ingreso de ${destino.correo} a ${correoNuevo}.`,
+          },
+          tx,
+        );
+        cambioDeCorreo = { anterior: destino.correo, nuevo: correoNuevo };
+      }
+
+      const cambiosDeRoles = datos.roles
+        ? await this.aplicarConjuntoDeRoles(tx, destino, datos.roles, quienActua, direccionIp)
+        : 0;
+
+      if (!cambioDeCorreo && cambiosDeRoles === 0) {
+        throw new BadRequestException({
+          codigo: 'SIN_CAMBIOS',
+          message: 'No hay cambios que guardar: la cuenta ya está así.',
+        });
+      }
+
+      return cambioDeCorreo;
+    });
+
+    // Fuera de la transaccion: si el correo falla, el cambio ya esta hecho.
+    if (resultado) await this.avisarCambioDeCorreo(resultado.anterior, resultado.nuevo);
+
+    return this.consultarUno(usuarioId, quienActua);
+  }
+
+  /**
+   * Deja a la cuenta con EXACTAMENTE los roles pedidos (y su vigencia).
+   * Devuelve cuantos cambios hizo (0 = ya estaba asi).
+   *
+   *   - Rol nuevo, reactivado o con otra fecha: se valida con
+   *     validarRolesAsignables (existe, activo, regla 1, fecha futura).
+   *   - Rol vigente que no viene en la lista: se quita (se vence "ahora"),
+   *     con la regla 2 (solo se quita lo que uno tiene).
+   *   - Rol que no cambia: no se toca ni se revalida.
+   *   - Tiene que quedar al menos un rol PERMANENTE (sin fecha). Si todos
+   *     vencen, llegaria el dia en que la cuenta se queda sin acceso sin que
+   *     nadie lo decida (pedido de Josthyn, 26/09).
+   *   - Cada cambio es un movimiento aparte en la bitacora.
+   */
+  private async aplicarConjuntoDeRoles(
+    tx: Prisma.TransactionClient,
+    destino: { id: string; correo: string; funcionarioId: string | null },
+    pedidos: RolAsignadoDto[],
+    quienActua: UsuarioAutenticado,
+    direccionIp?: string,
+  ): Promise<number> {
+    if (!pedidos.some((pedido) => !pedido.fechaVencimiento)) {
+      throw errorSinRolPermanente();
+    }
+
+    const actuales = await tx.usuarioRol.findMany({
+      where: { usuarioId: destino.id },
+      select: {
+        rolId: true,
+        fechaVencimiento: true,
+        rol: {
+          select: { nombre: true, permisos: { select: { permiso: { select: { clave: true, activo: true } } } } },
+        },
+      },
+    });
+    const vigentes = new Map(
+      actuales.filter((a) => estaVigente(a.fechaVencimiento)).map((a) => [a.rolId, a] as const),
+    );
+
+    // Los que hay que crear, reactivar o cambiar de fecha.
+    const aCambiar = pedidos.filter((pedido) => {
+      const actual = vigentes.get(pedido.rolId);
+      if (!actual) return true;
+      const fecha = pedido.fechaVencimiento ? interpretarFechaDeVencimiento(pedido.fechaVencimiento) : null;
+      return !mismaFecha(actual.fechaVencimiento, fecha);
+    });
+    const validados = aCambiar.length ? await this.validarRolesAsignables(tx, aCambiar, quienActua) : [];
+
+    // Repetidos tambien entre los que no cambian.
+    const ids = pedidos.map((pedido) => pedido.rolId);
+    if (new Set(ids).size !== ids.length) {
+      throw new BadRequestException({ codigo: 'ROL_REPETIDO', message: 'Un mismo rol aparece más de una vez.' });
+    }
+
+    // Los vigentes que ya no vienen: se quitan (regla 2).
+    const pedidosIds = new Set(ids);
+    const aQuitar = [...vigentes.values()].filter((actual) => !pedidosIds.has(actual.rolId));
+    for (const actual of aQuitar) {
+      const claves = actual.rol.permisos.filter((p) => p.permiso.activo).map((p) => p.permiso.clave);
+      if (permisosQueFaltan(quienActua.permisos, claves).length > 0) {
+        throw new ForbiddenException({
+          codigo: 'ROL_NO_QUITABLE',
+          message: `No puede quitar el rol "${actual.rol.nombre}" porque incluye permisos que usted no tiene.`,
+        });
+      }
+    }
+
+    const ahora = new Date();
+    const base = {
+      usuarioId: quienActua.id,
+      entidad: 'usuario',
+      registroAfectadoId: destino.id,
+      accion: 'modificar' as const,
+      funcionarioAfectadoId: destino.funcionarioId ?? undefined,
+      direccionIp,
+    };
+
+    for (const rol of validados) {
+      const anterior = vigentes.get(rol.id);
+      await tx.usuarioRol.upsert({
+        where: { usuarioId_rolId: { usuarioId: destino.id, rolId: rol.id } },
+        create: { usuarioId: destino.id, rolId: rol.id, fechaVencimiento: rol.fechaVencimiento, asignadoPorId: quienActua.id },
+        update: { fechaVencimiento: rol.fechaVencimiento, asignadoPorId: quienActua.id, fechaAsignacion: ahora },
+      });
+      const hasta = rol.fechaVencimiento
+        ? ` hasta ${formatearFechaCostaRica(rol.fechaVencimiento)}`
+        : ' de forma permanente';
+      await this.bitacora.registrar(
+        {
+          ...base,
+          datosAnteriores: {
+            rol: rol.nombre,
+            asignado: Boolean(anterior),
+            fechaVencimiento: anterior?.fechaVencimiento?.toISOString() ?? null,
+          },
+          datosNuevos: { rol: rol.nombre, asignado: true, fechaVencimiento: rol.fechaVencimiento?.toISOString() ?? null },
+          descripcion: anterior
+            ? `Cambió la vigencia del rol "${rol.nombre}" de ${destino.correo}: ahora${hasta}.`
+            : `Asignó el rol "${rol.nombre}" a ${destino.correo}${hasta}.`,
+        },
+        tx,
+      );
+    }
+
+    for (const actual of aQuitar) {
+      await tx.usuarioRol.update({
+        where: { usuarioId_rolId: { usuarioId: destino.id, rolId: actual.rolId } },
+        data: { fechaVencimiento: ahora, asignadoPorId: quienActua.id },
+      });
+      await this.bitacora.registrar(
+        {
+          ...base,
+          datosAnteriores: {
+            rol: actual.rol.nombre,
+            asignado: true,
+            fechaVencimiento: actual.fechaVencimiento?.toISOString() ?? null,
+          },
+          datosNuevos: { rol: actual.rol.nombre, asignado: false },
+          descripcion: `Quitó el rol "${actual.rol.nombre}" a ${destino.correo}.`,
+        },
+        tx,
+      );
+    }
+
+    return validados.length + aQuitar.length;
+  }
+
+  /**
+   * Cuantos roles PERMANENTES (sin fecha) y vigentes tiene la cuenta, sin
+   * contar "excepto". Sirve para la regla "al menos un rol permanente".
+   */
+  private async contarRolesPermanentes(
+    tx: Prisma.TransactionClient,
+    usuarioId: string,
+    excepto?: string,
+  ): Promise<number> {
+    return tx.usuarioRol.count({
+      where: { usuarioId, fechaVencimiento: null, ...(excepto ? { NOT: { rolId: excepto } } : {}) },
+    });
+  }
+
+  /**
+   * Asigna un rol a una cuenta existente, o cambia la fecha de vencimiento
+   * de uno que ya tiene.
+   *
+   * Casos que se cuidan:
+   *   - Regla 4: nadie se asigna roles a si mismo.
+   *   - Regla 3: no se toca a quien tiene mas acceso.
+   *   - Regla 1: solo se asigna un rol cuyos permisos uno tenga todos
+   *     (validarRolesAsignables, la misma revision que al crear la cuenta).
+   *   - Rol inexistente o inactivo, y fecha de vencimiento que ya paso.
+   *   - Si la cuenta ya tiene ese rol vigente con la misma fecha, se responde
+   *     ROL_YA_ASIGNADO en vez de repetirlo.
+   *   - Si lo tuvo y le vencio (o se lo quitaron), se reactiva la misma fila:
+   *     la tabla tiene una sola fila por cuenta y rol (uqUsuarioRol).
+   *
+   * Ejemplo de uso real: la jefatura sale de vacaciones y RRHH le da a una
+   * funcionaria el rol Aprobador hasta el dia en que regresa. Ese dia el rol
+   * deja de contar solo, sin que nadie tenga que acordarse de quitarlo.
+   */
+  async asignarRol(
+    usuarioId: string,
+    datos: RolAsignadoDto,
+    quienActua: UsuarioAutenticado,
+    direccionIp?: string,
+  ): Promise<unknown> {
+    this.impedirCambiosSobreSiMismo(usuarioId, quienActua);
+
+    await this.prisma.$transaction(async (tx) => {
+      const destino = await this.cargarCuentaConAcceso(tx, usuarioId);
+      this.verificarQueNoTengaMasAcceso(destino, quienActua);
+
+      const [rol] = await this.validarRolesAsignables(tx, [datos], quienActua);
+
+      const actual = await tx.usuarioRol.findUnique({
+        where: { usuarioId_rolId: { usuarioId, rolId: rol.id } },
+        select: { fechaVencimiento: true },
+      });
+
+      const estabaVigente = actual !== null && estaVigente(actual.fechaVencimiento);
+
+      if (estabaVigente && mismaFecha(actual.fechaVencimiento, rol.fechaVencimiento)) {
+        throw new ConflictException({
+          codigo: 'ROL_YA_ASIGNADO',
+          message: `La cuenta ya tiene el rol "${rol.nombre}" con esa misma vigencia.`,
+        });
+      }
+
+      // Pasar un rol permanente a "con fecha" no puede dejar a la cuenta sin
+      // ningun rol permanente: el dia que venza, se quedaria sin acceso.
+      if (
+        estabaVigente &&
+        actual.fechaVencimiento === null &&
+        rol.fechaVencimiento !== null &&
+        (await this.contarRolesPermanentes(tx, usuarioId, rol.id)) === 0
+      ) {
+        throw errorSinRolPermanente();
+      }
+
+      await tx.usuarioRol.upsert({
+        where: { usuarioId_rolId: { usuarioId, rolId: rol.id } },
+        create: {
+          usuarioId,
+          rolId: rol.id,
+          fechaVencimiento: rol.fechaVencimiento,
+          asignadoPorId: quienActua.id,
+        },
+        update: {
+          fechaVencimiento: rol.fechaVencimiento,
+          asignadoPorId: quienActua.id,
+          fechaAsignacion: new Date(),
+        },
+      });
+
+      const hasta = rol.fechaVencimiento ? ` hasta ${formatearFechaCostaRica(rol.fechaVencimiento)}` : ' de forma permanente';
+
+      await this.bitacora.registrar(
+        {
+          usuarioId: quienActua.id,
+          entidad: 'usuario',
+          registroAfectadoId: destino.id,
+          accion: 'modificar',
+          funcionarioAfectadoId: destino.funcionarioId ?? undefined,
+          direccionIp,
+          datosAnteriores: {
+            rol: rol.nombre,
+            asignado: estabaVigente,
+            fechaVencimiento: estabaVigente ? (actual.fechaVencimiento?.toISOString() ?? null) : null,
+          },
+          datosNuevos: {
+            rol: rol.nombre,
+            asignado: true,
+            fechaVencimiento: rol.fechaVencimiento?.toISOString() ?? null,
+          },
+          descripcion: estabaVigente
+            ? `Cambió la vigencia del rol "${rol.nombre}" de ${destino.correo}: ahora${hasta}.`
+            : `Asignó el rol "${rol.nombre}" a ${destino.correo}${hasta}.`,
+        },
+        tx,
+      );
+    });
+
+    return this.consultarUno(usuarioId, quienActua);
+  }
+
+  /**
+   * Quita un rol a una cuenta.
+   *
+   * No borra la fila: le pone como fecha de vencimiento "ahora". Asi queda
+   * a la vista cuando lo tuvo y hasta cuando, y reasignarlo despues reactiva
+   * la misma fila.
+   *
+   * Casos que se cuidan:
+   *   - Reglas 4 y 3, igual que al asignar.
+   *   - Regla 2: solo se quita un rol cuyos permisos uno tenga todos.
+   *   - Que la cuenta tenga de verdad ese rol vigente (ROL_NO_ASIGNADO).
+   *   - Que no se quede sin ningun rol (CUENTA_SIN_ROLES). Una cuenta sin
+   *     roles no puede hacer nada pero sigue "activa", lo cual confunde. Si
+   *     la persona ya no debe entrar, lo correcto es inactivar la cuenta.
+   */
+  async quitarRol(
+    usuarioId: string,
+    rolId: string,
+    quienActua: UsuarioAutenticado,
+    direccionIp?: string,
+  ): Promise<unknown> {
+    this.impedirCambiosSobreSiMismo(usuarioId, quienActua);
+
+    await this.prisma.$transaction(async (tx) => {
+      const destino = await this.cargarCuentaConAcceso(tx, usuarioId);
+      this.verificarQueNoTengaMasAcceso(destino, quienActua);
+
+      const asignacion = await tx.usuarioRol.findUnique({
+        where: { usuarioId_rolId: { usuarioId, rolId } },
+        select: {
+          fechaVencimiento: true,
+          rol: {
+            select: {
+              nombre: true,
+              permisos: { select: { permiso: { select: { clave: true, activo: true } } } },
+            },
+          },
+        },
+      });
+
+      if (!asignacion || !estaVigente(asignacion.fechaVencimiento)) {
+        throw new NotFoundException({
+          codigo: 'ROL_NO_ASIGNADO',
+          message: 'La cuenta no tiene ese rol vigente.',
+        });
+      }
+
+      // Regla 2: solo se quita lo que se tiene.
+      const permisosDelRol = asignacion.rol.permisos
+        .filter((asignado) => asignado.permiso.activo)
+        .map((asignado) => asignado.permiso.clave);
+
+      if (permisosQueFaltan(quienActua.permisos, permisosDelRol).length > 0) {
+        throw new ForbiddenException({
+          codigo: 'ROL_NO_QUITABLE',
+          message: `No puede quitar el rol "${asignacion.rol.nombre}" porque incluye permisos que usted no tiene.`,
+        });
+      }
+
+      // destino.roles ya viene filtrado por vigencia (cargarCuentaConAcceso).
+      if (destino.roles.length <= 1) {
+        throw new BadRequestException({
+          codigo: 'CUENTA_SIN_ROLES',
+          message:
+            'Es el único rol vigente de la cuenta y no puede quedar sin roles. ' +
+            'Asigne otro rol primero o, si la persona ya no debe ingresar, inactive la cuenta.',
+        });
+      }
+
+      // Quitar el unico rol permanente tampoco: los que quedan vencerian.
+      if (asignacion.fechaVencimiento === null && (await this.contarRolesPermanentes(tx, usuarioId, rolId)) === 0) {
+        throw errorSinRolPermanente();
+      }
+
+      await tx.usuarioRol.update({
+        where: { usuarioId_rolId: { usuarioId, rolId } },
+        data: { fechaVencimiento: new Date(), asignadoPorId: quienActua.id },
+      });
+
+      await this.bitacora.registrar(
+        {
+          usuarioId: quienActua.id,
+          entidad: 'usuario',
+          registroAfectadoId: destino.id,
+          accion: 'modificar',
+          funcionarioAfectadoId: destino.funcionarioId ?? undefined,
+          direccionIp,
+          datosAnteriores: {
+            rol: asignacion.rol.nombre,
+            asignado: true,
+            fechaVencimiento: asignacion.fechaVencimiento?.toISOString() ?? null,
+          },
+          datosNuevos: { rol: asignacion.rol.nombre, asignado: false },
+          descripcion: `Quitó el rol "${asignacion.rol.nombre}" a ${destino.correo}.`,
+        },
+        tx,
+      );
+    });
+
+    return this.consultarUno(usuarioId, quienActua);
+  }
+
+  /**
+   * Crea o cambia un permiso individual (una excepcion a lo que dan los
+   * roles). Ver AjustarPermisoDto para el significado de "otorgado".
+   *
+   * Casos que se cuidan:
+   *   - Reglas 4 y 3, igual que con los roles.
+   *   - Reglas 1 y 2: tanto para conceder como para quitar un permiso hay
+   *     que tenerlo. Asi RRHH no puede conceder "bitacora.ver", y tampoco
+   *     puede "apagarle" ese permiso a alguien.
+   *   - Permiso inexistente o inactivo.
+   *   - Fecha de vencimiento que ya paso.
+   *   - Si ya existe exactamente igual y vigente, PERMISO_SIN_CAMBIO.
+   */
+  async ajustarPermiso(
+    usuarioId: string,
+    permisoId: string,
+    datos: AjustarPermisoDto,
+    quienActua: UsuarioAutenticado,
+    direccionIp?: string,
+  ): Promise<unknown> {
+    this.impedirCambiosSobreSiMismo(usuarioId, quienActua);
+
+    const fechaVencimiento = convertirEnFechaFutura(datos.fechaVencimiento, 'del permiso');
+    const observacion = datos.observacion?.trim() || null;
+
+    await this.prisma.$transaction(async (tx) => {
+      const destino = await this.cargarCuentaConAcceso(tx, usuarioId);
+      this.verificarQueNoTengaMasAcceso(destino, quienActua);
+
+      const permiso = await this.cargarPermisoRepartible(tx, permisoId, quienActua);
+      const cambio = await this.aplicarExcepcion(
+        tx,
+        destino,
+        permiso,
+        { otorgado: datos.otorgado, fechaVencimiento, observacion },
+        quienActua,
+        direccionIp,
+      );
+      if (!cambio) {
+        throw new BadRequestException({
+          codigo: 'PERMISO_SIN_CAMBIO',
+          message: 'La cuenta ya tiene ese permiso individual exactamente así.',
+        });
+      }
+    });
+
+    return this.consultarUno(usuarioId, quienActua);
+  }
+
+  /**
+   * Pagina "Agregar excepcion": concede o quita VARIOS permisos de una vez,
+   * con la misma fecha limite y el mismo motivo. Todo junto o nada (una sola
+   * transaccion) y una entrada de bitacora por permiso.
+   *
+   * Mismas reglas que ajustarPermiso. Los permisos que ya estaban
+   * exactamente asi se saltan; si ninguno cambia, PERMISO_SIN_CAMBIO.
+   */
+  async ajustarVariosPermisos(
+    usuarioId: string,
+    datos: AjustarVariosPermisosDto,
+    quienActua: UsuarioAutenticado,
+    direccionIp?: string,
+  ): Promise<unknown> {
+    this.impedirCambiosSobreSiMismo(usuarioId, quienActua);
+
+    if (new Set(datos.permisoIds).size !== datos.permisoIds.length) {
+      throw new BadRequestException({ codigo: 'PERMISO_REPETIDO', message: 'Un mismo permiso aparece más de una vez.' });
+    }
+    const fechaVencimiento = convertirEnFechaFutura(datos.fechaVencimiento, 'de la excepción');
+    const observacion = datos.observacion.trim();
+
+    await this.prisma.$transaction(async (tx) => {
+      const destino = await this.cargarCuentaConAcceso(tx, usuarioId);
+      this.verificarQueNoTengaMasAcceso(destino, quienActua);
+
+      let cambios = 0;
+      for (const permisoId of datos.permisoIds) {
+        const permiso = await this.cargarPermisoRepartible(tx, permisoId, quienActua);
+        const cambio = await this.aplicarExcepcion(
+          tx,
+          destino,
+          permiso,
+          { otorgado: datos.otorgado, fechaVencimiento, observacion },
+          quienActua,
+          direccionIp,
+        );
+        if (cambio) cambios++;
+      }
+      if (cambios === 0) {
+        throw new BadRequestException({
+          codigo: 'PERMISO_SIN_CAMBIO',
+          message: 'La cuenta ya tenía esos permisos individuales exactamente así.',
+        });
+      }
+    });
+
+    return this.consultarUno(usuarioId, quienActua);
+  }
+
+  /**
+   * Crea o cambia UNA excepcion dentro de una transaccion ya abierta y la
+   * anota en la bitacora. Devuelve false si ya estaba exactamente igual
+   * (no se toca nada).
+   */
+  private async aplicarExcepcion(
+    tx: Prisma.TransactionClient,
+    destino: { id: string; funcionarioId: string | null; correo: string },
+    permiso: { id: string; clave: string },
+    nueva: { otorgado: boolean; fechaVencimiento: Date | null; observacion: string | null },
+    quienActua: UsuarioAutenticado,
+    direccionIp?: string,
+  ): Promise<boolean> {
+    const clave = { usuarioId_permisoId: { usuarioId: destino.id, permisoId: permiso.id } };
+    const actual = await tx.usuarioPermiso.findUnique({
+      where: clave,
+      select: { otorgado: true, fechaVencimiento: true, observacion: true },
+    });
+
+    const estabaVigente = actual !== null && estaVigente(actual.fechaVencimiento);
+
+    if (
+      estabaVigente &&
+      actual.otorgado === nueva.otorgado &&
+      mismaFecha(actual.fechaVencimiento, nueva.fechaVencimiento) &&
+      (actual.observacion ?? null) === nueva.observacion
+    ) {
+      return false;
+    }
+
+    await tx.usuarioPermiso.upsert({
+      where: clave,
+      create: {
+        usuarioId: destino.id,
+        permisoId: permiso.id,
+        otorgado: nueva.otorgado,
+        fechaVencimiento: nueva.fechaVencimiento,
+        observacion: nueva.observacion,
+        asignadoPorId: quienActua.id,
+      },
+      update: {
+        otorgado: nueva.otorgado,
+        fechaVencimiento: nueva.fechaVencimiento,
+        observacion: nueva.observacion,
+        asignadoPorId: quienActua.id,
+        fechaAsignacion: new Date(),
+      },
+    });
+
+    const verbo = nueva.otorgado ? 'Concedió' : 'Quitó';
+    const hasta = nueva.fechaVencimiento ? ` hasta ${formatearFechaCostaRica(nueva.fechaVencimiento)}` : '';
+
+    await this.bitacora.registrar(
+      {
+        usuarioId: quienActua.id,
+        entidad: 'usuario',
+        registroAfectadoId: destino.id,
+        accion: 'modificar',
+        funcionarioAfectadoId: destino.funcionarioId ?? undefined,
+        direccionIp,
+        datosAnteriores: estabaVigente
+          ? {
+              permiso: permiso.clave,
+              otorgado: actual.otorgado,
+              fechaVencimiento: actual.fechaVencimiento?.toISOString() ?? null,
+              observacion: actual.observacion,
+            }
+          : { permiso: permiso.clave, individual: false },
+        datosNuevos: {
+          permiso: permiso.clave,
+          otorgado: nueva.otorgado,
+          fechaVencimiento: nueva.fechaVencimiento?.toISOString() ?? null,
+          observacion: nueva.observacion,
+        },
+        descripcion: `${verbo} de forma individual el permiso "${permiso.clave}" a ${destino.correo}${hasta}.`,
+      },
+      tx,
+    );
+    return true;
+  }
+
+  /**
+   * Elimina la excepcion individual de un permiso: la cuenta vuelve a tener
+   * exactamente lo que le dan sus roles. Igual que con los roles, no se
+   * borra la fila, se vence "ahora".
+   */
+  async quitarPermisoIndividual(
+    usuarioId: string,
+    permisoId: string,
+    quienActua: UsuarioAutenticado,
+    direccionIp?: string,
+  ): Promise<unknown> {
+    this.impedirCambiosSobreSiMismo(usuarioId, quienActua);
+
+    await this.prisma.$transaction(async (tx) => {
+      const destino = await this.cargarCuentaConAcceso(tx, usuarioId);
+      this.verificarQueNoTengaMasAcceso(destino, quienActua);
+
+      const permiso = await this.cargarPermisoRepartible(tx, permisoId, quienActua, false);
+
+      const actual = await tx.usuarioPermiso.findUnique({
+        where: { usuarioId_permisoId: { usuarioId, permisoId } },
+        select: { otorgado: true, fechaVencimiento: true, observacion: true },
+      });
+
+      if (!actual || !estaVigente(actual.fechaVencimiento)) {
+        throw new NotFoundException({
+          codigo: 'PERMISO_INDIVIDUAL_NO_ASIGNADO',
+          message: 'La cuenta no tiene un permiso individual vigente para ese permiso.',
+        });
+      }
+
+      await tx.usuarioPermiso.update({
+        where: { usuarioId_permisoId: { usuarioId, permisoId } },
+        data: { fechaVencimiento: new Date(), asignadoPorId: quienActua.id },
+      });
+
+      await this.bitacora.registrar(
+        {
+          usuarioId: quienActua.id,
+          entidad: 'usuario',
+          registroAfectadoId: destino.id,
+          accion: 'modificar',
+          funcionarioAfectadoId: destino.funcionarioId ?? undefined,
+          direccionIp,
+          datosAnteriores: {
+            permiso: permiso.clave,
+            otorgado: actual.otorgado,
+            fechaVencimiento: actual.fechaVencimiento?.toISOString() ?? null,
+            observacion: actual.observacion,
+          },
+          datosNuevos: { permiso: permiso.clave, individual: false },
+          descripcion: `Eliminó el permiso individual "${permiso.clave}" de ${destino.correo}; vuelve a lo que dan sus roles.`,
+        },
+        tx,
+      );
+    });
+
+    return this.consultarUno(usuarioId, quienActua);
+  }
+
+  /**
+   * Por que quien consulta NO puede modificar una cuenta (null = si puede).
+   * Mismo criterio que aplican los metodos que modifican (reglas 3 y 4); se
+   * calcula aqui solo para que la pantalla lo muestre de antemano.
+   */
+  private motivoNoModificable(
+    usuarioId: string,
+    permisosDeLaCuenta: string[],
+    quienActua?: UsuarioAutenticado,
+  ): 'CUENTA_PROPIA' | 'CUENTA_CON_MAYOR_ACCESO' | null {
+    if (!quienActua) return null;
+    if (quienActua.id === usuarioId) return 'CUENTA_PROPIA';
+    if (permisosQueFaltan(quienActua.permisos, permisosDeLaCuenta).length > 0) return 'CUENTA_CON_MAYOR_ACCESO';
+    return null;
+  }
+
+  /**
+   * Regla 4 de reparto de acceso: nadie cambia su propia cuenta desde la
+   * administracion de usuarios (ni roles, ni permisos, ni correo).
+   * Se revisa antes de ir a la base: no hace falta consultar nada.
+   */
+  private impedirCambiosSobreSiMismo(usuarioId: string, quienActua: UsuarioAutenticado): void {
+    if (usuarioId === quienActua.id) {
+      throw new ForbiddenException({
+        codigo: 'NO_PUEDE_MODIFICAR_SU_PROPIA_CUENTA',
+        message: 'No puede modificar el acceso de su propia cuenta. Debe hacerlo otra persona.',
+      });
+    }
+  }
+
+  /**
+   * Trae un permiso del catalogo y comprueba que quien actua lo tenga
+   * (reglas 1 y 2: solo se da, o se quita, lo que se tiene).
+   *
+   * "exigirActivo" es false al QUITAR una excepcion: si el permiso se
+   * inactivo en el catalogo, igual debe poder limpiarse la excepcion vieja.
+   */
+  private async cargarPermisoRepartible(
+    tx: Prisma.TransactionClient,
+    permisoId: string,
+    quienActua: UsuarioAutenticado,
+    exigirActivo = true,
+  ): Promise<{ id: string; clave: string }> {
+    const permiso = await tx.permiso.findUnique({
+      where: { id: permisoId },
+      select: { id: true, clave: true, activo: true },
+    });
+
+    if (!permiso) {
+      throw new NotFoundException({
+        codigo: 'PERMISO_NO_ENCONTRADO',
+        message: 'No se encontró el permiso indicado.',
+      });
+    }
+
+    if (exigirActivo && !permiso.activo) {
+      throw new BadRequestException({
+        codigo: 'PERMISO_INACTIVO',
+        message: `El permiso "${permiso.clave}" está inactivo y no se puede asignar.`,
+      });
+    }
+
+    if (permiso.activo && !quienActua.permisos.includes(permiso.clave)) {
+      throw new ForbiddenException({
+        codigo: 'PERMISO_NO_ASIGNABLE',
+        message: `No puede conceder ni quitar el permiso "${permiso.clave}" porque usted no lo tiene.`,
+      });
+    }
+
+    return { id: permiso.id, clave: permiso.clave };
+  }
+
+  /**
+   * Aviso de seguridad cuando cambia el correo de ingreso. Va a las dos
+   * direcciones: a la anterior (por si el cambio no lo pidio la persona) y a
+   * la nueva (para confirmar que llega). Si falla, no se lanza el error: el
+   * cambio ya esta hecho; queda constancia en el registro del servidor.
+   */
+  private async avisarCambioDeCorreo(anterior: string, nuevo: string): Promise<void> {
+    const cuerpo = [
+      'Buen día,',
+      '',
+      'El correo de ingreso de su cuenta en SIGEL cambio:',
+      '',
+      `Correo anterior:  ${anterior}`,
+      `Correo nuevo:     ${nuevo}`,
+      '',
+      'A partir de ahora debe ingresar con el correo nuevo. Su contraseña no cambió.',
+      'Si usted no solicitó este cambio, comuníquese de inmediato con Recursos Humanos.',
+      '',
+      'Municipalidad de Palmares',
+    ].join('\n');
+
+    for (const para of [anterior, nuevo]) {
+      try {
+        await this.correo.enviar({ para, asunto: 'SIGEL - Cambio en su correo de ingreso', cuerpo });
+      } catch (error) {
+        this.registro.error(
+          'No se pudo enviar el aviso de cambio de correo',
+          error instanceof Error ? error.stack : String(error),
+        );
+      }
+    }
   }
 
   /**
@@ -607,7 +1484,7 @@ export class UsuariosService {
     if (!cuenta) {
       throw new NotFoundException({
         codigo: 'USUARIO_NO_ENCONTRADO',
-        message: 'No se encontro la cuenta indicada.',
+        message: 'No se encontró la cuenta indicada.',
       });
     }
 

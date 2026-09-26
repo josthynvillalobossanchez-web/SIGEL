@@ -252,10 +252,14 @@ SIGEL\
 │       ├── correo\         salida de correo del sistema
 │       ├── permisos\       catálogo de permisos
 │       ├── prisma\         conexión a la base
+│       ├── roles\          administración de roles
 │       ├── salud\          endpoint de comprobación
-│       ├── usuarios\       cuentas de usuario y su estado
+│       ├── usuarios\       cuentas, su estado, sus roles y permisos individuales
 │       └── generated\      cliente de Prisma (se genera, no se sube)
-├── frontend\               React + Vite (todavía no existe; se crea más adelante)
+├── frontend\               React + Vite (ver §7d)
+│   ├── index.html
+│   ├── vite.config.ts      puerto 5173 y proxy de /api al backend
+│   └── src\               api, sesion, diseno, paginas, componentes, estilos
 └── docs\                   documentación del proyecto
     └── _trabajo\           respaldos y borradores, fuera de Git
 ```
@@ -313,12 +317,31 @@ aparece marcado como público, exige sesión.
 | `POST /autenticacion/cambiar-contrasena` | con sesión | Cambio propio y del primer ingreso |
 | `POST /autenticacion/solicitar-recuperacion` | público | Envía un código de 6 dígitos al correo |
 | `POST /autenticacion/restablecer-contrasena` | público | Cambia la contraseña con ese código |
-| `GET /permisos` | `permisos.editar` | Catálogo de permisos agrupado por módulo |
+| `GET /permisos` | `usuarios.ver` | Catálogo de permisos por módulo; cada uno trae `asignable` |
 | `GET /bitacora` | `bitacora.ver` | Auditoría, paginada y con filtros |
 | `GET /usuarios` | `usuarios.ver` | Lista de cuentas, con búsqueda y filtros por estado y rol |
 | `GET /usuarios/:id` | `usuarios.ver` | Detalle de una cuenta con sus roles y permisos |
 | `POST /usuarios` | `usuarios.crear` | Crea la cuenta de un funcionario |
 | `PATCH /usuarios/:id/estado` | `usuarios.cambiarEstado` | Activa, inactiva o bloquea una cuenta |
+| `PATCH /usuarios/:id` | `usuarios.editar` | Página "Editar usuario": `{ correo?, roles? }` (roles = lista completa). Todo junto o nada; avisa a los dos correos si cambia |
+| `GET /mi-cuenta` | con sesión | Perfil propio (cuenta, funcionario, profesiones) |
+| `PATCH /mi-cuenta/datos-personales` | `perfilPropio.editar` | Teléfono, correos, profesión, dirección propios |
+| `POST /usuarios/:id/roles` | `usuarios.editar` | Asigna un rol o cambia su vigencia. Cuerpo: `{ rolId, fechaVencimiento? }` |
+| `DELETE /usuarios/:id/roles/:rolId` | `usuarios.editar` | Quita un rol (lo vence ahora; no borra la fila) |
+| `PUT /usuarios/:id/permisos/:permisoId` | `usuarios.editar` | Permiso individual. Cuerpo: `{ otorgado, fechaVencimiento?, observacion? }` |
+| `POST /usuarios/:id/permisos` | `usuarios.editar` | Varios a la vez: `{ permisoIds, otorgado, fechaVencimiento?, observacion }` (motivo obligatorio). Todo junto o nada |
+| `DELETE /usuarios/:id/permisos/:permisoId` | `usuarios.editar` | Elimina el permiso individual (vuelve a lo del rol) |
+| `GET /roles` | `usuarios.ver` | Roles, con `asignable` y `cantidadUsuarios` |
+| `GET /roles/:id` | `usuarios.ver` | Detalle con sus permisos y `editable` |
+| `POST /roles` | `roles.editar` | Crea un rol. Cuerpo: `{ nombre, descripcion?, permisoIds[] }` |
+| `PATCH /roles/:id` | `roles.editar` | `{ nombre?, descripcion?, permisoIds? }`: todo junto o nada (página "Editar rol") |
+| `PUT /roles/:id/permisos` | `roles.editar` | Reemplaza la lista completa: `{ permisoIds[] }` |
+| `PATCH /roles/:id/estado` | `roles.editar` | Activa o inactiva: `{ activo }` |
+| `GET /usuarios/funcionarios-disponibles?busqueda=` | `usuarios.crear` | Funcionarios activos sin cuenta, máximo 20 |
+
+`GET /usuarios/:id` trae además `permisosEfectivos` (lo que la cuenta puede hacer de verdad),
+`puedoModificar` y `motivoNoModificable` (`CUENTA_PROPIA` o `CUENTA_CON_MAYOR_ACCESO`) respecto
+de quien consulta. La pantalla los usa para mostrar u ocultar botones.
 | `GET /salud` | público | Comprobación del servicio y de la base |
 
 Ojo con `/usuarios/:id`: el `id` es el de la **cuenta**, no el del funcionario. Son dos
@@ -344,7 +367,25 @@ Códigos de error más frecuentes:
 | `ROL_NO_ASIGNABLE` | Quiso asignar un rol con permisos que él no tiene |
 | `CUENTA_CON_MAYOR_ACCESO` | Quiso modificar una cuenta con más permisos que la suya |
 | `NO_PUEDE_MODIFICAR_SU_PROPIA_CUENTA` | Quiso cambiar su propio acceso |
-| `FUNCIONARIO_YA_TIENE_CUENTA` / `CORREO_EN_USO` | Duplicados al crear una cuenta |
+| `FUNCIONARIO_YA_TIENE_CUENTA` / `CORREO_EN_USO` | Duplicados al crear una cuenta o cambiar el correo |
+| `CORREO_SIN_CAMBIO` / `ROL_SIN_CAMBIO` / `PERMISO_SIN_CAMBIO` / `PERMISOS_SIN_CAMBIO` / `ESTADO_SIN_CAMBIO` | Se pidió dejar algo exactamente como ya estaba |
+| `ROL_YA_ASIGNADO` | La cuenta ya tiene ese rol vigente con la misma fecha |
+| `ROL_NO_ASIGNADO` / `PERMISO_INDIVIDUAL_NO_ASIGNADO` | Quiso quitar algo que la cuenta no tiene vigente |
+| `ROL_NO_QUITABLE` | Quiso quitar un rol con permisos que él no tiene (regla 2) |
+| `CUENTA_SIN_ROLES` | Quiso quitar el último rol; si no debe entrar, se inactiva la cuenta |
+| `PERMISO_NO_ASIGNABLE` | Quiso dar o quitar un permiso que él no tiene (reglas 1, 2 y 5) |
+| `FECHA_VENCIMIENTO_PASADA` | La fecha de vencimiento ya pasó |
+| `FECHA_NO_VALIDA` | La fecha no es "AAAA-MM-DD" o ese día no existe (31 de febrero) |
+| `FECHA_VENCIMIENTO_MUY_LEJANA` | La fecha pasa de 5 años (usar permanente) |
+| `PERMISO_REPETIDO` | Un mismo permiso viene dos veces en la lista |
+| `ROL_DE_SISTEMA` | Los 5 roles de sistema no se modifican desde la API |
+| `ROL_CON_MAYOR_ACCESO` | Quiso modificar un rol con permisos que él no tiene |
+| `ROL_PROPIO` | Quiso cambiar permisos o estado de un rol que él mismo tiene (regla 4) |
+| `ROL_EN_USO` | Quiso inactivar un rol que alguien tiene vigente; trae `cantidadUsuarios` |
+| `ROL_DUPLICADO` | Ya hay un rol con ese nombre (sin importar mayúsculas ni tildes) |
+| `CUENTA_SIN_ROL_PERMANENTE` | La cuenta quedaría sin ningún rol permanente (sin fecha) |
+| `SIN_CAMBIOS` | Se pidió guardar algo exactamente igual a como está |
+| `CUENTA_SIN_FUNCIONARIO` / `CORREO_INSTITUCIONAL_EN_USO` | Mi cuenta: cuenta técnica sin datos personales / correo de otra persona |
 
 ---
 
@@ -379,10 +420,108 @@ ese día, sin que nadie tenga que acordarse de quitarla. Es lo que se usa cuando
 jefatura se incapacita y RRHH le da el rol Aprobador a otra persona hasta su regreso.
 Las asignaciones vencidas no se borran: quedan como historia de quién tuvo qué acceso.
 
+**Fechas de vencimiento.** Si se envía solo la fecha (`"2026-10-31"`), vale hasta el final
+de ese día en hora de Costa Rica. Si se envía con hora, se respeta. Lo hace
+`src/comun/fechas.ts`; no usar `new Date("2026-10-31")` directo, que en Costa Rica
+corta el día anterior a las 6 p. m.
+
+**Roles de sistema.** Los cinco roles que crea el seed no se modifican desde la API
+(`ROL_DE_SISTEMA`): el seed los vuelve a completar cada vez que corre, así que un
+cambio hecho desde la aplicación se perdería sin avisar. Para otra combinación de
+permisos se crea un rol nuevo. Los roles no se borran: se inactivan, y solo si nadie
+los tiene vigentes.
+
 **Cuidado al agregar permisos nuevos.** Si en un sprint futuro se le agrega un permiso
 al rol Aprobador (por ejemplo `vacaciones.aprobar`), **hay que agregárselo también al
 rol Administrador** en el seed. Si no, por la regla 1, RRHH dejaría de poder asignar
 el rol Aprobador, que es justo lo que necesita para cubrir una ausencia.
+
+---
+
+## 7d. Frontend
+
+Vive en `frontend/`. React 19 + Vite 8 + TypeScript + React Router 8.
+
+**Primera vez:**
+
+```
+cd frontend
+npm install
+```
+
+**Día a día** (con Docker y el backend ya corriendo en otra terminal, `npm run dev` en `backend/`):
+
+```
+cd frontend
+npm run dev
+```
+
+y abrir `http://localhost:5173`. Vite reenvía todo lo que empiece con `/api` al backend
+(`vite.config.ts`), así que la cookie de sesión funciona sin configurar CORS.
+
+Otros comandos: `npm run revisar-tipos` (TypeScript sin compilar) y `npm run build`
+(genera `frontend/dist/`, que en producción sirve el servidor web junto con un proxy de
+`/api` hacia el backend).
+
+**Cómo está organizado `src/`:**
+
+| Carpeta | Qué tiene |
+|---|---|
+| `api/` | Las llamadas al backend. `cliente.ts` es la única puerta: manda la cookie, convierte errores en `ErrorDeApi` (con `codigo`) y avisa si la sesión venció |
+| `sesion/` | `SesionProveedor` (quién está conectado, sus permisos) y las guardias de rutas |
+| `diseno/` | El marco (barra superior + menú) y `menu.ts`, la lista de opciones con sus permisos |
+| `paginas/` | Una carpeta por módulo |
+| `componentes/` | Piezas reutilizables: campo de contraseña, mensajes, iconos, botón de tema |
+| `estilos/` | `sigel.css` es **copia del prototipo** (no tocar salvo para mantenerlo igual); lo propio va en `ajustes.css` |
+| `utilidades/` | Tema claro/oscuro, política de contraseñas (copia de la del backend), textos, fechas en hora de Costa Rica |
+
+**Regla de pantallas**: consultar = **ventana** (con pestañas); crear o editar = **página
+aparte por pasos** (`FormularioPorPasos`), con subsección en el menú (`diseno/menu.ts`) y migas.
+Nada de páginas largas con scroll en PC.
+
+**Pantallas que existen** (todas con sus permisos en `App.tsx` y `diseno/menu.ts`):
+
+| Ruta | Permiso | Qué hace |
+|---|---|---|
+| `/iniciar-sesion`, `/recuperar-contrasena`, `/primer-ingreso` | sin sesión / temporal | Acceso |
+| `/` | con sesión | Inicio con accesos directos |
+| `/usuarios` (`?ver=<id>`, `?permisos=<id>`) | `usuarios.ver` | Lista; ventanas Ver usuario, Permisos individuales, Cambiar estado |
+| `/usuarios/nuevo` | `usuarios.crear` | Crear usuario (Cuenta · Roles · Revisar) |
+| `/usuarios/:id/editar` | `usuarios.editar` | Editar usuario (mismos pasos, se puede saltar entre ellos) |
+| `/usuarios/:id/excepciones/nueva` | `usuarios.editar` | Agregar excepción (Qué hacer · Permisos · Duración y motivo · Revisar) |
+| `/usuarios/:id/excepciones/:permisoId/editar` | `usuarios.editar` | Editar excepción |
+| `/roles` (`?rol=<id>`, `?pestana=permisos`) | `usuarios.ver` | Pestañas Roles (tabla con acciones) y Catálogo; ventanas Ver rol y Activar/Inactivar |
+| `/roles/nuevo`, `/roles/:id/editar` | `roles.editar` | Crear / Editar rol (Datos · Permisos · Revisar) |
+| `/mi-cuenta` | con sesión | Perfil; pestañas Mis datos personales y Acceso y seguridad |
+
+`/usuarios/:id` y `/roles/:id` (sin "editar") abren la ventana de consulta.
+
+**Piezas para armar pantallas** (en `componentes/`):
+
+| Pieza | Para qué |
+|---|---|
+| `FormularioPorPasos` | Página de edición del prototipo: migas, pasos, barra de progreso, "Paso 1 de 3", Cancelar/Anterior/Siguiente/Guardar. Revisa el paso antes de avanzar y todos antes de guardar |
+| `Migas` | Migas de pan (`Usuarios › Ana › Editar usuario`) |
+| `CambiosSinGuardar` | `useCambiosSinGuardar(hayCambios)` en la página; menú, migas y Cancelar preguntan antes de salir |
+| `SelectorPorModulos` | Elegir permisos: módulos a la izquierda (con "2/4"), casillas a la derecha, buscador, "Marcar todos"; también de solo lectura |
+| `CampoFechaDeVencimiento` | Fecha de vencimiento que detecta fechas incompletas y fuera de rango |
+| `Modal` | Ventana del prototipo; foco atrapado, Escape, pie propio |
+| `Pasos` | Indicador de pasos (en orden al crear, libre al editar) |
+| `Pestanas` + `PanelDePestana` | Pestañas accesibles (flechas, Inicio, Fin) |
+| `BotonIcono`, `BotonConAyuda` | Botones con ayuda y **bloqueo explicado** (`bloqueadoPor="motivo"`) |
+| `ModalExito` | "Se hizo con éxito" + Aceptar (y la página vuelve a la lista) |
+| `GestorDeAyudas` | Muestra el globo de cualquier elemento con `data-ayuda="texto"` |
+
+**Para hacer una página de edición nueva** (p. ej. "Registrar funcionario"):
+1. Página con `FormularioPorPasos` (mirar `paginas/roles/PaginaRol.tsx`, es la más corta).
+2. `useCambiosSinGuardar(hayCambios && !terminado)`.
+3. Ruta en `App.tsx` con `<ConPermisos>` y subsección en `diseno/menu.ts` (`ruta` si es fija,
+   `patron` si depende de un id).
+4. Al guardar, `ModalExito` y Aceptar vuelve a la lista.
+
+**Regla para botones**: no usar `title=""` ni `disabled` para explicar un bloqueo. Usar
+`data-ayuda` (globo) y, si no se puede, `bloqueadoPor` en `BotonIcono`/`BotonConAyuda`: el botón
+queda atenuado, no hace nada, y el globo y el lector de pantalla dicen por qué.
 
 ---
 

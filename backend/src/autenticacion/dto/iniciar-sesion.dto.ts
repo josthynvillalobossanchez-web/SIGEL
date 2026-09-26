@@ -8,15 +8,15 @@ import { IsEmail, IsNotEmpty, IsString, MaxLength } from 'class-validator';
  * un "esAdministrador: true" ni nada por el estilo.
  */
 export class IniciarSesionDto {
-  @IsEmail({}, { message: 'El correo no tiene un formato valido.' })
+  @IsEmail({}, { message: 'El correo no tiene un formato válido.' })
   @MaxLength(150, { message: 'El correo no puede pasar de 150 caracteres.' })
   correo!: string;
 
   // A proposito no se valida largo minimo ni complejidad: eso se exige al
   // CREAR o cambiar la contrasena, no al usarla. Validarlo aqui solo le diria
   // a un atacante como son las contrasenas del sistema.
-  @IsString({ message: 'La contrasena debe ser texto.' })
-  @IsNotEmpty({ message: 'La contrasena es obligatoria.' })
-  @MaxLength(128, { message: 'La contrasena no puede pasar de 128 caracteres.' })
+  @IsString({ message: 'La contraseña debe ser texto.' })
+  @IsNotEmpty({ message: 'La contraseña es obligatoria.' })
+  @MaxLength(128, { message: 'La contraseña no puede pasar de 128 caracteres.' })
   contrasena!: string;
 }

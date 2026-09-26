@@ -21,8 +21,8 @@ export class ConsultarUsuariosDto extends PaginacionDto {
    * barata de hacerle trabajar de mas a la base.
    */
   @IsOptional()
-  @IsString({ message: 'La busqueda debe ser texto.' })
-  @MaxLength(120, { message: 'La busqueda no puede pasar de 120 caracteres.' })
+  @IsString({ message: 'La búsqueda debe ser texto.' })
+  @MaxLength(120, { message: 'La búsqueda no puede pasar de 120 caracteres.' })
   busqueda?: string;
 
   @IsOptional()
@@ -31,6 +31,6 @@ export class ConsultarUsuariosDto extends PaginacionDto {
 
   /** Para ver, por ejemplo, quienes tienen el rol de Aprobador. */
   @IsOptional()
-  @IsUUID(undefined, { message: 'El rol indicado no es valido.' })
+  @IsUUID(undefined, { message: 'El rol indicado no es válido.' })
   rolId?: string;
 }

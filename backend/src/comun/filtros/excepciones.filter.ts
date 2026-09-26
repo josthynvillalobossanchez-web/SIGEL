@@ -46,13 +46,13 @@ const CODIGO_POR_ESTADO: Record<number, string> = {
  */
 const MENSAJE_POR_ESTADO: Record<number, string> = {
   [HttpStatus.BAD_REQUEST]: 'Revise los datos enviados.',
-  [HttpStatus.UNAUTHORIZED]: 'Debe iniciar sesion para continuar.',
-  [HttpStatus.FORBIDDEN]: 'No tiene permisos para realizar esta accion.',
+  [HttpStatus.UNAUTHORIZED]: 'Debe iniciar sesión para continuar.',
+  [HttpStatus.FORBIDDEN]: 'No tiene permisos para realizar esta acción.',
   [HttpStatus.TOO_MANY_REQUESTS]:
     'Demasiados intentos seguidos. Espere unos minutos y vuelva a intentarlo.',
-  [HttpStatus.NOT_FOUND]: 'No se encontro lo que esta buscando.',
+  [HttpStatus.NOT_FOUND]: 'No se encontró lo que está buscando.',
   [HttpStatus.INTERNAL_SERVER_ERROR]:
-    'Ocurrio un error inesperado. Si vuelve a pasar, avise al Departamento de TI.',
+    'Ocurrió un error inesperado. Si vuelve a pasar, avise al Departamento de TI.',
 };
 
 /** Mensaje que se usa cuando el estado no tiene uno propio. */
@@ -84,7 +84,7 @@ function traducirDetalle(detalle: string): string {
   const campoDeMas = /^property (.+) should not exist$/i.exec(detalle);
 
   if (campoDeMas) {
-    return `El campo "${campoDeMas[1]}" no corresponde a esta operacion.`;
+    return `El campo "${campoDeMas[1]}" no corresponde a esta operación.`;
   }
 
   /**
@@ -224,7 +224,7 @@ export class FiltroDeExcepciones implements ExceptionFilter {
     return {
       statusCode: HttpStatus.BAD_REQUEST,
       codigo: 'JSON_INVALIDO',
-      message: 'El cuerpo de la solicitud no es un JSON valido.',
+      message: 'El cuerpo de la solicitud no es un JSON válido.',
       ruta,
     };
   }
@@ -262,7 +262,7 @@ export class FiltroDeExcepciones implements ExceptionFilter {
       return {
         statusCode: HttpStatus.NOT_FOUND,
         codigo: 'NO_ENCONTRADO',
-        message: 'No se encontro el registro indicado.',
+        message: 'No se encontró el registro indicado.',
         ruta,
       };
     }

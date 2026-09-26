@@ -15,10 +15,10 @@ export class CambiarContrasenaDto {
    * porque si alguien deja la computadora sin bloquear, no deberia poder
    * cambiarle la contrasena y quedarse con la cuenta.
    */
-  @IsString({ message: 'La contrasena actual debe ser texto.' })
-  @IsNotEmpty({ message: 'Debe indicar su contrasena actual.' })
+  @IsString({ message: 'La contraseña actual debe ser texto.' })
+  @IsNotEmpty({ message: 'Debe indicar su contraseña actual.' })
   @MaxLength(LARGO_MAXIMO_CONTRASENA, {
-    message: `La contrasena actual no puede pasar de ${LARGO_MAXIMO_CONTRASENA} caracteres.`,
+    message: `La contraseña actual no puede pasar de ${LARGO_MAXIMO_CONTRASENA} caracteres.`,
   })
   contrasenaActual!: string;
 

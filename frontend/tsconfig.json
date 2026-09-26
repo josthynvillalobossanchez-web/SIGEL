@@ -1,0 +1,23 @@
+{
+  // Configuracion de TypeScript para el frontend.
+  // Solo revisa tipos (noEmit): quien genera los archivos finales es Vite.
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "jsx": "react-jsx",
+    "types": ["vite/client"],
+    "noEmit": true,
+    "isolatedModules": true,
+    "skipLibCheck": true,
+    "allowImportingTsExtensions": false,
+    // Igual que el backend: sin modo estricto completo (decision del 24/09),
+    // pero si avisa de variables sin usar para mantener el codigo limpio.
+    "strict": false,
+    "strictNullChecks": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true
+  },
+  "include": ["src", "vite.config.ts"]
+}

@@ -11,7 +11,7 @@ export function duracionEnMilisegundos(expresion: string): number {
   const partes = /^(\d+)\s*([smhd]?)$/.exec(expresion.trim());
 
   if (!partes) {
-    throw new Error(`JWT_EXPIRACION no tiene un formato valido: "${expresion}". Use 30m, 8h o 7d.`);
+    throw new Error(`JWT_EXPIRACION no tiene un formato válido: "${expresion}". Use 30m, 8h o 7d.`);
   }
 
   const unidades: Record<string, number> = { s: 1000, m: 60_000, h: 3_600_000, d: 86_400_000 };

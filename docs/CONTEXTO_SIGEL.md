@@ -44,24 +44,24 @@ expediente laboral, vacaciones, incapacidades, horas extra y reclutamiento (Tale
   atraso del cronograma se decidió **no prototipar los Sprints 2 y 3**: se programan directo,
   tomando el Sprint 1 como referencia visual y reusando sus tokens y componentes.
 - **Backend en marcha desde el 19/09**, versionado en GitHub (ver más abajo).
-- **Autenticación terminada el 24/09. Usuarios en curso** desde el 24/09.
-- **El Sprint 1 vencía el 25/09 según el cronograma y no está terminado.** Todo lo hecho hasta
-  hoy es backend: la épica de autenticación y usuarios va cerca del 70 %, las épicas de
-  funcionarios y de gestión documental están sin empezar, y el frontend también. El reacomodo de
-  fechas queda para conversarlo con Joseph.
+- **Autenticación terminada el 24/09. Backend de usuarios y roles terminado el 25/09**
+  (épica 1 completa en backend, probada con 72 casos automáticos; ver "Estado del backend").
+- **Frontend: épica 1 completa el 25/09 (noche)** en `frontend\` (React + Vite): acceso
+  (login, recuperación, primer ingreso), usuarios (lista, crear, detalle con roles,
+  suplencias, permisos individuales, estado y correo), roles y permisos (lista, crear,
+  detalle, permisos, estado) y "Mi cuenta". **La épica 1 queda terminada de punta a punta.**
+- **El Sprint 1 vencía el 25/09 según el cronograma y no está terminado**: faltan las épicas de
+  funcionarios y de gestión documental. El
+  reacomodo de fechas queda para conversarlo con Joseph.
 
 ### Lo que toca ahora, en orden
 
-1. **Terminar usuarios**: editar el correo de una cuenta; asignar y quitar roles a una cuenta
-   existente; conceder, revocar y quitar permisos individuales. Quitar un rol o un permiso **no
-   borra la fila**: le pone la fecha de vencimiento en "hoy", para que quede la historia.
-2. **Módulo de roles**: listar, crear, editar y asignarle permisos a un rol (regla 5).
-3. **Arrancar el frontend en paralelo**, empezando por la pantalla de inicio de sesión, que ya
-   tiene todo su backend. La idea es tener algo funcionando que mostrarle a Joseph.
-4. **Épica 2**: catálogos (departamentos, puestos, profesiones), funcionarios con la casilla para
-   crear su cuenta, expediente, historial laboral y "Mi cuenta".
-5. **Épica 3**: tipos de documento, subir y descargar, baja lógica y restauración.
-6. **Informe de Avance Intermedio** (`Proyectos\Informe_Avance_Intermedio_SIGEL.docx`): las
+1. **Probar la épica 1 completa** en la PC y hacer el commit.
+2. **Épica 2**: catálogos (departamentos, puestos, profesiones), funcionarios (con la casilla
+   "crear también su cuenta", que reutiliza `crearCuentaEnTransaccion`), expediente e
+   historial laboral.
+3. **Épica 3**: tipos de documento, subir y descargar, baja lógica y restauración.
+4. **Informe de Avance Intermedio** (`Proyectos\Informe_Avance_Intermedio_SIGEL.docx`): las
    capturas de Jira/GitHub, las minutas y el criterio de Joseph los aporta Josthyn.
 
 **Pendientes externos**, que dependen de Joseph o de TI: confirmar que habrá HTTPS, los datos del
@@ -149,12 +149,25 @@ contraseña temporal.
   separada para que el registro de funcionarios la reutilice.
 - **Cambiar el estado** de una cuenta (activo, inactivo, bloqueado), con motivo obligatorio al
   inactivar o bloquear. El efecto es inmediato: la persona queda fuera en su siguiente petición.
-- **Reglas de reparto de acceso ya aplicadas**: la 1 al crear (solo se asignan roles cuyos
-  permisos uno tiene), y la 3 y la 4 al cambiar el estado (no se toca a quien tiene más acceso ni
-  la propia cuenta). La 2 y la 5 entran con los endpoints que faltan.
+- **Las cinco reglas de reparto de acceso aplicadas** en todos los endpoints de usuarios y roles
+  (ver `GUIA_DESARROLLO.md` §7c).
 - **Vencimiento de asignaciones** activo en todo cálculo de permisos: lo vencido deja de contar
   solo.
 - Comando `npm run db:datos-de-prueba`, que crea seis funcionarios ficticios para probar.
+
+**Cierre de usuarios y módulo de roles (25/09), probado con 72 casos automáticos:**
+
+- **Editar el correo** de una cuenta, con aviso por correo a la dirección anterior y a la nueva.
+- **Asignar un rol** a una cuenta existente, o cambiarle la vigencia (suplencias). Si lo tuvo y
+  le venció, se reactiva la misma fila.
+- **Quitar un rol**: no borra la fila, la vence "ahora". La cuenta no puede quedar sin roles
+  (para eso se inactiva).
+- **Permisos individuales**: conceder o quitar uno puntual, con vencimiento y observación, y
+  eliminar la excepción para volver a lo que dan los roles.
+- **Módulo de roles**: listar (con `asignable` para quien consulta y cuántas cuentas lo tienen
+  vigente), detalle, crear, renombrar, reemplazar permisos y activar/inactivar.
+- **Fechas de vencimiento**: `"2026-10-31"` significa hasta el final del 31 en hora de Costa
+  Rica (antes se cortaba el 30 a las 6 p. m. por la zona horaria).
 
 **Endpoints disponibles:**
 
@@ -166,22 +179,93 @@ contraseña temporal.
 | `POST /api/autenticacion/cambiar-contrasena` | con sesión | Cambio propio y del primer ingreso |
 | `POST /api/autenticacion/solicitar-recuperacion` | público | Envía el código al correo |
 | `POST /api/autenticacion/restablecer-contrasena` | público | Cambia la contraseña con el código |
-| `GET /api/permisos` | `permisos.editar` | Catálogo de permisos por módulo |
+| `GET /api/permisos` | `usuarios.ver` | Catálogo de permisos por módulo, con `asignable` |
 | `GET /api/bitacora` | `bitacora.ver` | Auditoría, paginada y con filtros |
 | `GET /api/usuarios` | `usuarios.ver` | Lista de cuentas con búsqueda y filtros |
 | `GET /api/usuarios/:id` | `usuarios.ver` | Detalle con roles y permisos individuales |
 | `POST /api/usuarios` | `usuarios.crear` | Crea la cuenta de un funcionario |
 | `PATCH /api/usuarios/:id/estado` | `usuarios.cambiarEstado` | Activa, inactiva o bloquea |
+| `PATCH /api/usuarios/:id` | `usuarios.editar` | Página "Editar usuario": correo y/o lista completa de roles, todo junto |
+| `GET /api/mi-cuenta` | con sesión | Perfil propio para "Mi cuenta" |
+| `PATCH /api/mi-cuenta/datos-personales` | `perfilPropio.editar` | La persona actualiza sus datos de contacto |
+| `POST /api/usuarios/:id/roles` | `usuarios.editar` | Asigna un rol o cambia su vigencia |
+| `DELETE /api/usuarios/:id/roles/:rolId` | `usuarios.editar` | Quita un rol (lo vence hoy) |
+| `PUT /api/usuarios/:id/permisos/:permisoId` | `usuarios.editar` | Permiso individual (conceder o quitar) |
+| `POST /api/usuarios/:id/permisos` | `usuarios.editar` | Página "Agregar excepción": varios permisos, misma fecha y motivo (obligatorio), todo junto |
+| `DELETE /api/usuarios/:id/permisos/:permisoId` | `usuarios.editar` | Elimina el permiso individual |
+| `GET /api/roles` | `usuarios.ver` | Lista de roles |
+| `GET /api/roles/:id` | `usuarios.ver` | Detalle con sus permisos |
+| `POST /api/roles` | `roles.editar` | Crea un rol |
+| `PATCH /api/roles/:id` | `roles.editar` | Página "Editar rol": nombre, descripción y/o lista completa de permisos, todo junto |
+| `PUT /api/roles/:id/permisos` | `roles.editar` | Reemplaza la lista de permisos |
+| `PATCH /api/roles/:id/estado` | `roles.editar` | Activa o inactiva |
+| `GET /api/usuarios/funcionarios-disponibles` | `usuarios.crear` | Funcionarios activos sin cuenta (para crear una) |
 | `GET /api/salud` | público | Comprobación del servicio |
 
-**Falta:** el resto de usuarios (editar correo, asignar y quitar roles y permisos), el módulo
-de roles, funcionarios, expediente y documentos. Y todo el frontend.
+**Falta en backend:** funcionarios, catálogos, expediente, historial laboral y documentos.
 
-**Sobre el frontend:** la carpeta `frontend\` **todavía no existe**, el proyecto de Vite no se
-ha creado. Es a propósito: la pantalla de login no tiene contra qué autenticarse mientras no
-exista el endpoint que valide la contraseña y devuelva el token. Primero se levanta el backend
-del Sprint 1 y se prueba con Postman; después se monta el frontend reusando el diseño del
-prototipo aprobado.
+### Estado del frontend (desde el 25/09)
+
+Carpeta `frontend\`: React 19 + Vite 8 + TypeScript, React Router 8 (modo declarativo:
+`BrowserRouter`/`Routes`). **Reusa el CSS del prototipo tal cual** (`src/estilos/sigel.css`, con
+los mismos nombres de clase) y lo propio va en `src/estilos/ajustes.css`. En desarrollo, Vite
+reenvía `/api` al backend (puerto 3000), así la cookie funciona sin CORS.
+
+Hecho y probado en navegador (escritorio, celular, claro y oscuro):
+
+- Inicio de sesión con los casos del backend: credenciales, bloqueo de 3 min con cuenta
+  regresiva real (`segundosRestantes`), cuenta inactiva o bloqueada, límite de intentos, sin
+  conexión.
+- Recuperación en 3 pasos, primer ingreso obligatorio, lista de requisitos de contraseña en vivo.
+- Marco con barra superior, menú lateral plegable (y menú de celular) que muestra solo lo que
+  los permisos permiten; página "sin permiso" y "no encontrada".
+- Sesión vencida: cualquier 401 lleva al login con aviso y, al volver a entrar, regresa a la
+  página donde estaba. Después de "Salir" no (puede entrar otra persona).
+- "Mi cuenta" (datos de acceso y cambio de contraseña) y la lista de usuarios con búsqueda,
+  filtro de estado y paginación en la URL.
+
+**Rehecho el 26/09 para ser fiel al prototipo** (pedido de Josthyn) y **ajustado el 26/09 en la
+tarde** con la regla de abajo. Probado con 36 pasos automáticos en navegador (escritorio, celular,
+claro y oscuro) y 125 casos contra la API.
+
+**Regla de pantallas (Josthyn, 26/09):** lo que solo se **consulta** va en una **ventana**,
+dividida en pestañas; lo que se **crea o edita** va en una **página aparte**, dividida en
+**pasos** (sin bajar en PC), con su **subsección en el menú lateral** (p. ej. Usuarios → Editar
+usuario) y migas de pan arriba. Siempre por encima de todo: la comodidad de la persona.
+
+- **Usuarios** (`/usuarios`): la lista tiene la columna **Acciones** del prototipo (Editar usuario,
+  Permisos individuales, Cambiar estado). Tocar una fila abre **Ver usuario** (ventana de solo
+  lectura, pestañas Resumen / Roles / Permisos) con el botón "Editar usuario", que lleva a la
+  página **Editar usuario** (`/usuarios/:id/editar`, pasos Cuenta · Roles · Revisar y guardar).
+  **Crear usuario** es la página `/usuarios/nuevo` (mismos pasos, en orden). Al terminar, ventana
+  "…con éxito" (con la contraseña temporal al crear) y **Aceptar** vuelve a la lista.
+- **Permisos individuales**: la ventana muestra las excepciones vigentes (y deja eliminarlas).
+  **Agregar excepción** es la página `/usuarios/:id/excepciones/nueva` en 4 pasos: Qué hacer (dar o
+  quitar) · Permisos (módulos a la izquierda, casillas a la derecha, buscador) · Duración y motivo
+  (motivo obligatorio) · Revisar (hoy / después). Se pueden dar o quitar **varios permisos a la
+  vez** con la misma fecha y motivo. Editar una excepción: `/usuarios/:id/excepciones/:permisoId/editar`.
+- **Roles y permisos** (`/roles`): pestañas **Roles** (tabla con acciones por fila: Editar rol y
+  Activar/Inactivar; tocar la fila abre **Ver rol**, ventana con Resumen y Permisos por módulo) y
+  **Catálogo de permisos** (consulta). **Crear rol** (`/roles/nuevo`) y **Editar rol**
+  (`/roles/:id/editar`) son páginas en 3 pasos: Datos · Permisos (por módulo) · Revisar (lo que se
+  agrega/quita y a cuántas cuentas afecta). Nombre, descripción y permisos se guardan juntos.
+- **Vigencias**: cada rol o excepción es "Permanente" o "Hasta el [fecha]". Una fecha incompleta,
+  pasada o a más de 5 años se marca en rojo y no deja avanzar (antes una fecha a medio escribir
+  se guardaba como permanente). El backend también la rechaza.
+- **Cambios sin guardar**: si la persona sale de una página de edición por el menú, las migas,
+  Cancelar o "Salir", se le pregunta antes; al recargar o cerrar, avisa el navegador.
+- **Mi cuenta** (`/mi-cuenta`): tarjeta de perfil con el degradado (iniciales si no hay foto),
+  pestañas **Mis datos personales** (teléfono, correos, profesión, dirección; permiso
+  `perfilPropio.editar`) y **Acceso y seguridad** (datos de acceso, roles, contraseña en ventana).
+- **Acciones bloqueadas explicadas**: toda acción que no se puede queda atenuada y dice **por
+  qué** al pasar el mouse, al llegar con Tab o al tocarla en el celular (globo de ayuda propio,
+  `componentes/Ayudas.tsx`). Todos los botones de ícono dicen para qué sirven.
+- **Accesibilidad**: ventanas con foco atrapado y devuelto al cerrar, Escape, pestañas y módulos
+  con flechas, pasos con "Paso 1 de 3" y el foco en el título del paso nuevo, lectores de
+  pantalla con el motivo de cada bloqueo, campos obligatorios marcados, errores ligados a su
+  campo, avisos en regiones vivas.
+
+Pendiente: todo lo de las épicas 2 y 3.
 
 ### Repositorio en GitHub (versionado el 19/09/2026)
 
@@ -490,6 +574,42 @@ Estas ya están validadas. **Trátelas como verdad** salvo que Josthyn diga lo c
 - **Escalabilidad**: `profesion`, `tipoIncapacidad` y `regimenVacaciones` son tablas catálogo
   editables. `tipoSalida` e `institucion` quedan como texto plano.
 
+### Decisiones del 25/09/2026 (tomadas al cerrar la épica 1; se pueden revertir)
+
+- **Los roles de sistema no se editan desde la API** (ni nombre, ni descripción, ni permisos, ni
+  estado): su contenido lo define `prisma/seed.ts`, que los vuelve a completar cada vez que corre;
+  un cambio hecho desde la aplicación se desharía sin avisar. Para otra combinación de permisos se
+  crea un rol nuevo. Si Joseph prefiere lo contrario, hay que cambiar el seed para que no pise.
+- **Los roles no se borran, se inactivan**, y no se inactiva uno que alguien tiene vigente.
+- **Nadie cambia los permisos ni el estado de un rol que él mismo tiene** (regla 4 aplicada a roles).
+- **Una cuenta no puede quedar sin roles** al quitar el último: si ya no debe entrar, se inactiva.
+- **El correo propio no se cambia desde la administración** (regla 4): "Mi cuenta" tendrá su
+  flujo con código de verificación.
+- **El catálogo de permisos lo ve quien tiene `usuarios.ver`** (antes pedía `permisos.editar`,
+  que Administrador no tiene: RRHH no habría podido armar roles).
+- **Vencimientos por día**: una fecha sin hora vale hasta las 23:59:59 de ese día en Costa Rica.
+
+### Decisiones del 26/09/2026
+
+- **Toda cuenta conserva al menos un rol PERMANENTE** (sin fecha de vencimiento). Se valida al
+  crear, al editar, al cambiar la vigencia y al quitar un rol (`CUENTA_SIN_ROL_PERMANENTE`); si
+  todos vencieran, llegaría el día en que la cuenta se queda sin acceso sin que nadie lo decida.
+  Cada cambio de rol o de vigencia queda en la bitácora.
+- **La cuenta propia no se edita desde Usuarios** (solo lectura): los datos personales se
+  cambian en "Mi cuenta" con `perfilPropio.editar`; el acceso (roles, estado) lo cambia otra
+  persona.
+- **El catálogo de permisos es solo de consulta.** No hay "Crear permiso" (el prototipo lo tenía):
+  un permiso sin código detrás no hace nada; cada permiso nace con su funcionalidad (seed).
+- **Crear usuario no escribe contraseña**: la genera el sistema (el prototipo tenía el campo).
+- **Consultar = ventana; crear o editar = página por pasos** con su subsección en el menú (ver
+  "Frontend"). Cambiar estado (de una cuenta o de un rol) sigue en ventana: es una confirmación
+  corta, no un formulario.
+- **Vencimientos**: "Permanente" o "Hasta el [fecha]", explícito. La fecha va de hoy a **5 años**
+  como máximo (más que eso es permanente, o un año mal escrito). `FECHA_NO_VALIDA`,
+  `FECHA_VENCIMIENTO_PASADA`, `FECHA_VENCIMIENTO_MUY_LEJANA`.
+- **Excepciones de permisos**: el motivo es obligatorio al agregarlas desde la página (queda en la
+  bitácora). Se pueden hacer varias a la vez.
+
 ### Convenciones de la base de datos
 
 - Nombres en **español, camelCase**.
@@ -552,11 +672,15 @@ La barra lateral del prototipo lo dice al pie.
 | 2 | **Certificado HTTPS**: confirmar con Joseph que SIGEL se servirá por HTTPS. Se está programando asumiendo que sí (ver §6). | Joseph / TI |
 | 3 | **Horas extra**: Joseph delegó la definición. Falta proponerle un flujo. | Josthyn propone |
 | 4a | **Texto del consentimiento informado** del Talent Pool: lo define Joseph. | Joseph |
+| 6 | **Cambio de contraseña en "Mi cuenta"**: Josthyn decidió (25/09) dejarlo con la contraseña actual en vez del código al correo del prototipo (evita correos de más y mantiene la seguridad). **Falta mostrárselo a Joseph.** | Joseph |
 | 4b | **Datos del servidor de correo**: servidor, puerto, cuenta, TLS y autorización del dominio para envío desde la aplicación. Es lo único que falta para cerrar la recuperación de contraseña. | TI |
 
 > Resueltos el 16/09/2026: el **stack** quedó definido (§2), Joseph **aprobó el prototipo v4** sin
 > correcciones y `nombreUsuario` **se da por eliminado** (se entra con el correo; ya se quitó del
 > DBML v3).
+>
+> Resuelto el 25/09/2026: los **mensajes que ve la persona** (errores del backend, correos,
+> descripciones de roles y permisos) llevan tildes y eñes. Los comentarios del código siguen sin ellas.
 >
 > Resueltos el 23/09/2026 (ver §6): **dónde se guardan los archivos**, **quién hace la carga
 > inicial de datos**, el **diseño del historial laboral** y el **envío de correos**, que queda
@@ -564,11 +688,18 @@ La barra lateral del prototipo lo dice al pie.
 
 ### Pendientes para el prototipo v5 (no hacer hasta terminar el informe intermedio)
 
+- Ajustes que la aplicación ya hace distinto del prototipo (26/09): quitar "Crear permiso" del
+  catálogo, quitar el campo "Contraseña temporal" y la opción "Cuenta administrativa, sin
+  expediente" de "Crear usuario", y el cambio de contraseña de "Mi cuenta" con la contraseña actual
+  en vez de código al correo.
+
 - En la vista de funcionaria, el botón de baja debe aparecer **solo** en las filas de documentos que
   ella subió (hoy está oculto en todas).
 - Agregar `documentos.darDeBajaPropio` al catálogo de permisos de `p_seguridad.html`.
 - En "Mi cuenta" con vista RRHH, los campos de correo muestran los de María José (datos de
   ejemplo que no cambian con el selector RRHH/Funcionaria). Corregir en `app.js`.
+- El texto de ayuda de las contraseñas dice "al menos una letra y un número"; la política
+  vigente (24/09) es mínimo 8, mayúscula, minúscula, número y carácter especial.
 - Republicar el artifact con los cambios del 16/09 ya hechos en fuentes: rol "Consulta" y dominio
   `@munipalmares.go.cr` en los correos de ejemplo.
 

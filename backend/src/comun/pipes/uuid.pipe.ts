@@ -19,7 +19,7 @@ export function uuidValido(queCosa = 'registro'): ParseUUIDPipe {
     exceptionFactory: () =>
       new BadRequestException({
         codigo: 'IDENTIFICADOR_INVALIDO',
-        message: `El identificador de ${queCosa} indicado no es valido.`,
+        message: `El identificador de ${queCosa} indicado no es válido.`,
       }),
   });
 }

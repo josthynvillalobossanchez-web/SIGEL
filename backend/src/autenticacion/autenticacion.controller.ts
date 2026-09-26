@@ -57,7 +57,7 @@ export class AutenticacionController {
   @HttpCode(HttpStatus.OK)
   cerrarSesion(@Res({ passthrough: true }) respuesta: Response): { mensaje: string } {
     respuesta.clearCookie(COOKIE_SESION, opcionesCookie(0));
-    return { mensaje: 'Sesion cerrada.' };
+    return { mensaje: 'Sesión cerrada.' };
   }
 
   /**
@@ -105,7 +105,7 @@ export class AutenticacionController {
     @DireccionIp() direccionIp: string | undefined,
   ): Promise<{ mensaje: string }> {
     await this.autenticacion.cambiarContrasenaPropia(usuario.id, datos, direccionIp);
-    return { mensaje: 'Contrasena actualizada.' };
+    return { mensaje: 'Contraseña actualizada.' };
   }
 
   /**
@@ -129,7 +129,7 @@ export class AutenticacionController {
     await this.autenticacion.solicitarRecuperacion(datos);
 
     return {
-      mensaje: 'Si el correo corresponde a una cuenta activa, recibira un codigo en unos minutos.',
+      mensaje: 'Si el correo corresponde a una cuenta activa, recibirá un código en unos minutos.',
     };
   }
 
@@ -152,6 +152,6 @@ export class AutenticacionController {
     @DireccionIp() direccionIp: string | undefined,
   ): Promise<{ mensaje: string }> {
     await this.autenticacion.restablecerContrasenaConCodigo(datos, direccionIp);
-    return { mensaje: 'Contrasena restablecida. Ya puede iniciar sesion.' };
+    return { mensaje: 'Contraseña restablecida. Ya puede iniciar sesión.' };
   }
 }

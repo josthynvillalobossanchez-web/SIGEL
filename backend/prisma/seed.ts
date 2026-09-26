@@ -34,7 +34,7 @@ const prisma = new PrismaClient({ adapter: new PrismaMariaDb(configuracionDeCone
 const PERMISOS: { clave: string; modulo: string; descripcion: string }[] = [
   { clave: 'funcionarios.ver', modulo: 'funcionarios', descripcion: 'Consultar funcionarios y su ficha resumida' },
   { clave: 'funcionarios.crear', modulo: 'funcionarios', descripcion: 'Registrar un funcionario nuevo' },
-  { clave: 'funcionarios.editar', modulo: 'funcionarios', descripcion: 'Modificar la informacion de un funcionario' },
+  { clave: 'funcionarios.editar', modulo: 'funcionarios', descripcion: 'Modificar la información de un funcionario' },
   { clave: 'expediente.ver', modulo: 'expediente', descripcion: 'Abrir el expediente laboral' },
   { clave: 'documentos.crear', modulo: 'documentos', descripcion: 'Subir documentos al expediente' },
   { clave: 'documentos.descargar', modulo: 'documentos', descripcion: 'Ver y descargar documentos' },
@@ -42,18 +42,18 @@ const PERMISOS: { clave: string; modulo: string; descripcion: string }[] = [
   {
     clave: 'documentos.darDeBajaPropio',
     modulo: 'documentos',
-    descripcion: 'Dar de baja unicamente los documentos que subio la propia persona',
+    descripcion: 'Dar de baja únicamente los documentos que subió la propia persona',
   },
   { clave: 'documentos.restaurar', modulo: 'documentos', descripcion: 'Restaurar un documento dado de baja' },
-  { clave: 'tiposDocumento.editar', modulo: 'tiposDocumento', descripcion: 'Administrar el catalogo de tipos de documento' },
+  { clave: 'tiposDocumento.editar', modulo: 'tiposDocumento', descripcion: 'Administrar el catálogo de tipos de documento' },
   { clave: 'usuarios.ver', modulo: 'usuarios', descripcion: 'Consultar las cuentas de usuario' },
   { clave: 'usuarios.crear', modulo: 'usuarios', descripcion: 'Crear cuentas de usuario' },
   { clave: 'usuarios.editar', modulo: 'usuarios', descripcion: 'Modificar cuentas de usuario' },
   { clave: 'usuarios.cambiarEstado', modulo: 'usuarios', descripcion: 'Activar, inactivar o bloquear una cuenta' },
   { clave: 'roles.editar', modulo: 'roles', descripcion: 'Administrar los roles y sus permisos' },
-  { clave: 'permisos.editar', modulo: 'permisos', descripcion: 'Administrar el catalogo de permisos' },
+  { clave: 'permisos.editar', modulo: 'permisos', descripcion: 'Administrar el catálogo de permisos' },
   { clave: 'catalogos.editar', modulo: 'catalogos', descripcion: 'Administrar departamentos, puestos y profesiones' },
-  { clave: 'bitacora.ver', modulo: 'bitacora', descripcion: 'Consultar la bitacora de auditoria' },
+  { clave: 'bitacora.ver', modulo: 'bitacora', descripcion: 'Consultar la bitácora de auditoría' },
   { clave: 'perfilPropio.editar', modulo: 'perfilPropio', descripcion: 'Editar los datos personales y de contacto propios' },
 ];
 
@@ -73,12 +73,12 @@ const AUTOSERVICIO = [
 const ROLES: { nombre: string; descripcion: string; permisos: string[] | 'todos' }[] = [
   {
     nombre: 'Super Administrador',
-    descripcion: 'Control total del sistema. Unico rol que consulta la bitacora de auditoria.',
+    descripcion: 'Control total del sistema. Único rol que consulta la bitácora de auditoría.',
     permisos: 'todos',
   },
   {
     nombre: 'Administrador',
-    descripcion: 'Gestion completa de funcionarios, expedientes, usuarios y catalogos. Lo usa Recursos Humanos.',
+    descripcion: 'Gestión completa de funcionarios, expedientes, usuarios y catálogos. Lo usa Recursos Humanos.',
     permisos: [
       'funcionarios.ver',
       'funcionarios.crear',
@@ -111,7 +111,7 @@ const ROLES: { nombre: string; descripcion: string; permisos: string[] | 'todos'
   },
   {
     nombre: 'Consulta',
-    descripcion: 'Solo lectura de funcionarios y expedientes, sin ningun permiso de escritura. Auditoria Interna.',
+    descripcion: 'Solo lectura de funcionarios y expedientes, sin ningún permiso de escritura. Auditoría Interna.',
     permisos: ['funcionarios.ver', 'expediente.ver', 'documentos.descargar', 'usuarios.ver'],
   },
 ];
@@ -119,21 +119,21 @@ const ROLES: { nombre: string; descripcion: string; permisos: string[] | 'todos'
 const REGIMENES = [
   {
     nombre: 'general',
-    descripcion: '15 dias habiles los primeros 6 anios de servicio y 20 dias despues.',
+    descripcion: '15 días hábiles los primeros 6 años de servicio y 20 días después.',
     periodosMaximosAcumulables: 2,
     diasAvisoAntesDeVencer: 60,
   },
   {
     nombre: 'anterior',
-    descripcion: '30 dias para los funcionarios amparados al regimen anterior.',
+    descripcion: '30 días para los funcionarios amparados al régimen anterior.',
     periodosMaximosAcumulables: 2,
     diasAvisoAntesDeVencer: 60,
   },
 ];
 
 const TIPOS_DOCUMENTO = [
-  { nombre: 'Cedula de identidad', descripcion: 'Copia del documento de identidad', generadoPorSistema: false },
-  { nombre: 'Titulo universitario', descripcion: 'Grado academico del funcionario', generadoPorSistema: false },
+  { nombre: 'Cédula de identidad', descripcion: 'Copia del documento de identidad', generadoPorSistema: false },
+  { nombre: 'Título universitario', descripcion: 'Grado académico del funcionario', generadoPorSistema: false },
   { nombre: 'Accion de personal', descripcion: 'Nombramientos y cambios de puesto', generadoPorSistema: false },
   { nombre: 'Hoja de delincuencia', descripcion: 'Documento emitido por el Registro Judicial', generadoPorSistema: false },
   { nombre: 'Curriculum', descripcion: 'Se copia desde el Talent Pool al contratar', generadoPorSistema: true },
@@ -205,27 +205,27 @@ async function main(): Promise<void> {
   const existente = await prisma.usuario.findUnique({ where: { correo } });
 
   if (existente) {
-    console.log(`  Super Administrador: ya existe (${correo}), no se toca su contrasena.`);
+    console.log(`  Super Administrador: ya existe (${correo}), no se toca su contraseña.`);
   } else {
     const generada = !process.env.SEED_ADMIN_CONTRASENA;
     const contrasena = process.env.SEED_ADMIN_CONTRASENA ?? randomBytes(9).toString('base64url');
-    const usuario = await prisma.usuario.create({
+    // Cuenta y rol en una sola operacion: si el seed se interrumpe, no queda
+    // una cuenta de Super Administrador sin rol (que ademas el seed ya no
+    // repararia, porque al volver a correr ve que la cuenta "ya existe").
+    const rolSuper = await prisma.rol.findUniqueOrThrow({ where: { nombre: 'Super Administrador' } });
+    await prisma.usuario.create({
       data: {
         correo,
         contrasenaHash: await argon2.hash(contrasena, { type: argon2.argon2id }),
         debeCambiarContrasena: true,
+        roles: { create: { rolId: rolSuper.id } },
       },
     });
 
-    const rolSuper = await prisma.rol.findUnique({ where: { nombre: 'Super Administrador' } });
-    if (rolSuper) {
-      await prisma.usuarioRol.create({ data: { usuarioId: usuario.id, rolId: rolSuper.id } });
-    }
-
     console.log('  Super Administrador creado:');
     console.log(`    correo:     ${correo}`);
-    console.log(`    contrasena: ${contrasena}${generada ? '   <-- generada al azar, anotela ahora' : ''}`);
-    console.log('    El sistema le exigira cambiarla en el primer ingreso.');
+    console.log(`    contraseña: ${contrasena}${generada ? '   <-- generada al azar, anotela ahora' : ''}`);
+    console.log('    El sistema le exigirá cambiarla en el primer ingreso.');
   }
 
   console.log('Listo.');

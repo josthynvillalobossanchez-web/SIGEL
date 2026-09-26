@@ -7,7 +7,7 @@ import { IsEmail, MaxLength } from 'class-validator';
  * para no confirmarle a nadie que direcciones estan registradas.
  */
 export class SolicitarRecuperacionDto {
-  @IsEmail({}, { message: 'El correo no tiene un formato valido.' })
+  @IsEmail({}, { message: 'El correo no tiene un formato válido.' })
   @MaxLength(150, { message: 'El correo no puede pasar de 150 caracteres.' })
   correo!: string;
 }

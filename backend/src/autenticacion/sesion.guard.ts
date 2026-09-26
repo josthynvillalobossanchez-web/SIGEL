@@ -38,7 +38,7 @@ export class SesionGuard implements CanActivate {
     const token = peticion.cookies?.[COOKIE_SESION] as string | undefined;
 
     if (!token) {
-      throw this.sinSesion('No hay una sesion activa.');
+      throw this.sinSesion('No hay una sesión activa.');
     }
 
     let contenido: ContenidoToken;
@@ -46,7 +46,7 @@ export class SesionGuard implements CanActivate {
       contenido = await this.jwt.verifyAsync<ContenidoToken>(token);
     } catch {
       // Token vencido, alterado o firmado con otro secreto.
-      throw this.sinSesion('La sesion expiro o no es valida.');
+      throw this.sinSesion('La sesión expiró o no es válida.');
     }
 
     /**
@@ -59,7 +59,7 @@ export class SesionGuard implements CanActivate {
     const usuario = await this.autenticacion.cargarUsuarioAutenticado(contenido.sub);
 
     if (!usuario) {
-      throw this.sinSesion('La cuenta ya no esta disponible.');
+      throw this.sinSesion('La cuenta ya no está disponible.');
     }
 
     /**
@@ -80,7 +80,7 @@ export class SesionGuard implements CanActivate {
       if (!permitido) {
         throw new ForbiddenException({
           codigo: 'CONTRASENA_TEMPORAL',
-          message: 'Debe cambiar su contrasena antes de usar el sistema.',
+          message: 'Debe cambiar su contraseña antes de usar el sistema.',
         });
       }
     }

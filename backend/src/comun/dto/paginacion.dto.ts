@@ -23,15 +23,15 @@ export class PaginacionDto {
    */
   @IsOptional()
   @Type(() => Number)
-  @IsInt({ message: 'La pagina debe ser un numero entero.' })
-  @Min(1, { message: 'La pagina empieza en 1.' })
+  @IsInt({ message: 'La página debe ser un número entero.' })
+  @Min(1, { message: 'La página empieza en 1.' })
   pagina: number = 1;
 
   @IsOptional()
   @Type(() => Number)
-  @IsInt({ message: 'El tamano de pagina debe ser un numero entero.' })
-  @Min(1, { message: 'El tamano de pagina debe ser al menos 1.' })
-  @Max(TAMANO_MAXIMO_PAGINA, { message: `No se pueden pedir mas de ${TAMANO_MAXIMO_PAGINA} registros por pagina.` })
+  @IsInt({ message: 'El tamaño de página debe ser un número entero.' })
+  @Min(1, { message: 'El tamaño de página debe ser al menos 1.' })
+  @Max(TAMANO_MAXIMO_PAGINA, { message: `No se pueden pedir más de ${TAMANO_MAXIMO_PAGINA} registros por página.` })
   tamano: number = 20;
 }
 

@@ -18,11 +18,11 @@ import {
  * dia: es lo que se usa para las suplencias.
  */
 export class RolAsignadoDto {
-  @IsUUID(undefined, { message: 'El rol indicado no es valido.' })
+  @IsUUID(undefined, { message: 'El rol indicado no es válido.' })
   rolId!: string;
 
   @IsOptional()
-  @IsDateString({}, { message: 'La fecha de vencimiento del rol no es valida.' })
+  @IsDateString({}, { message: 'La fecha de vencimiento del rol no es válida.' })
   fechaVencimiento?: string;
 }
 
@@ -37,7 +37,7 @@ export class RolAsignadoDto {
  * nadie elige "Palmares2026" para todo el mundo.
  */
 export class CrearUsuarioDto {
-  @IsUUID(undefined, { message: 'El funcionario indicado no es valido.' })
+  @IsUUID(undefined, { message: 'El funcionario indicado no es válido.' })
   funcionarioId!: string;
 
   /**
@@ -46,14 +46,14 @@ export class CrearUsuarioDto {
    * o cuando va a entrar con su correo personal.
    */
   @IsOptional()
-  @IsEmail({}, { message: 'El correo no tiene un formato valido.' })
+  @IsEmail({}, { message: 'El correo no tiene un formato válido.' })
   @MaxLength(150, { message: 'El correo no puede pasar de 150 caracteres.' })
   correo?: string;
 
   /** Al menos uno: una cuenta sin roles no puede hacer nada en el sistema. */
   @IsArray({ message: 'Los roles deben venir en una lista.' })
   @ArrayMinSize(1, { message: 'La cuenta debe tener al menos un rol.' })
-  @ArrayMaxSize(10, { message: 'No se pueden asignar mas de 10 roles a la vez.' })
+  @ArrayMaxSize(10, { message: 'No se pueden asignar más de 10 roles a la vez.' })
   @ValidateNested({ each: true })
   @Type(() => RolAsignadoDto)
   roles!: RolAsignadoDto[];

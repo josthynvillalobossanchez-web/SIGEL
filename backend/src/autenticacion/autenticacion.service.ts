@@ -83,14 +83,14 @@ export class AutenticacionService {
     if (usuario.estado === 'inactivo') {
       throw new UnauthorizedException({
         codigo: 'CUENTA_INACTIVA',
-        message: 'La cuenta esta inactiva. Comuniquese con Recursos Humanos.',
+        message: 'La cuenta está inactiva. Comuníquese con Recursos Humanos.',
       });
     }
 
     if (usuario.estado === 'bloqueado') {
       throw new UnauthorizedException({
         codigo: 'CUENTA_BLOQUEADA_POR_ADMINISTRADOR',
-        message: 'La cuenta esta bloqueada. Comuniquese con Recursos Humanos.',
+        message: 'La cuenta está bloqueada. Comuníquese con Recursos Humanos.',
       });
     }
 
@@ -194,7 +194,7 @@ export class AutenticacionService {
     if (!actualCorrecta) {
       throw new UnauthorizedException({
         codigo: 'CONTRASENA_ACTUAL_INCORRECTA',
-        message: 'La contrasena actual no es correcta.',
+        message: 'La contraseña actual no es correcta.',
       });
     }
 
@@ -205,7 +205,7 @@ export class AutenticacionService {
     if (esLaMisma) {
       throw new BadRequestException({
         codigo: 'CONTRASENA_REPETIDA',
-        message: 'La contrasena nueva debe ser distinta de la actual.',
+        message: 'La contraseña nueva debe ser distinta de la actual.',
       });
     }
 
@@ -240,14 +240,14 @@ export class AutenticacionService {
           registroAfectadoId: usuario.id,
           accion: 'modificar',
           direccionIp,
-          descripcion: 'Cambio su propia contrasena desde el sistema.',
+          descripcion: 'Cambió su propia contraseña desde el sistema.',
         },
         tx,
       );
     });
 
     // Se registra el identificador, nunca las contrasenas.
-    this.registro.log(`El usuario ${usuario.id} cambio su contrasena`);
+    this.registro.log(`El usuario ${usuario.id} cambió su contraseña`);
   }
 
   /**
@@ -299,21 +299,21 @@ export class AutenticacionService {
 
     await this.correo.enviar({
       para: usuario.correo,
-      asunto: 'SIGEL - Codigo para recuperar su contrasena',
+      asunto: 'SIGEL - Código para recuperar su contraseña',
       cuerpo: [
-        'Buen dia,',
+        'Buen día,',
         '',
-        `Su codigo para recuperar la contrasena de SIGEL es: ${codigo}`,
+        `Su código para recuperar la contraseña de SIGEL es: ${codigo}`,
         '',
-        `El codigo vence en ${MINUTOS_VIGENCIA_CODIGO} minutos y solo se puede usar una vez.`,
-        'Si usted no solicito este cambio, ignore este mensaje: su contrasena sigue igual.',
+        `El código vence en ${MINUTOS_VIGENCIA_CODIGO} minutos y solo se puede usar una vez.`,
+        'Si usted no solicitó este cambio, ignore este mensaje: su contraseña sigue igual.',
         '',
         'Municipalidad de Palmares',
       ].join('\n'),
     });
 
     // Se registra la cuenta, jamas el codigo.
-    this.registro.log(`Se envio un codigo de recuperacion al usuario ${usuario.id}`);
+    this.registro.log(`Se envió un código de recuperación al usuario ${usuario.id}`);
   }
 
   /**
@@ -372,7 +372,7 @@ export class AutenticacionService {
     if (esLaMisma) {
       throw new BadRequestException({
         codigo: 'CONTRASENA_REPETIDA',
-        message: 'La contrasena nueva debe ser distinta de la anterior.',
+        message: 'La contraseña nueva debe ser distinta de la anterior.',
       });
     }
 
@@ -415,19 +415,19 @@ export class AutenticacionService {
           registroAfectadoId: usuario.id,
           accion: 'modificar',
           direccionIp,
-          descripcion: 'Restablecio su contrasena con un codigo enviado al correo.',
+          descripcion: 'Restableció su contraseña con un código enviado al correo.',
         },
         tx,
       );
     });
 
-    this.registro.log(`El usuario ${usuario.id} restablecio su contrasena con un codigo`);
+    this.registro.log(`El usuario ${usuario.id} restableció su contraseña con un código`);
   }
 
   private codigoInvalido(): BadRequestException {
     return new BadRequestException({
       codigo: 'CODIGO_INVALIDO',
-      message: 'El codigo no es valido o ya vencio. Solicite uno nuevo.',
+      message: 'El código no es válido o ya venció. Solicite uno nuevo.',
     });
   }
 
@@ -498,7 +498,7 @@ export class AutenticacionService {
   private credencialesInvalidas(): UnauthorizedException {
     return new UnauthorizedException({
       codigo: 'CREDENCIALES_INVALIDAS',
-      message: 'Correo o contrasena incorrectos.',
+      message: 'Correo o contraseña incorrectos.',
     });
   }
 }

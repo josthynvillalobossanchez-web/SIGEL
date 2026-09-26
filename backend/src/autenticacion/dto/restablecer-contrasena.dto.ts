@@ -8,12 +8,12 @@ import { EsContrasenaValida } from '../politica-contrasena.js';
  * codigo de 6 digitos y contrasena nueva.
  */
 export class RestablecerContrasenaDto {
-  @IsEmail({}, { message: 'El correo no tiene un formato valido.' })
+  @IsEmail({}, { message: 'El correo no tiene un formato válido.' })
   @MaxLength(150, { message: 'El correo no puede pasar de 150 caracteres.' })
   correo!: string;
 
   /** Exactamente 6 caracteres, como lo muestra la pantalla del prototipo. */
-  @Length(6, 6, { message: 'El codigo debe tener 6 digitos.' })
+  @Length(6, 6, { message: 'El código debe tener 6 dígitos.' })
   codigo!: string;
 
   @EsContrasenaValida()

@@ -45,18 +45,18 @@ const TIENE_ESPECIAL = /[^\p{L}\p{N}]/u;
  */
 export function EsContrasenaValida(): PropertyDecorator {
   return applyDecorators(
-    IsString({ message: 'La contrasena debe ser texto.' }),
+    IsString({ message: 'La contraseña debe ser texto.' }),
     MinLength(LARGO_MINIMO_CONTRASENA, {
-      message: `La contrasena debe tener al menos ${LARGO_MINIMO_CONTRASENA} caracteres.`,
+      message: `La contraseña debe tener al menos ${LARGO_MINIMO_CONTRASENA} caracteres.`,
     }),
     MaxLength(LARGO_MAXIMO_CONTRASENA, {
-      message: `La contrasena no puede pasar de ${LARGO_MAXIMO_CONTRASENA} caracteres.`,
+      message: `La contraseña no puede pasar de ${LARGO_MAXIMO_CONTRASENA} caracteres.`,
     }),
-    Matches(TIENE_MINUSCULA, { message: 'La contrasena debe incluir al menos una letra minuscula.' }),
-    Matches(TIENE_MAYUSCULA, { message: 'La contrasena debe incluir al menos una letra mayuscula.' }),
-    Matches(TIENE_NUMERO, { message: 'La contrasena debe incluir al menos un numero.' }),
+    Matches(TIENE_MINUSCULA, { message: 'La contraseña debe incluir al menos una letra minúscula.' }),
+    Matches(TIENE_MAYUSCULA, { message: 'La contraseña debe incluir al menos una letra mayúscula.' }),
+    Matches(TIENE_NUMERO, { message: 'La contraseña debe incluir al menos un número.' }),
     Matches(TIENE_ESPECIAL, {
-      message: 'La contrasena debe incluir al menos un caracter especial, por ejemplo . - _ # @ !',
+      message: 'La contraseña debe incluir al menos un carácter especial, por ejemplo . - _ # @ !',
     }),
   );
 }

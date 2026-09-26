@@ -1,5 +1,6 @@
 import { Controller, Get } from '@nestjs/common';
-import { RequierePermisos } from '../autenticacion/decoradores.js';
+import { RequierePermisos, UsuarioActual } from '../autenticacion/decoradores.js';
+import type { UsuarioAutenticado } from '../autenticacion/tipos.js';
 import { PermisosService, type ModuloDePermisos } from './permisos.service.js';
 
 /**
@@ -18,14 +19,21 @@ export class PermisosController {
    * GET /api/permisos
    *
    * Lista el catalogo completo de permisos activos, agrupado por modulo,
-   * para la pantalla donde se arma cada rol.
+   * para la pantalla donde se arma cada rol y para la de permisos
+   * individuales de una cuenta. Cada permiso trae "asignable": true si
+   * quien consulta lo tiene (solo se da lo que se tiene), para que la
+   * pantalla no ofrezca lo que despues el backend va a rechazar.
    *
-   * Exige "permisos.editar" porque saber que controles existen en el sistema
-   * ya es informacion de seguridad: solo la ve quien administra los roles.
+   * Pide "usuarios.ver" (antes pedia "permisos.editar", que el rol
+   * Administrador no tiene: RRHH no podia armar roles ni dar permisos
+   * individuales). No expone nada nuevo: el detalle de cada rol
+   * (GET /api/roles/:id) ya muestra sus permisos con ese mismo permiso.
+   * "permisos.editar" queda reservado para cuando el catalogo se pueda
+   * administrar desde la aplicacion.
    */
-  @RequierePermisos('permisos.editar')
+  @RequierePermisos('usuarios.ver')
   @Get()
-  listarCatalogo(): Promise<ModuloDePermisos[]> {
-    return this.permisos.listarCatalogo();
+  listarCatalogo(@UsuarioActual() quienActua: UsuarioAutenticado): Promise<ModuloDePermisos[]> {
+    return this.permisos.listarCatalogo(quienActua);
   }
 }

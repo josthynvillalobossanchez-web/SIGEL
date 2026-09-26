@@ -59,7 +59,7 @@ El sistema se desarrolla considerando controles de autenticación, autorización
 ```
 SIGEL/
 ├── backend/            API en NestJS + Prisma
-├── frontend/           Interfaz en React + Vite (pendiente de crear)
+├── frontend/           Interfaz en React + Vite
 ├── docs/               Documentación del proyecto
 └── docker-compose.yml  MySQL 8.4 para desarrollo
 ```
@@ -78,6 +78,14 @@ npm run db:seed
 npm run dev                   # API en http://localhost:3000/api
 ```
 
+En otra terminal, la interfaz:
+
+```bash
+cd frontend
+npm install
+npm run dev                   # http://localhost:5173
+```
+
 El paso a paso completo, con la explicación de cada comando y los problemas más
 comunes, está en [`docs/GUIA_DESARROLLO.md`](docs/GUIA_DESARROLLO.md).
 
@@ -85,7 +93,7 @@ comunes, está en [`docs/GUIA_DESARROLLO.md`](docs/GUIA_DESARROLLO.md).
 
 Sprint 1 en desarrollo: autenticación y usuarios, funcionarios y expediente, y gestión documental. Las fases de análisis, diseño y prototipado están concluidas y el prototipo de interfaces fue aprobado por el supervisor.
 
-Al 25 de setiembre de 2026 el backend tiene terminado el módulo de autenticación y seguridad (inicio de sesión con Argon2id, sesión en cookie protegida, bloqueo por intentos fallidos, límite de peticiones por IP, autorización por permisos granulares, cambio obligatorio de contraseña, recuperación por correo, manejo uniforme de errores y bitácora de auditoría) y avanzada la gestión de usuarios: consulta, creación de cuentas ligadas a funcionarios, cambio de estado y reparto de acceso con suplencias que vencen solas. Siguen el resto de usuarios, el módulo de roles y el frontend.
+Al 25 de setiembre de 2026 el backend tiene terminada la primera épica: autenticación y seguridad (inicio de sesión con Argon2id, sesión en cookie protegida, bloqueo por intentos fallidos, límite de peticiones por IP, autorización por permisos granulares, cambio obligatorio de contraseña, recuperación por correo, manejo uniforme de errores y bitácora de auditoría), gestión de usuarios (consulta, creación de cuentas ligadas a funcionarios, cambio de estado y de correo, asignación de roles y permisos individuales con suplencias que vencen solas) y administración de roles, todo bajo reglas de reparto de acceso que impiden dar o quitar lo que uno no tiene. El frontend cubre toda la primera épica: inicio de sesión, recuperación de contraseña, primer ingreso, menú según permisos, "Mi cuenta", administración de usuarios (crear, roles con suplencias, permisos individuales, estado y correo) y administración de roles. Siguen las épicas de funcionarios y gestión documental.
 
 ## Proyecto
 

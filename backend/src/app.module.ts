@@ -7,6 +7,8 @@ import { BitacoraModule } from './bitacora/bitacora.module.js';
 import { CorreoModule } from './correo/correo.module.js';
 import { PermisosModule } from './permisos/permisos.module.js';
 import { PrismaModule } from './prisma/prisma.module.js';
+import { RolesModule } from './roles/roles.module.js';
+import { MiCuentaModule } from './mi-cuenta/mi-cuenta.module.js';
 import { UsuariosModule } from './usuarios/usuarios.module.js';
 import { SaludController } from './salud/salud.controller.js';
 
@@ -25,8 +27,10 @@ import { SaludController } from './salud/salud.controller.js';
     AutenticacionModule,
     PermisosModule,
     UsuariosModule,
+    RolesModule,
+    MiCuentaModule,
     // Aqui se iran agregando los demas modulos del Sprint 1:
-    // RolesModule, FuncionariosModule, ExpedienteModule, DocumentosModule.
+    // FuncionariosModule, ExpedienteModule, DocumentosModule.
   ],
   controllers: [SaludController],
   providers: [

@@ -58,7 +58,7 @@ export class PermisosGuard implements CanActivate {
       // interna del sistema y no le sirve a quien no deberia estar ahi.
       throw new ForbiddenException({
         codigo: 'SIN_PERMISO',
-        message: 'No tiene permisos para realizar esta accion.',
+        message: 'No tiene permisos para realizar esta acción.',
       });
     }
 
