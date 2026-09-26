@@ -1,6 +1,7 @@
 /*
  * Ventanas de la lista de funcionarios:
- *   - ModalFicha (mdResumen del prototipo): ficha resumida, solo lectura.
+ *   - ModalFicha (mdResumen del prototipo): ficha de solo lectura en
+ *     pestanas (Datos personales · Datos laborales · Cuenta de acceso).
  *     Botones: Editar funcionario (pagina) y Ver expediente.
  *   - ModalSalida: registrar que la persona deja la Municipalidad (fecha y
  *     motivo). Su cuenta se inactiva a la vez.
@@ -21,9 +22,11 @@ import { Mensaje } from '../../componentes/Mensaje';
 import { BotonConAyuda } from '../../componentes/Botones';
 import { CampoFecha } from '../../componentes/CampoFecha';
 import { revisarFechasDeVencimiento } from '../../componentes/CampoFechaDeVencimiento';
-import { formatearFechaSola, hoyEnCostaRica, sumarAnios } from '../../utilidades/fechas';
+import { PanelDePestana, Pestanas, usePrefijoDePestanas } from '../../componentes/Pestanas';
+import { hoyEnCostaRica, sumarAnios } from '../../utilidades/fechas';
 import { inicialesDeFuncionario, nombreCompleto } from '../../utilidades/texto';
 import { ChipDeFuncionario } from './ChipDeFuncionario';
+import { Dato, DatosLaboralesVista, DatosPersonalesVista } from './DatosDeFuncionario';
 import { MOTIVO_EXPEDIENTE_PENDIENTE } from './motivos';
 
 /* ================================================================== */
@@ -42,8 +45,10 @@ export function ModalFicha({
   alCerrar: () => void;
   alEditar: () => void;
 }) {
+  const prefijo = usePrefijoDePestanas();
   const [f, setF] = useState<DetalleDeFuncionario | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [pestana, setPestana] = useState('personales');
 
   useEffect(() => {
     consultarFuncionario(funcionarioId)
@@ -58,10 +63,25 @@ export function ModalFicha({
       descripcion={f ? `Cédula ${f.cedula}${f.numeroEmpleado ? ` · Código ${f.numeroEmpleado}` : ''}` : undefined}
       cabeceraExtra={
         f && (
-          <div className="ficha-chips" style={{ marginTop: 8 }}>
-            <ChipDeFuncionario estado={f.estado} />
-            <span className="chip chip-neutro">{NOMBRES_DE_NOMBRAMIENTO[f.tipoNombramiento]}</span>
-          </div>
+          <>
+            <div className="ficha-chips" style={{ marginTop: 8 }}>
+              <ChipDeFuncionario estado={f.estado} />
+              <span className="chip chip-neutro">{NOMBRES_DE_NOMBRAMIENTO[f.tipoNombramiento]}</span>
+            </div>
+            <div style={{ marginTop: 12 }}>
+              <Pestanas
+                prefijo={prefijo}
+                etiqueta="Información del funcionario"
+                actual={pestana}
+                alCambiar={setPestana}
+                opciones={[
+                  { id: 'personales', texto: 'Datos personales' },
+                  { id: 'laborales', texto: 'Datos laborales' },
+                  { id: 'cuenta', texto: 'Cuenta de acceso' },
+                ]}
+              />
+            </div>
+          </>
         )
       }
       alCerrar={alCerrar}
@@ -90,42 +110,35 @@ export function ModalFicha({
       {!f && !error && <p style={{ color: 'var(--texto-sec)' }}>Cargando…</p>}
       {f && (
         <>
-          <dl className="resumen-datos" style={{ borderTop: 0, paddingTop: 0 }}>
-            <Dato titulo="Puesto" valor={f.puesto?.nombre} />
-            <Dato titulo="Departamento" valor={f.departamento?.nombre} />
-            <Dato titulo="Jefatura inmediata" valor={f.jefatura?.nombre ?? 'Sin jefatura (tope de la jerarquía)'} />
-            <Dato titulo="Teléfono" valor={f.telefonoPersonal} num />
-            <Dato titulo="Correo" valor={f.correoInstitucional ?? f.correoPersonal} />
-            <Dato titulo="Fecha de ingreso" valor={formatearFechaSola(f.fechaIngreso)} num />
-            <Dato
-              titulo="Cuenta de acceso"
-              valor={f.cuenta ? `${f.cuenta.correo} · ${f.cuenta.estado === 'activo' ? 'activa' : f.cuenta.estado === 'bloqueado' ? 'bloqueada' : 'inactiva'}` : 'Sin cuenta'}
-            />
-            <Dato titulo="Personal a cargo" valor={String(f.cantidadACargo)} num />
-            {f.estado === 'inactivo' && (
-              <>
-                <Dato titulo="Fecha de salida" valor={formatearFechaSola(f.fechaSalida)} num />
-                <Dato titulo="Motivo de salida" valor={f.motivoSalida} />
-              </>
-            )}
-          </dl>
           {f.esPropio && (
-            <p className="nota-modal" style={{ marginTop: 12 }}>
-              Es su propio registro. Sus datos personales y de contacto los cambia en «Mi cuenta».
+            <p className="nota-modal" style={{ marginBottom: 10 }}>
+              Es su propio registro. Sus datos personales y laborales se cambian en «Mi cuenta».
             </p>
           )}
+          <PanelDePestana id="personales" actual={pestana} prefijo={prefijo}>
+            <DatosPersonalesVista f={f} compacto />
+          </PanelDePestana>
+          <PanelDePestana id="laborales" actual={pestana} prefijo={prefijo}>
+            <DatosLaboralesVista f={f} compacto />
+          </PanelDePestana>
+          <PanelDePestana id="cuenta" actual={pestana} prefijo={prefijo}>
+            {f.cuenta ? (
+              <dl className="info-rejilla vista-datos compacto">
+                <Dato titulo="Correo de ingreso" valor={f.cuenta.correo} />
+                <Dato
+                  titulo="Estado de la cuenta"
+                  valor={f.cuenta.estado === 'activo' ? 'Activa' : f.cuenta.estado === 'bloqueado' ? 'Bloqueada' : 'Inactiva'}
+                />
+              </dl>
+            ) : (
+              <p className="nota-modal">
+                No tiene cuenta de acceso al sistema. Se le puede crear desde Usuarios → «Crear usuario».
+              </p>
+            )}
+          </PanelDePestana>
         </>
       )}
     </Modal>
-  );
-}
-
-function Dato({ titulo, valor, num }: { titulo: string; valor: string | null | undefined; num?: boolean }) {
-  return (
-    <div className="dato">
-      <dt>{titulo}</dt>
-      <dd className={valor ? (num ? 'num' : undefined) : 'vacio-dato'}>{valor || 'Sin registrar'}</dd>
-    </div>
   );
 }
 

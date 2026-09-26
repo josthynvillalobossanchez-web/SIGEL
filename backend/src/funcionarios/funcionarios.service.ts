@@ -32,14 +32,63 @@ import type {
 const EDAD_MINIMA = 15;
 
 /**
- * Permiso que hace a alguien JEFATURA posible: quien aprueba solicitudes.
- * En el catalogo sembrado lo tienen el rol Aprobador (las jefaturas),
- * Administrador (Recursos Humanos: su jefatura tambien es jefatura de su
- * equipo, y lo necesita para poder asignar el rol Aprobador) y el Super
- * Administrador (tiene todo). Tambien se puede dar como permiso individual. Se decide por permiso y no por el nombre
- * del rol, para que un rol nuevo con este permiso tambien cuente.
+ * Rol que hace a alguien JEFATURA posible (decision de Josthyn, 28/09):
+ * "quien tiene el rol Aprobador es jefatura". Se decide por el ROL y no por
+ * el permiso solicitudes.aprobar, porque ese permiso tambien lo tiene RRHH
+ * (para poder asignar el rol) y se puede dar suelto a alguien como caso
+ * especial sin que sea jefatura. Solo cuenta el rol PERMANENTE: una
+ * suplencia con fecha cubre un tiempo, no recibe personal a cargo fijo.
+ * Es un rol de sistema: no se puede renombrar (ROL_DE_SISTEMA).
  */
-export const PERMISO_PARA_APROBAR = 'solicitudes.aprobar';
+export const ROL_DE_JEFATURA = 'Aprobador';
+
+/**
+ * Condicion de "puede ser jefatura": funcionario activo con cuenta no
+ * inactiva (una cuenta bloqueada por intentos fallidos sigue contando) que
+ * tiene el rol Aprobador sin fecha de vencimiento. Al quitar un rol, la
+ * fila queda con fecha de hoy, asi que tampoco cuenta.
+ */
+const PUEDE_SER_JEFATURA: Prisma.funcionarioWhereInput = {
+  estado: 'activo',
+  usuario: {
+    is: {
+      estado: { not: 'inactivo' },
+      roles: { some: { fechaVencimiento: null, rol: { nombre: ROL_DE_JEFATURA, activo: true } } },
+    },
+  },
+};
+
+/** Campos que cada quien cambia de si mismo en "Mi cuenta" (todo lo personal menos la cedula). */
+export const CAMPOS_PERSONALES_PROPIOS = [
+  'nombre',
+  'primerApellido',
+  'segundoApellido',
+  'fechaNacimiento',
+  'profesionId',
+  'correoPersonal',
+  'correoInstitucional',
+  'telefonoPersonal',
+  'direccion',
+] as const;
+
+/** Campos laborales: los cambia solo quien tiene funcionarios.editar (RRHH), tambien los propios. */
+export const CAMPOS_LABORALES = [
+  'puestoId',
+  'departamentoId',
+  'jefaturaId',
+  'tipoNombramiento',
+  'regimenVacacionesId',
+  'fechaIngreso',
+  'numeroEmpleado',
+] as const;
+
+/** Como se edita: sobre otra persona (Funcionarios) o sobre si mismo (Mi cuenta). */
+export interface ModoDeEdicion {
+  /** true = la persona edita su propio registro desde "Mi cuenta". */
+  propio?: boolean;
+  /** Si viene, solo se aceptan estos campos (lo demas es DATOS_INVALIDOS). */
+  campos?: readonly string[];
+}
 
 /** Como se nombra cada tipo de nombramiento en pantalla y en la bitacora. */
 export const NOMBRES_DE_NOMBRAMIENTO: Record<TipoDeNombramiento, string> = {
@@ -89,6 +138,11 @@ export interface FuncionarioEnLista {
   tieneCuenta: boolean;
   /** Es el funcionario de quien consulta (no puede editarse a si mismo aqui). */
   esPropio: boolean;
+  /**
+   * Su cuenta tiene permisos que quien consulta no tiene: no puede editarlo,
+   * registrar su salida ni su reingreso (regla 3: "para arriba no").
+   */
+  tieneMasAcceso: boolean;
 }
 
 /** Ficha completa (ventana "Ver funcionario" y pagina "Editar funcionario"). */
@@ -116,7 +170,7 @@ export interface OpcionesDeFormulario {
   puestos: Referencia[];
   profesiones: Referencia[];
   regimenes: (Referencia & { descripcion: string | null })[];
-  /** Funcionarios activos que pueden ser jefatura. */
+  /** Funcionarios activos con el rol Aprobador permanente (ROL_DE_JEFATURA). */
   jefaturas: (Referencia & { puesto: string | null })[];
   tiposNombramiento: { valor: TipoDeNombramiento; texto: string }[];
 }
@@ -172,11 +226,15 @@ function nombreCompleto(f: { nombre: string; primerApellido: string; segundoApel
  *   - La cedula es el identificador permanente: se normaliza (ver cedula.ts),
  *     no se repite y no se edita.
  *   - Nadie edita su propio registro ni registra su propia salida desde
- *     aqui (FUNCIONARIO_PROPIO): los datos personales propios se cambian en
- *     "Mi cuenta" y los laborales los cambia otra persona de RRHH.
- *   - La jefatura debe ser un funcionario activo, distinto de la persona y
- *     sin ciclos (A jefe de B y B jefe de A). Sin jefatura = tope de la
- *     jerarquia (se autoaprueba).
+ *     aqui (FUNCIONARIO_PROPIO): los datos propios se cambian en "Mi
+ *     cuenta" (los laborales, solo quien tiene funcionarios.editar). Mi
+ *     cuenta reutiliza editar() con modo.propio.
+ *   - A alguien cuya cuenta tiene MAS acceso que quien actua no se le
+ *     edita, ni se le registra salida o reingreso (CUENTA_CON_MAYOR_ACCESO).
+ *     Mismo acceso o menos, si.
+ *   - La jefatura debe ser un funcionario activo con el rol Aprobador
+ *     permanente, distinto de la persona y sin ciclos (A jefe de B y B jefe
+ *     de A). Sin jefatura = tope de la jerarquia.
  *   - Solo se eligen departamentos, puestos, profesiones y regimenes
  *     ACTIVOS; si la persona ya tenia uno que despues se inactivo, lo
  *     conserva mientras no se cambie.
@@ -242,8 +300,14 @@ export class FuncionariosService {
       }),
     ]);
 
+    const conMasAcceso = await this.conMasAcceso(this.prisma, filas.map((f) => f.id), quienActua);
     return armarPagina(
-      filas.map(({ usuario, ...f }) => ({ ...f, tieneCuenta: usuario !== null, esPropio: f.id === quienActua.funcionarioId })),
+      filas.map(({ usuario, ...f }) => ({
+        ...f,
+        tieneCuenta: usuario !== null,
+        esPropio: f.id === quienActua.funcionarioId,
+        tieneMasAcceso: conMasAcceso.has(f.id),
+      })),
       total,
       pagina,
       tamano,
@@ -251,7 +315,9 @@ export class FuncionariosService {
   }
 
   async consultarUno(id: string, quienActua: UsuarioAutenticado): Promise<DetalleDeFuncionario> {
-    return this.aDetalle(await this.cargar(this.prisma, id), quienActua);
+    const fila = await this.cargar(this.prisma, id);
+    const conMasAcceso = await this.conMasAcceso(this.prisma, [id], quienActua);
+    return this.aDetalle(fila, quienActua, conMasAcceso.has(id));
   }
 
   /** Listas para los formularios: solo lo ACTIVO. */
@@ -263,7 +329,7 @@ export class FuncionariosService {
       this.prisma.profesion.findMany(soloActivos),
       this.prisma.regimenVacaciones.findMany({ where: { activo: true }, orderBy: { nombre: 'asc' }, select: { id: true, nombre: true, descripcion: true } }),
       this.prisma.funcionario.findMany({
-        where: { estado: 'activo', id: { in: [...(await this.idsQueAprueban(this.prisma))] } },
+        where: PUEDE_SER_JEFATURA,
         orderBy: [{ primerApellido: 'asc' }, { nombre: 'asc' }],
         select: { id: true, nombre: true, primerApellido: true, segundoApellido: true, puesto: { select: { nombre: true } } },
       }),
@@ -273,7 +339,7 @@ export class FuncionariosService {
       puestos,
       profesiones,
       regimenes,
-      // Solo quien puede aprobar solicitudes (ver PERMISO_PARA_APROBAR).
+      // Solo quien tiene el rol Aprobador permanente (ver ROL_DE_JEFATURA).
       jefaturas: jefaturas.map((j) => ({ id: j.id, nombre: nombreCompleto(j), puesto: j.puesto?.nombre ?? null })),
       tiposNombramiento: Object.entries(NOMBRES_DE_NOMBRAMIENTO).map(([valor, texto]) => ({ valor: valor as TipoDeNombramiento, texto })),
     };
@@ -389,16 +455,44 @@ export class FuncionariosService {
   /* Editar                                                            */
   /* ---------------------------------------------------------------- */
 
+  /**
+   * Cambia lo que venga en "datos". Dos modos:
+   *   - Desde Funcionarios (modo normal): sobre OTRA persona, y solo si su
+   *     cuenta no tiene mas acceso que quien actua (CUENTA_CON_MAYOR_ACCESO).
+   *   - Desde Mi cuenta (modo.propio): sobre si mismo; "modo.campos" limita
+   *     que se puede cambiar (datos personales, o laborales si es RRHH).
+   */
   async editar(
     id: string,
     datos: EditarFuncionarioDto,
     quienActua: UsuarioAutenticado,
     direccionIp?: string,
+    modo: ModoDeEdicion = {},
   ): Promise<DetalleDeFuncionario> {
-    this.impedirSobreSiMismo(id, quienActua, 'editar sus propios datos desde aquí. Sus datos personales se cambian en "Mi cuenta"; los laborales los cambia otra persona de Recursos Humanos');
+    if (modo.propio) {
+      if (id !== quienActua.funcionarioId) throw new ForbiddenException({ codigo: 'SIN_PERMISO', message: 'Solo puede cambiar sus propios datos desde aquí.' });
+    } else {
+      this.impedirSobreSiMismo(id, quienActua, 'editar sus propios datos desde aquí. Cámbielos en "Mi cuenta"');
+    }
+    if (modo.campos) {
+      const permitidos = new Set(modo.campos);
+      const otros = Object.keys(datos).filter((campo) => (datos as Record<string, unknown>)[campo] !== undefined && !permitidos.has(campo));
+      if (otros.length > 0) {
+        throw new BadRequestException({
+          codigo: 'DATOS_INVALIDOS',
+          message: `Desde aquí no se puede cambiar: ${otros.map((c) => ETIQUETAS[c.replace(/Id$/, '')] ?? c).join(', ')}.`,
+        });
+      }
+    }
 
     await this.prisma.$transaction(async (tx) => {
       const actual = await this.cargar(tx, id);
+      if (!modo.propio && (await this.conMasAcceso(tx, [id], quienActua)).has(id)) {
+        throw new ForbiddenException({
+          codigo: 'CUENTA_CON_MAYOR_ACCESO',
+          message: `${nombreCompleto(actual)} tiene una cuenta con permisos que usted no tiene: no puede editar sus datos. Lo debe hacer alguien con ese acceso.`,
+        });
+      }
       const cambios: Prisma.funcionarioUncheckedUpdateInput = {};
       const antes: Record<string, unknown> = {};
       const despues: Record<string, unknown> = {};
@@ -474,7 +568,7 @@ export class FuncionariosService {
       }
 
       if (Object.keys(cambios).length === 0) {
-        throw new BadRequestException({ codigo: 'SIN_CAMBIOS', message: 'No hay cambios que guardar: el funcionario ya tiene esos datos.' });
+        throw new BadRequestException({ codigo: 'SIN_CAMBIOS', message: 'No hay cambios que guardar: los datos ya son esos.' });
       }
 
       await this.verificarUnicos(
@@ -499,7 +593,9 @@ export class FuncionariosService {
           direccionIp,
           datosAnteriores: antes,
           datosNuevos: despues,
-          descripcion: `Actualizó los datos de ${nombreCompleto(actual)}: ${lista.join(', ')}.`,
+          descripcion: modo.propio
+            ? `Actualizó sus propios datos: ${lista.join(', ')}.`
+            : `Actualizó los datos de ${nombreCompleto(actual)}: ${lista.join(', ')}.`,
         },
         tx,
       );
@@ -593,6 +689,12 @@ export class FuncionariosService {
       if (actual.estado === 'activo') {
         throw new BadRequestException({ codigo: 'FUNCIONARIO_YA_ACTIVO', message: `${nombre} ya está activo.` });
       }
+      if ((await this.conMasAcceso(tx, [id], quienActua)).has(id)) {
+        throw new ForbiddenException({
+          codigo: 'CUENTA_CON_MAYOR_ACCESO',
+          message: `${nombre} tiene una cuenta con permisos que usted no tiene: el reingreso lo debe registrar alguien con ese acceso.`,
+        });
+      }
       if (actual.fechaSalida && ingreso < actual.fechaSalida) {
         throw new BadRequestException({
           codigo: 'FECHA_INGRESO_NO_VALIDA',
@@ -641,7 +743,7 @@ export class FuncionariosService {
     return fila;
   }
 
-  private aDetalle(f: FilaDeDetalle, quienActua: UsuarioAutenticado): DetalleDeFuncionario {
+  private aDetalle(f: FilaDeDetalle, quienActua: UsuarioAutenticado, tieneMasAcceso: boolean): DetalleDeFuncionario {
     return {
       id: f.id,
       cedula: f.cedula,
@@ -668,6 +770,7 @@ export class FuncionariosService {
       cuenta: f.usuario,
       tieneCuenta: f.usuario !== null,
       esPropio: f.id === quienActua.funcionarioId,
+      tieneMasAcceso,
       fechaRegistro: f.fechaRegistro.toISOString(),
     };
   }
@@ -771,8 +874,8 @@ export class FuncionariosService {
   }
 
   /**
-   * La jefatura: un funcionario activo, con cuenta activa que pueda aprobar
-   * solicitudes (PERMISO_PARA_APROBAR), que no sea la misma persona y que
+   * La jefatura: un funcionario activo con el rol Aprobador permanente
+   * (PUEDE_SER_JEFATURA), que no sea la misma persona y que
    * no cree un ciclo (que la jefatura elegida no dependa, directa o
    * indirectamente, de esta persona).
    */
@@ -787,10 +890,10 @@ export class FuncionariosService {
     if (!jefatura || jefatura.estado !== 'activo') {
       throw new BadRequestException({ codigo: 'JEFATURA_NO_VALIDA', message: 'La jefatura elegida no existe o ya no trabaja en la Municipalidad.' });
     }
-    if (!(await this.idsQueAprueban(tx)).has(jefatura.id)) {
+    if (!(await tx.funcionario.findFirst({ where: { id: jefatura.id, ...PUEDE_SER_JEFATURA }, select: { id: true } }))) {
       throw new BadRequestException({
         codigo: 'JEFATURA_NO_VALIDA',
-        message: `${nombreCompleto(jefatura)} no puede ser jefatura: su cuenta no tiene permiso para aprobar solicitudes (rol Aprobador).`,
+        message: `${nombreCompleto(jefatura)} no puede ser jefatura: no tiene el rol ${ROL_DE_JEFATURA} permanente (las suplencias con fecha no cuentan).`,
       });
     }
     if (funcionarioId) {
@@ -812,15 +915,21 @@ export class FuncionariosService {
   }
 
   /**
-   * Ids de los funcionarios ACTIVOS cuya cuenta ACTIVA tiene hoy el permiso
-   * de aprobar (por un rol vigente o por un permiso individual). Se calcula
-   * igual que el guard de sesion (resolverAcceso), asi que una suplencia con
-   * fecha cuenta mientras este vigente.
+   * De los funcionarios indicados, los que tienen una cuenta con permisos
+   * que quien actua no tiene (regla 3 de reparto de acceso: "no se toca a
+   * quien tiene mas acceso"). Mismo calculo que el guard de sesion
+   * (resolverAcceso con roles y permisos vigentes). Igual o menos acceso =
+   * se puede tocar.
    */
-  private async idsQueAprueban(cliente: Prisma.TransactionClient | PrismaService): Promise<Set<string>> {
+  private async conMasAcceso(
+    cliente: Prisma.TransactionClient | PrismaService,
+    funcionarioIds: string[],
+    quienActua: UsuarioAutenticado,
+  ): Promise<Set<string>> {
+    if (funcionarioIds.length === 0) return new Set();
     const vigente = soloVigentes();
     const cuentas = await cliente.usuario.findMany({
-      where: { estado: 'activo', funcionario: { is: { estado: 'activo' } } },
+      where: { funcionarioId: { in: funcionarioIds } },
       select: {
         funcionarioId: true,
         roles: {
@@ -831,7 +940,9 @@ export class FuncionariosService {
       },
     });
     return new Set(
-      cuentas.filter((c) => resolverAcceso(c.roles, c.permisos).permisos.includes(PERMISO_PARA_APROBAR)).map((c) => c.funcionarioId!),
+      cuentas
+        .filter((c) => permisosQueFaltan(quienActua.permisos, resolverAcceso(c.roles, c.permisos).permisos).length > 0)
+        .map((c) => c.funcionarioId!),
     );
   }
 
@@ -849,21 +960,8 @@ export class FuncionariosService {
     direccionIp: string | undefined,
     funcionarioId: string,
   ): Promise<void> {
-    const vigente = soloVigentes();
-    const cuenta = await tx.usuario.findUniqueOrThrow({
-      where: { id: usuarioId },
-      select: {
-        correo: true,
-        estado: true,
-        roles: {
-          where: vigente,
-          select: { rol: { select: { nombre: true, activo: true, permisos: { select: { permiso: { select: { clave: true, activo: true } } } } } } },
-        },
-        permisos: { where: vigente, select: { otorgado: true, permiso: { select: { clave: true, activo: true } } } },
-      },
-    });
-    const { permisos } = resolverAcceso(cuenta.roles, cuenta.permisos);
-    if (permisosQueFaltan(quienActua.permisos, permisos).length > 0) {
+    const cuenta = await tx.usuario.findUniqueOrThrow({ where: { id: usuarioId }, select: { correo: true, estado: true } });
+    if ((await this.conMasAcceso(tx, [funcionarioId], quienActua)).has(funcionarioId)) {
       throw new ForbiddenException({
         codigo: 'CUENTA_CON_MAYOR_ACCESO',
         message: `${nombre} tiene una cuenta con permisos que usted no tiene. La salida la debe registrar alguien con ese acceso, para que la cuenta se inactive a la vez.`,

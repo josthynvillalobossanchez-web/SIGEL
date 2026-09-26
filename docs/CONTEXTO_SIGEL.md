@@ -666,12 +666,14 @@ Estas ya están validadas. **Trátelas como verdad** salvo que Josthyn diga lo c
 
 ### Decisiones del 27/09/2026 (Josthyn)
 
-- **Jefatura inmediata = quien puede aprobar solicitudes** (permiso `solicitudes.aprobar`). Lo
-  tienen el rol **Aprobador** (las jefaturas), **Administrador** (RRHH: no para aprobar en el día
-  a día, sino para poder asignar el rol Aprobador en una emergencia o al crear el funcionario,
-  por la regla "solo se da lo que se tiene") y el Super Administrador. También se puede dar como
-  permiso individual. En el formulario solo aparecen esas personas; el backend lo revisa
-  (`JEFATURA_NO_VALIDA`).
+- **Permiso `solicitudes.aprobar`**: lo tienen el rol **Aprobador** (las jefaturas),
+  **Administrador** (RRHH: no para aprobar en el día a día, sino para poder asignar el rol
+  Aprobador en una emergencia o al crear el funcionario, por la regla "solo se da lo que se
+  tiene") y el Super Administrador. Se puede dar suelto como caso especial.
+- **Jefatura inmediata = rol Aprobador PERMANENTE** (corregido el 28/09; no se decide por el
+  permiso). Las suplencias con fecha no cuentan. Quien tiene solo el permiso suelto no es
+  jefatura. La jefa de RRHH, para ser jefatura de su equipo, lleva también el rol Aprobador. En
+  el formulario solo aparecen esas personas; el backend lo revisa (`JEFATURA_NO_VALIDA`).
 - **Todo usuario puede hacer solicitudes** (`solicitudes.crear`, en el autoservicio de
   Solicitante; por lo tanto también en Aprobador y Administrador): vacaciones, permisos,
   incapacidades con comprobante, capacitaciones que chocan con el horario. Es la razón principal
@@ -682,12 +684,30 @@ Estas ya están validadas. **Trátelas como verdad** salvo que Josthyn diga lo c
   seguidas ("iiii"). Ningún nombre real cumple eso.
 - **Teléfono de Costa Rica**: 8 dígitos; empieza en 2 o 4 (fijo), 5 (servicios especiales/IP) o
   6, 7, 8 (móvil). Se acepta con espacios, guion o +506 y se guarda como `8712-4408`.
-- **Mi cuenta** muestra todo: tarjeta con la cuenta, pestaña de datos personales (la fecha de
-  nacimiento en solo lectura), pestaña de **datos laborales** (solo lectura) y acceso. Pestañas
-  centradas.
+- **Mi cuenta** muestra todo: tarjeta con la cuenta, pestaña de datos personales, pestaña de
+  **datos laborales** y acceso. Pestañas centradas. (Quién edita qué: ver decisiones del 28/09.)
 - **Menú**: las subsecciones fijas (Crear usuario, Crear rol…) se ven solo en la sección actual
   o si se despliegan con la flecha; al cambiar de sección se pliegan las otras. Las de contexto
   (Editar …) siguen apareciendo solo en su página. Las secciones nunca se ocultan.
+
+### Decisiones del 28/09/2026 (Josthyn)
+
+- **Datos personales propios**: cada quien (con `perfilPropio.editar`) cambia en Mi cuenta todo
+  lo personal **menos la cédula** (nombre, apellidos, fecha de nacimiento, profesión, contacto).
+  La cédula la corrige RRHH desde Funcionarios.
+- **Datos laborales**: todos los VEN en Mi cuenta; solo quien tiene `funcionarios.editar` (RRHH)
+  los cambia, **también los suyos, desde Mi cuenta** (no tiene sentido pedirle a otra persona de
+  RRHH). Desde Funcionarios nadie edita su propio registro (`FUNCIONARIO_PROPIO`).
+- **"Para arriba no"**: en Funcionarios se edita, se registra salida o reingreso solo a quien
+  tiene **igual o menos acceso** (`CUENTA_CON_MAYOR_ACCESO`). La lista y la ficha lo marcan
+  (`tieneMasAcceso`) y el botón explica por qué está bloqueado.
+- **Todos los datos en todos lados**: "Datos personales" y "Datos laborales" muestran todo lo
+  guardado, igual en Mi cuenta, en la ficha de Funcionarios y en Ver usuario (misma vista:
+  `paginas/funcionarios/DatosDeFuncionario.tsx`). En Ver usuario solo si quien mira tiene
+  `funcionarios.ver`.
+- **Quién ve Funcionarios y Usuarios**: RRHH y administradores. **Aprobador solo ve funcionarios
+  (no cambiar)**. Solicitante no ve ninguno. **Consulta** (Auditoría Interna) se deja como está:
+  ve funcionarios, expedientes y usuarios, sin editar.
 
 ### Convenciones de la base de datos
 

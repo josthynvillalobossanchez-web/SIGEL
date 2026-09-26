@@ -31,6 +31,8 @@ export interface FuncionarioEnLista {
   tieneCuenta: boolean;
   /** Es el funcionario de quien mira: no se edita a si mismo aqui. */
   esPropio: boolean;
+  /** Su cuenta tiene permisos que quien mira no tiene: no se le edita, ni salida ni reingreso. */
+  tieneMasAcceso: boolean;
 }
 
 /** GET /funcionarios/:id */

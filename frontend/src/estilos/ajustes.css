@@ -395,3 +395,38 @@ tr[data-resaltada="si"] td { animation: resaltar 2.4s ease-out; }
 /* Dato que se ve pero no se edita aqui (p. ej. la fecha de nacimiento). */
 input.solo-lectura { background: var(--neutro-bg); color: var(--texto-sec); cursor: default; }
 .mc-centro .panel-paso { padding-top: 14px; padding-bottom: 2px; }
+
+/* Vistas de solo lectura de los datos de un funcionario (DatosDeFuncionario.tsx):
+   4 columnas en paginas, 3 en ventanas ("compacto"); la direccion ocupa la fila. */
+.info-rejilla.vista-datos { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px 20px; padding: 18px 22px; }
+.info-rejilla.vista-datos.compacto { grid-template-columns: repeat(3, minmax(0, 1fr)); padding: 4px 0; }
+.info-rejilla.vista-datos .ancho-completo { grid-column: 1 / -1; }
+@media (max-width: 900px) {
+  .info-rejilla.vista-datos, .info-rejilla.vista-datos.compacto { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 520px) {
+  .info-rejilla.vista-datos, .info-rejilla.vista-datos.compacto { grid-template-columns: 1fr; }
+}
+/* Mi cuenta > Datos laborales: datos que no se editan ahi (estado y personal a cargo). */
+.campo.mc-fijos { flex-direction: row; gap: 28px; margin: 0; }
+.mc-fijos dt { font-size: 13.5px; font-weight: 600; margin-bottom: 8px; }
+.mc-fijos dd { margin: 0; font-size: 15px; font-weight: 600; }
+
+/* Mi cuenta: tarjeta de perfil un poco mas compacta (misma estructura del
+   prototipo) y campos mas juntos, para que cada pestana quepa sin scroll a
+   1366x768 ahora que ahi se editan todos los datos. */
+@media (min-width: 1100px) {
+  .perfil.mc-perfil { padding-top: 14px; padding-bottom: 14px; }
+  .perfil.mc-perfil .perfil-foto { width: 72px; height: 72px; font-size: 24px; }
+  .perfil.mc-perfil .perfil-rapido { margin-bottom: -14px; margin-top: 14px; }
+  .perfil.mc-perfil .perfil-rapido div { padding-top: 8px; padding-bottom: 8px; }
+  .mc-centro .mc-campos .campo { margin-bottom: 10px; }
+}
+@media (min-width: 1100px) {
+  .perfil.mc-perfil .perfil-foto .cambiar { width: 28px; height: 28px; right: -4px; bottom: -4px; }
+}
+/* En celular las pestanas de Mi cuenta no caben: se alinean al inicio para
+   que se puedan deslizar sin que la primera quede cortada. */
+@media (max-width: 700px) {
+  .mc-centro > .tabs { justify-content: flex-start; }
+}

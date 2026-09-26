@@ -200,7 +200,7 @@ export function ListaDeFuncionarios() {
               <tbody>
                 {resultado.datos.map((f) => {
                   const nombre = nombreCompleto(f);
-                  const salida = motivoParaSalida(f.esPropio, tienePermisos);
+                  const salida = motivoParaSalida(f, tienePermisos);
                   return (
                     <tr
                       key={f.id}
@@ -235,7 +235,7 @@ export function ListaDeFuncionarios() {
                           icono="editar"
                           texto="Editar funcionario"
                           sobre={nombre}
-                          bloqueadoPor={motivoParaEditar(f.esPropio, tienePermisos)}
+                          bloqueadoPor={motivoParaEditar(f, tienePermisos)}
                           alHacerClic={() => navegar(`/funcionarios/${f.id}/editar`)}
                         />
                         {f.estado === 'activo' ? (
@@ -280,7 +280,7 @@ export function ListaDeFuncionarios() {
       {verId && !ventana && (
         <ModalFicha
           funcionarioId={verId}
-          bloqueoEditar={(f) => motivoParaEditar(f.esPropio, tienePermisos)}
+          bloqueoEditar={(f) => motivoParaEditar(f, tienePermisos)}
           alCerrar={() => cambiar({ ver: '' })}
           alEditar={() => navegar(`/funcionarios/${verId}/editar`)}
         />

@@ -60,11 +60,12 @@ const PERMISOS: { clave: string; modulo: string; descripcion: string }[] = [
   // ya porque deciden cosas de este sprint (decision de Josthyn, 27/09):
   //   - solicitudes.crear: lo mas basico; lo tiene TODA cuenta (va en el
   //     autoservicio del Solicitante, y por eso en Aprobador y Administrador).
-  //   - solicitudes.aprobar: quien lo tiene puede ser JEFATURA INMEDIATA.
-  //     Lo tienen las jefaturas (rol Aprobador) y Recursos Humanos
-  //     (Administrador), que ademas lo necesita para poder asignar el rol
-  //     Aprobador ("solo se da lo que se tiene"). Tambien se puede conceder
-  //     a una persona como permiso individual.
+  //   - solicitudes.aprobar: aprobar o rechazar solicitudes. Lo tienen las
+  //     jefaturas (rol Aprobador) y Recursos Humanos (Administrador), que
+  //     lo necesita para poder asignar el rol Aprobador ("solo se da lo que
+  //     se tiene"). Se puede conceder suelto a alguien como caso especial.
+  //     OJO: JEFATURA INMEDIATA no se decide por este permiso sino por el
+  //     ROL Aprobador permanente (ver ROL_DE_JEFATURA en funcionarios).
   { clave: 'solicitudes.crear', modulo: 'solicitudes', descripcion: 'Hacer solicitudes propias: vacaciones, permisos, incapacidades y capacitaciones' },
   {
     clave: 'solicitudes.aprobar',

@@ -7,12 +7,17 @@
  * acceso que el suyo.
  *
  * La informacion va en pestanas para no tener que bajar:
- *   Resumen  | Roles (vigentes y vencidos) | Permisos (excepciones y total)
+ *   Resumen | Datos personales | Datos laborales | Roles | Permisos
+ * Los datos personales y laborales son los del funcionario de la cuenta
+ * (mismas vistas que Funcionarios y Mi cuenta); se piden aparte y solo si
+ * quien mira tiene funcionarios.ver (son datos personales).
  */
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router';
 import { textoDelError } from '../../api/cliente';
 import { consultarCuenta, type DetalleDeCuenta } from '../../api/usuarios';
+import { consultarFuncionario, type DetalleDeFuncionario } from '../../api/funcionarios';
+import { DatosLaboralesVista, DatosPersonalesVista } from '../funcionarios/DatosDeFuncionario';
 import { useSesion } from '../../sesion/SesionProveedor';
 import { Modal } from '../../componentes/Modal';
 import { Mensaje } from '../../componentes/Mensaje';
@@ -38,12 +43,32 @@ export function ModalVerUsuario({
   const [cuenta, setCuenta] = useState<DetalleDeCuenta | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [pestana, setPestana] = useState('resumen');
+  const puedeVerFuncionarios = tienePermisos('funcionarios.ver');
+  const [ficha, setFicha] = useState<DetalleDeFuncionario | null>(null);
+  const [errorFicha, setErrorFicha] = useState<string | null>(null);
 
   useEffect(() => {
     consultarCuenta(usuarioId)
       .then(setCuenta)
       .catch((e) => setError(textoDelError(e)));
   }, [usuarioId]);
+
+  // Datos del funcionario de la cuenta (si tiene y si quien mira puede verlos).
+  const funcionarioId = cuenta?.funcionario?.id;
+  useEffect(() => {
+    if (!funcionarioId || !puedeVerFuncionarios) return;
+    consultarFuncionario(funcionarioId)
+      .then(setFicha)
+      .catch((e) => setErrorFicha(textoDelError(e)));
+  }, [funcionarioId, puedeVerFuncionarios]);
+
+  /** Contenido de las pestanas de datos del funcionario. */
+  function datosDelFuncionario(vista: (f: DetalleDeFuncionario) => React.ReactNode) {
+    if (!puedeVerFuncionarios) return <Mensaje tipo="info">Su cuenta no tiene permiso para ver los datos de los funcionarios.</Mensaje>;
+    if (errorFicha) return <Mensaje tipo="error">{errorFicha}</Mensaje>;
+    if (!ficha) return <p style={{ color: 'var(--texto-sec)' }}>Cargando…</p>;
+    return vista(ficha);
+  }
 
   const bloqueo = cuenta ? motivoDeBloqueo('editar', cuenta.motivoNoModificable, tienePermisos) : null;
   const vigentes = cuenta?.roles.filter((r) => r.vigente) ?? [];
@@ -66,6 +91,12 @@ export function ModalVerUsuario({
               alCambiar={setPestana}
               opciones={[
                 { id: 'resumen', texto: 'Resumen' },
+                ...(cuenta.funcionario
+                  ? [
+                      { id: 'personales', texto: 'Datos personales' },
+                      { id: 'laborales', texto: 'Datos laborales' },
+                    ]
+                  : []),
                 { id: 'roles', texto: 'Roles', cuenta: vigentes.length },
                 { id: 'permisos', texto: 'Permisos', cuenta: cuenta.permisosEfectivos.length },
               ]}
@@ -151,6 +182,17 @@ export function ModalVerUsuario({
               </div>
             </dl>
           </PanelDePestana>
+
+          {cuenta.funcionario && (
+            <>
+              <PanelDePestana id="personales" actual={pestana} prefijo={prefijo}>
+                {datosDelFuncionario((f) => <DatosPersonalesVista f={f} compacto />)}
+              </PanelDePestana>
+              <PanelDePestana id="laborales" actual={pestana} prefijo={prefijo}>
+                {datosDelFuncionario((f) => <DatosLaboralesVista f={f} compacto />)}
+              </PanelDePestana>
+            </>
+          )}
 
           <PanelDePestana id="roles" actual={pestana} prefijo={prefijo}>
             <p className="nota-modal">

@@ -55,6 +55,7 @@ import {
 } from '../../utilidades/texto';
 import { ContrasenaTemporal } from '../usuarios/ContrasenaTemporal';
 import { aPedidos, revisarRoles, SelectorDeRoles, type RolesMarcados } from '../usuarios/SelectorDeRoles';
+import { Lista, Texto } from '../../componentes/CamposDeFormulario';
 import { motivoParaEditar } from './motivos';
 
 const LISTA = '/funcionarios';
@@ -116,7 +117,7 @@ export function PaginaEditarFuncionario() {
       })
       .catch((e) => setError(textoDelError(e)));
   }, [id]);
-  const bloqueo = detalle ? motivoParaEditar(detalle.esPropio, tienePermisos) : null;
+  const bloqueo = detalle ? motivoParaEditar(detalle, tienePermisos) : null;
   if (!opciones || !detalle || bloqueo) {
     return <Cargando titulo="Editar funcionario" error={error} bloqueo={bloqueo} detalle={detalle} />;
   }
@@ -543,8 +544,8 @@ function FormularioDeFuncionario({ opciones, detalle }: { opciones: OpcionesDeFo
                 vacio="— Sin jefatura: tope de la jerarquía —"
                 ayuda={
                   listas.jefaturas.length === 0
-                    ? 'Todavía nadie puede ser jefatura: se necesita una cuenta con el rol Aprobador (se asigna en Usuarios).'
-                    : 'Solo aparecen quienes pueden aprobar solicitudes (rol Aprobador). Sin jefatura, aprueba las propias.'
+                    ? 'Todavía nadie puede ser jefatura: se necesita una cuenta con el rol Aprobador permanente (se asigna en Usuarios).'
+                    : 'Solo aparecen quienes tienen el rol Aprobador permanente (las suplencias con fecha no cuentan).'
                 }
               />
               <div className="campo">
@@ -728,84 +729,6 @@ const ETIQUETAS: Record<keyof Formulario, string> = {
 /* ------------------------------------------------------------------ */
 /* Piezas pequenas del formulario                                      */
 /* ------------------------------------------------------------------ */
-
-function Texto(props: {
-  id: string;
-  etiqueta: string;
-  valor: string;
-  alCambiar: (v: string) => void;
-  obligatorio?: boolean;
-  max: number;
-  tipo?: string;
-  placeholder?: string;
-  ayuda?: string;
-  /** Al salir del campo (p. ej. para dar formato al telefono). */
-  alSalir?: () => void;
-}) {
-  return (
-    <div className="campo">
-      <label htmlFor={props.id}>
-        {props.etiqueta} {props.obligatorio && <span className="obligatorio">*</span>}
-      </label>
-      <input
-        id={props.id}
-        type={props.tipo ?? 'text'}
-        value={props.valor}
-        onChange={(e) => props.alCambiar(e.target.value)}
-        onBlur={props.alSalir}
-        maxLength={props.max}
-        placeholder={props.placeholder}
-        aria-required={props.obligatorio || undefined}
-        aria-describedby={props.ayuda ? `${props.id}-ayuda` : undefined}
-        autoComplete="off"
-      />
-      {props.ayuda && (
-        <span className="ayuda" id={`${props.id}-ayuda`}>
-          {props.ayuda}
-        </span>
-      )}
-    </div>
-  );
-}
-
-function Lista(props: {
-  id: string;
-  etiqueta: string;
-  valor: string;
-  alCambiar: (v: string) => void;
-  opciones: { id: string; nombre: string }[];
-  obligatorio?: boolean;
-  /** Texto de la opcion vacia; sin esto, la opcion vacia dice "Seleccione...". */
-  vacio?: string;
-  ayuda?: string;
-}) {
-  return (
-    <div className="campo">
-      <label htmlFor={props.id}>
-        {props.etiqueta} {props.obligatorio && <span className="obligatorio">*</span>}
-      </label>
-      <select
-        id={props.id}
-        value={props.valor}
-        onChange={(e) => props.alCambiar(e.target.value)}
-        aria-required={props.obligatorio || undefined}
-        aria-describedby={props.ayuda ? `${props.id}-ayuda` : undefined}
-      >
-        <option value="">{props.vacio ?? 'Seleccione…'}</option>
-        {props.opciones.map((o) => (
-          <option key={o.id} value={o.id}>
-            {o.nombre}
-          </option>
-        ))}
-      </select>
-      {props.ayuda && (
-        <span className="ayuda" id={`${props.id}-ayuda`}>
-          {props.ayuda}
-        </span>
-      )}
-    </div>
-  );
-}
 
 function Bloque({ titulo, children }: { titulo: string; children: React.ReactNode }) {
   return (
