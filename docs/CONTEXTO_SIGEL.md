@@ -1,6 +1,6 @@
-# SIGEL — Documento de contexto para continuar el proyecto en un chat nuevo
+# SINERGIA — Documento de contexto para continuar el proyecto en un chat nuevo
 
-**Última actualización:** 16 de setiembre de 2026
+**Última actualización:** 30 de setiembre de 2026 (nombre SINERGIA, servidor, correo, jefatura)
 **Archivo:** `C:\Users\josthyn\Documents\Proyectos\SIGEL\docs\CONTEXTO_SIGEL.md`
 
 > Este documento existe para que un chat nuevo con Claude pueda retomar el proyecto sin tener
@@ -18,7 +18,11 @@
 | **Supervisor** | Joseph Granda Vargas — Jefe del Departamento de Tecnologías de la Informática y Telecomunicaciones |
 | **Equipo de TI de la Muni** | 2 personas. Toda decisión técnica se toma favoreciendo **mantenibilidad sobre elegancia**. |
 
-**SIGEL** = *Sistema Integral de Gestión Laboral*. Sustituye el manejo en papel y Excel del
+**SINERGIA** = *Sistema Integrado de Nómina, Expediente, Recursos y Gestión de Incapacidades y
+Ausencias* (nombre que dio Joseph el 30/09/2026; antes se llamaba **SIGEL**, Sistema Integral de
+Gestión Laboral). Por ahora conservan el nombre viejo la carpeta `Proyectos\SIGEL`, el repositorio
+de GitHub, la base de datos `sigel`, el contenedor `sigel-mysql` y los nombres de archivo de los
+documentos (`CONTEXTO_SIGEL.md`, `SIGEL_BaseDatos_v3.dbml`...). Sustituye el manejo en papel y Excel del
 expediente laboral, vacaciones, incapacidades, horas extra y reclutamiento (Talent Pool).
 
 ---
@@ -61,14 +65,17 @@ expediente laboral, vacaciones, incapacidades, horas extra y reclutamiento (Tale
    - ✔ **Catálogos** de departamentos, puestos y profesiones (27/09, commit `c05a357`).
    - ✔ **Funcionarios** (27/09): lista, ficha resumida, "Registrar funcionario" por pasos (con
      "crear también su cuenta"), "Editar funcionario", salida y reingreso.
-   - **Expediente**: ficha con pestañas e historial laboral.
-   - Enlaces entre módulos, inicio, menú y documentación.
+   - ✔ **Expediente** (28/09, commit `531ca38`): mi expediente, expediente de RRHH, historial laboral.
+   - ✔ **Enlaces entre módulos, Inicio y limpieza del frontend** (29/09, commit `2929ee4`).
+   - ✔ **Preparación del servidor** (30/09): registros en archivo, HTTPS directo, interfaz servida
+     por el backend, TLS de la base con CA propia (GUIA, sección 10).
 3. **Épica 3**: tipos de documento, subir y descargar, baja lógica y restauración.
 4. **Informe de Avance Intermedio** (`Proyectos\Informe_Avance_Intermedio_SIGEL.docx`): las
    capturas de Jira/GitHub, las minutas y el criterio de Joseph los aporta Josthyn.
 
-**Pendientes externos**, que dependen de Joseph o de TI: confirmar que habrá HTTPS, los datos del
-servidor de correo, y si la cuenta de Informática se asocia a Joseph.
+**Pendientes externos**, que dependen de Joseph o de TI: los datos del servidor de correo, y si la
+cuenta de Informática se asocia a Joseph. Todo lo del servidor (HTTPS, dominio, proxy, TLS de la
+base, bitácora) quedó respondido el 30/09 (§6, "Decisiones del 30/09/2026").
 
 ### Entorno de desarrollo (armado el 17/09/2026)
 
@@ -76,7 +83,7 @@ servidor de correo, y si la cuenta de Informática se asocia a Joseph.
   durante todo el desarrollo; React/Vite y NestJS corren localmente contra ese contenedor.
   Los sprints se desarrollan, prueban y versionan normalmente. **Cuando la arquitectura esté
   estable, antes de las pruebas finales y del despliegue**, se dockerizan frontend y backend
-  para levantar todo SIGEL con Docker Compose. No agregar complejidad de Docker antes de eso.
+  para levantar todo SINERGIA con Docker Compose. No agregar complejidad de Docker antes de eso.
 - **Monorepo:** `SIGEL\backend\` (NestJS) y `SIGEL\frontend\` (React + Vite), un solo
   repositorio, para que TI lo mantenga en un solo lugar.
 - **Versiones reales verificadas (setiembre 2026):** NestJS 12, Prisma 7.10, TypeScript 6,
@@ -105,7 +112,7 @@ servidor de correo, y si la cuenta de Informática se asocia a Joseph.
   expone el puerto **3307**. Las credenciales de MySQL se regeneraron el 17/09 con
   `docker compose down -v` porque la contraseña anterior se había perdido; viven únicamente en
   los `.env`, que no se versionan.
-- **Ramas:** `main` = SIGEL completo. Cuando el expediente esté terminado (antes del Talent
+- **Ramas:** `main` = SINERGIA completo. Cuando el expediente esté terminado (antes del Talent
   Pool) se saca la rama **`piscinas`** desde `main`, sin Talent Pool, para el proyecto de las
   piscinas municipales.
 
@@ -310,7 +317,8 @@ Decisiones de funcionarios (27/09; se pueden revertir):
   y hasta un año hacia adelante. Las fechas de calendario viajan como `AAAA-MM-DD` (esto corrigió
   además "Mi cuenta", que mostraba la fecha de ingreso un día antes).
 - **Obligatorios** (como el prototipo): cédula, nombre, primer apellido, correo personal, puesto,
-  departamento, nombramiento, régimen y fecha de ingreso. Código de empleado opcional y único.
+  departamento, nombramiento, régimen y fecha de ingreso. (El código de empleado se eliminó el 30/09:
+  la Municipalidad no lo usa.)
 - **Jefatura**: un funcionario activo, distinto de la persona y **sin ciclos**. Sin jefatura = tope.
 - **Cuenta desde el registro**: el correo de ingreso es el institucional; sin él, la casilla se
   bloquea y la cuenta se crea después desde Usuarios. Se propone el rol Solicitante.
@@ -560,12 +568,11 @@ Estas ya están validadas. **Trátelas como verdad** salvo que Josthyn diga lo c
   documentos agregados o dados de baja en su expediente. Cada entrada muestra fecha, qué
   cambió, de qué valor a cuál y quién lo hizo. Se alimenta de `bitacoraCambio` filtrada por ese
   funcionario, sin tabla aparte. Si Joseph pide otra cosa, se ajusta.
-- **Sesión sobre HTTPS (asumido, pendiente de confirmar)**: se programa asumiendo que SIGEL se
-  sirve por HTTPS, aunque sea dentro de la red interna. Por lo tanto el token de sesión viaja
+- **Sesión sobre HTTPS (confirmado por Joseph el 30/09)**: SINERGIA se sirve por HTTPS, aunque
+  sea dentro de la red interna. Por lo tanto el token de sesión viaja
   en una **cookie `httpOnly`, `Secure` y `SameSite`**, no en `localStorage`, de modo que un XSS
   no pueda robarla. En desarrollo la marca `Secure` se apaga por `.env`, porque `localhost` no
-  usa HTTPS. Si Joseph confirmara que no hay certificado, habría que rehacer el manejo de
-  sesión completo.
+  usa HTTPS.
 
 **Decididas por Josthyn el 24/09/2026:**
 
@@ -608,7 +615,7 @@ Estas ya están validadas. **Trátelas como verdad** salvo que Josthyn diga lo c
   ve pero no los toca. RRHH (rol Administrador) y los administradores pueden editar todo.
 - **Documentos propios en autoservicio (decisión 16/09/2026)**: el funcionario puede subir
   documentos a su expediente y, **solo sobre los que él mismo subió**, editar el título y el tipo y
-  darlos de baja. Los que subió RRHH o que generó SIGEL solo los puede ver. Ver §9.
+  darlos de baja. Los que subió RRHH o que generó SINERGIA solo los puede ver. Ver §9.
 - **Tope de la jerarquía**: quien no tiene jefatura arriba, se autoaprueba.
 - **Carga inicial de datos**: la hace la Municipalidad, no el sistema.
 - **Accesos fallidos**: no se auditan.
@@ -617,7 +624,9 @@ Estas ya están validadas. **Trátelas como verdad** salvo que Josthyn diga lo c
   los documentos del candidato al expediente nuevo.
 - **Cancelar una solicitud**: solo si la jefatura aún no la ha leído; si ya la leyó, se maneja por
   notas/observaciones.
-- **Horas extra**: Joseph dijo *"trabajalo como lo más lógico que consideres tú"*. Sigue abierto.
+- **Horas extra**: Joseph dijo *"trabajalo como lo más lógico que consideres tú"*. Resuelto el
+  30/09: es **solo un registro**. Quien hace horas extra le avisa a RRHH y RRHH las registra; sin
+  solicitud ni aprobación en el sistema, por ahora.
 - **Tipos de nombramiento**: 3 — en propiedad, interino, contratación por servicios.
 - **Incapacidades**: `tipoIncapacidad` es tabla escalable (no enum). Ninguna incapacidad afecta
   el cálculo de vacaciones.
@@ -631,7 +640,7 @@ Estas ya están validadas. **Trátelas como verdad** salvo que Josthyn diga lo c
   institucional, se usa el personal — por eso el correo personal es obligatorio.
 - **Feriados**: se cargan por año y son editables.
 - **Cambio de jefatura**: mueve las solicitudes pendientes a la jefatura nueva.
-- **Liquidación**: queda fuera del alcance de SIGEL.
+- **Liquidación**: queda fuera del alcance de SINERGIA.
 - **Escalabilidad**: `profesion`, `tipoIncapacidad` y `regimenVacaciones` son tablas catálogo
   editables. `tipoSalida` e `institucion` quedan como texto plano.
 
@@ -728,6 +737,59 @@ Estas ya están validadas. **Trátelas como verdad** salvo que Josthyn diga lo c
   laborales (de qué a qué y quién), salida y reingreso. Los cambios de datos personales no se
   muestran ahí.
 
+### Decisiones del 30/09/2026 (respuestas de Joseph sobre el servidor, y de Josthyn)
+
+No volver a preguntarlas. El detalle de cómo se despliega está en `GUIA_DESARROLLO.md`, sección 10.
+
+- **Servidor**: máquina virtual **Windows** de la Municipalidad; se puede instalar **Docker**.
+- **HTTPS: sí.** Dominio: un **subdominio dentro de munipalmares**, en esa misma VM, de forma
+  provisional al principio. Solo falta saber el nombre exacto, y eso se sabrá al desplegar.
+- **Sin proxy inverso.** Nginx está instalado en la VM, pero no se usa. SINERGIA se sirve solo: el
+  mismo proceso de Node atiende HTTPS (`CERTIFICADO_HTTPS`, `LLAVE_HTTPS`), la API y la interfaz
+  compilada (`RUTA_FRONTEND`), en el mismo dominio. `trust proxy` queda apagado.
+- **Base de datos con TLS**: `BD_TLS=true` y, como el certificado lo firma una autoridad propia,
+  `BD_TLS_CA`. El certificado que MySQL genera solo no sirve (no trae el nombre del servidor);
+  la GUIA dice cómo generarlo.
+- **Bitácora**: solo se consulta en el sistema, **no se exporta**. Se conserva **mínimo 3
+  meses**; SINERGIA no borra nada, así que se cumple sin programar nada.
+- **Internet**: hay, en el servidor y en las computadoras (sin internet no se entra). La fuente
+  de Google se queda.
+- **Registros (logs)** — Josthyn: en `backend/registros/` (`sigel-AAAA-MM-DD.log`, un archivo
+  por día, hora de Costa Rica), además de la consola. TI decide respaldo y limpieza; SINERGIA solo
+  documenta dónde quedan. Nunca llevan contraseñas, códigos ni la `DATABASE_URL`: el correo
+  simulado (con la contraseña temporal o el código) sale solo en la consola.
+- **Archivos del expediente** — Josthyn: en `backend/archivos/` (`RUTA_ARCHIVOS=./archivos`),
+  también en el servidor. TI los incluye en su respaldo. Fuera de git.
+
+### Decisiones del 30/09/2026, segunda parte (Joseph y Josthyn)
+
+- **Nombre**: el sistema se llama **SINERGIA** (*Sistema Integrado de Nómina, Expediente, Recursos y
+  Gestión de Incapacidades y Ausencias*). Se cambió en pantallas, correos, mensajes, registros
+  (`sinergia-AAAA-MM-DD.log`), cookie de sesión (`sinergia_sesion`) y documentación. No se cambió
+  todavía: carpeta, repositorio, base `sigel`, contenedor `sigel-mysql`, nombres de archivo de docs.
+- **Subdominio**: lo proponemos nosotros. Propuesta: **`sinergia.munipalmares.go.cr`**.
+- **Correo**: Joseph dio acceso a la cuenta de **Gmail** que la Municipalidad usa para esto (no es
+  institucional). SINERGIA envía por SMTP de Gmail con una **contraseña de aplicación** (GUIA §10.5).
+  Las credenciales solo van en el `.env` del servidor; nunca en código, git ni documentos.
+- **Súper Administradores**: se queda como está (uno puede crear otro; queda en bitácora).
+- **Cambio de contraseña en Mi cuenta**: Joseph dio el visto bueno a como está (con la actual).
+- **Código de empleado**: la Municipalidad no tiene. Se **eliminó** de la base (migración
+  `20260930200000_quitar_codigo_de_empleado`), de la API y de las pantallas.
+- **Jefatura que sale, pierde el rol Aprobador o queda con la cuenta inactiva**: no se adivina la
+  nueva. La salida se registra igual; su personal queda marcado **"Revisar jefatura"** (se conserva
+  quién era la jefatura). RRHH lo ve en Inicio ("N necesitan nueva jefatura"), en Funcionarios
+  (aviso, filtro `?jefatura=revisar` y marca en la fila y en la ficha) y la asigna con "Editar
+  funcionario". Antes de dar la salida, quitar el rol o inactivar la cuenta, la ventana avisa
+  cuántas personas tiene a cargo. Cuando exista el módulo de notificaciones, además se le notifica.
+- **Horas extra**: solo un registro que hace RRHH cuando la persona le avisa. Sin flujo de
+  aprobación por ahora.
+- **Consentimiento informado (Talent Pool)**: el texto sale de un archivo,
+  `backend/contenido/consentimiento-talent-pool.txt` (hoy un **borrador** basado en la Ley 8968).
+  Cuando Joseph entregue el original, se reemplaza el contenido de ese archivo y SINERGIA muestra
+  lo que tenga. Para la trazabilidad (Sprint 3): al arrancar, si el texto del archivo cambió, se
+  guarda como versión nueva en la tabla `consentimiento`, y cada candidato queda ligado a la
+  versión exacta que aceptó.
+
 ### Convenciones de la base de datos
 
 - Nombres en **español, camelCase**.
@@ -750,13 +812,13 @@ Las fechas del perfil no cambian; sí el contenido de cada sprint.
 | **Sprint 3** (12–23 oct) | Talent Pool · Notificaciones · Auditoría (bitácora y trazabilidad) |
 
 Objetivo de la épica Autenticación y usuarios: proporcionar un mecanismo seguro para autenticar a
-los usuarios de SIGEL y administrar usuarios, roles y permisos, garantizando que cada usuario acceda
+los usuarios de SINERGIA y administrar usuarios, roles y permisos, garantizando que cada usuario acceda
 únicamente a las funcionalidades autorizadas.
 
 **Motivo del cambio:** la universidad pidió un segundo proyecto con la misma base (expediente laboral)
 para los encargados de las **piscinas municipales**, que las administran otras personas. Se termina
 primero todo lo del expediente, se crea una **rama del proyecto sin Talent Pool** para adaptarla a
-las piscinas, y luego se hace el Talent Pool en SIGEL. En ese proyecto participan otros dos
+las piscinas, y luego se hace el Talent Pool en SINERGIA. En ese proyecto participan otros dos
 estudiantes (facturación); Josthyn se encarga del expediente. En documentos formales **no** se
 nombran a los otros estudiantes.
 
@@ -787,12 +849,20 @@ La barra lateral del prototipo lo dice al pie.
 
 | # | Pendiente | Quién decide |
 |---|---|---|
-| 2 | **Certificado HTTPS**: confirmar con Joseph que SIGEL se servirá por HTTPS. Se está programando asumiendo que sí (ver §6). | Joseph / TI |
-| 3 | **Horas extra**: Joseph delegó la definición. Falta proponerle un flujo. | Josthyn propone |
-| 4a | **Texto del consentimiento informado** del Talent Pool: lo define Joseph. | Joseph |
-| 6 | **Cambio de contraseña en "Mi cuenta"**: Josthyn decidió (25/09) dejarlo con la contraseña actual en vez del código al correo del prototipo (evita correos de más y mantiene la seguridad). **Falta mostrárselo a Joseph.** | Joseph |
-| 4b | **Datos del servidor de correo**: servidor, puerto, cuenta, TLS y autorización del dominio para envío desde la aplicación. Es lo único que falta para cerrar la recuperación de contraseña. | TI |
+| 4a | **Texto oficial del consentimiento informado** del Talent Pool. Mientras tanto hay un borrador en `backend/contenido/consentimiento-talent-pool.txt`; cuando llegue el original se reemplaza ese archivo (ver §6, 30/09 segunda parte). No bloquea nada. | Joseph |
+| 10 | **Subdominio**: se le propone a Joseph `sinergia.munipalmares.go.cr`. TI crea el registro DNS y el certificado. | Joseph / TI |
 
+>
+> Resueltos el 30/09/2026, segunda parte (§6): **correo** (cuenta de Gmail de la Municipalidad),
+> **Súper Administradores** (se queda como está), **jefatura que sale o pierde el rol** (su personal
+> queda "Revisar jefatura" y RRHH asigna la nueva), **horas extra** (solo registro de RRHH),
+> **cambio de contraseña en Mi cuenta** (Joseph lo aprobó) y **código de empleado** (se eliminó).
+>
+> Resueltos el 30/09/2026 (§6): **HTTPS** (sí), **dominio** (subdominio de munipalmares en la
+> VM Windows), **proxy inverso** (no hay), **TLS de la base** (sí), **bitácora** (solo en el
+> sistema, mínimo 3 meses), **internet** (sí), **registros y archivos** (carpetas dentro de
+> `backend/`).
+>
 > Resueltos el 16/09/2026: el **stack** quedó definido (§2), Joseph **aprobó el prototipo v4** sin
 > correcciones y `nombreUsuario` **se da por eliminado** (se entra con el correo; ya se quitó del
 > DBML v3).
@@ -855,7 +925,9 @@ personas con discapacidad visual**. Lo que ya está definido:
   nunca al usarla para entrar.
 - **Bloqueo**: 3 intentos fallidos → bloqueo temporal de 3 minutos.
 - **Bitácora**: se registra abrir un expediente y abrir o descargar un documento, con usuario,
-  fecha y documento. **No** se registran consultas generales ni accesos fallidos (T-4).
+  fecha y documento. **No** se registran consultas generales ni accesos fallidos (T-4). Solo se
+  consulta en el sistema y se conserva **mínimo 3 meses** (Joseph, 30/09).
+- **Transporte cifrado**: HTTPS hacia las personas y TLS hacia la base de datos (Joseph, 30/09).
 - **Cambios de contraseña en bitácora (decisión de Josthyn, 24/09/2026)**: sí se auditan, tanto el
   cambio voluntario como el restablecimiento con código, con usuario, fecha y dirección IP. Es el
   rastro que permite investigar un cambio no autorizado. **Nunca** se guarda la contraseña ni su
@@ -866,7 +938,7 @@ personas con discapacidad visual**. Lo que ya está definido:
 - **Baja de un documento propio (decisión 16/09/2026)** — permiso nuevo `documentos.darDeBajaPropio`.
   El funcionario puede dar de baja un documento solo si se cumplen **las tres** condiciones:
   está en su propio expediente, él lo subió (`usuarioRegistroId` = usuario actual) y no lo generó
-  SIGEL. Para él desaparece por completo (ni en el filtro "Dados de baja"); para RRHH y Súper
+  SINERGIA. Para él desaparece por completo (ni en el filtro "Dados de baja"); para RRHH y Súper
   Administrador sigue visible como "dado de baja por el funcionario", con fecha y motivo, y se puede
   restaurar. Se pide un motivo corto opcional (sugerencias: "archivo equivocado", "documento
   duplicado"), se **notifica a RRHH** y queda en bitácora. Cuando RRHH da de baja, aplica la

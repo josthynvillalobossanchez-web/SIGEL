@@ -62,13 +62,14 @@ export function ModalFicha({
     <Modal
       titulo={f ? nombreCompleto(f) : 'Funcionario'}
       foto={f ? inicialesDeFuncionario(f) : '…'}
-      descripcion={f ? `Cédula ${f.cedula}${f.numeroEmpleado ? ` · Código ${f.numeroEmpleado}` : ''}` : undefined}
+      descripcion={f ? `Cédula ${f.cedula}` : undefined}
       cabeceraExtra={
         f && (
           <>
             <div className="ficha-chips" style={{ marginTop: 8 }}>
               <ChipDeFuncionario estado={f.estado} />
               <span className="chip chip-neutro">{NOMBRES_DE_NOMBRAMIENTO[f.tipoNombramiento]}</span>
+              {f.revisarJefatura && <ChipRevisarJefatura />}
             </div>
             <div style={{ marginTop: 12 }}>
               <Pestanas
@@ -182,12 +183,22 @@ export function ModalFicha({
 /* Registrar salida                                                    */
 /* ================================================================== */
 
+/** Marca de "necesita nueva jefatura" (lista, ficha). */
+export function ChipRevisarJefatura() {
+  return (
+    <span className="chip chip-advert" data-ayuda="Su jefatura salió o dejó de ser Aprobadora. Asígnele otra con «Editar funcionario».">
+      Revisar jefatura
+    </span>
+  );
+}
+
 export function ModalSalida({
   funcionario,
   alCerrar,
   alGuardar,
 }: {
-  funcionario: { id: string; nombre: string; tieneCuenta: boolean };
+  /** cantidadACargo: personas activas que la tienen como jefatura. */
+  funcionario: { id: string; nombre: string; tieneCuenta: boolean; cantidadACargo: number };
   alCerrar: () => void;
   alGuardar: (aviso: string) => void;
 }) {
@@ -206,8 +217,11 @@ export function ModalSalida({
     setError(null);
     try {
       await registrarSalida(funcionario.id, { fechaSalida: fecha, motivoSalida: motivo.trim() });
+      const n = funcionario.cantidadACargo;
       alGuardar(
-        `Se registró la salida de ${funcionario.nombre}.` + (funcionario.tieneCuenta ? ' Su cuenta de acceso quedó inactiva.' : ''),
+        `Se registró la salida de ${funcionario.nombre}.` +
+          (funcionario.tieneCuenta ? ' Su cuenta de acceso quedó inactiva.' : '') +
+          (n > 0 ? ` ${personasACargo(n)} quedan marcadas con «Revisar jefatura»: asígneles una nueva.` : ''),
       );
     } catch (e) {
       setError(textoDelError(e));
@@ -248,6 +262,12 @@ export function ModalSalida({
             aria-required="true"
           />
         </div>
+        {funcionario.cantidadACargo > 0 && (
+          <Mensaje tipo="advert">
+            Es jefatura de {personasACargo(funcionario.cantidadACargo)}. La salida se registra igual; esas personas quedan
+            marcadas con «Revisar jefatura» para que Recursos Humanos les asigne una nueva.
+          </Mensaje>
+        )}
         {funcionario.tieneCuenta ? (
           <Mensaje tipo="advert" icono="info">
             Tiene cuenta de acceso: se inactiva en este mismo momento, para que nadie que ya se fue conserve acceso al sistema.
@@ -322,4 +342,9 @@ export function ModalReingreso({
       </div>
     </Modal>
   );
+}
+
+/** "1 persona" / "3 personas" (a cargo). */
+export function personasACargo(n: number): string {
+  return n === 1 ? '1 persona' : `${n} personas`;
 }

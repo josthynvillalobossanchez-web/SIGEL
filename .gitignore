@@ -48,6 +48,10 @@ docker-compose.override.yml
 *.pem
 *.key
 *.crt
+*.pfx
+*.csr
+# Certificados de la base de datos en el servidor (docs/GUIA_DESARROLLO.md, seccion 10)
+certificados-bd/
 
 # Archivos sensibles
 secrets/

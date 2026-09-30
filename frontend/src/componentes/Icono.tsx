@@ -1,5 +1,5 @@
 /*
- * Iconos de SIGEL. Son los mismos trazos SVG del prototipo, reunidos aqui
+ * Iconos de SINERGIA. Son los mismos trazos SVG del prototipo, reunidos aqui
  * para no repetir el SVG en cada pantalla. Todos son de 24x24, con trazo
  * del color del texto (currentColor), asi toman el color del boton.
  *

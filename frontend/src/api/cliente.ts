@@ -1,5 +1,5 @@
 /*
- * Cliente HTTP de SIGEL: la UNICA puerta de salida hacia el backend.
+ * Cliente HTTP de SINERGIA: la UNICA puerta de salida hacia el backend.
  *
  * Todas las pantallas llaman al backend por medio de `pedirAlServidor`
  * (o de las funciones de api/*.ts que lo usan). Asi hay un solo lugar donde:

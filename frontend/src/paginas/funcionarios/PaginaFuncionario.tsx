@@ -6,7 +6,7 @@
  *   1. Datos personales   cedula, nombre, apellidos, nacimiento y profesion.
  *   2. Contacto           correos, telefono y direccion.
  *   3. Datos laborales    puesto, departamento, jefatura, nombramiento,
- *                         regimen, ingreso y codigo de empleado.
+ *                         regimen e ingreso.
  *   4. Cuenta de acceso   (solo al registrar) casilla "crear tambien su
  *                         cuenta", con el correo institucional y sus roles.
  *   5. Revisar            lo que se va a registrar, o la lista de cambios.
@@ -22,7 +22,6 @@ import { useEffect, useMemo, useState } from 'react';
 import {
   minimoDeIngreso,
   problemaDeCedula,
-  problemaDeCodigoDeEmpleado,
   problemaDeContacto,
   problemaDeIngreso,
   problemaDeNacimiento,
@@ -67,7 +66,7 @@ import {
 
 const LISTA = '/funcionarios';
 
-const CAMPOS_OPCIONALES = ['segundoApellido', 'fechaNacimiento', 'profesionId', 'correoInstitucional', 'telefonoPersonal', 'direccion', 'jefaturaId', 'numeroEmpleado'] as const;
+const CAMPOS_OPCIONALES = ['segundoApellido', 'fechaNacimiento', 'profesionId', 'correoInstitucional', 'telefonoPersonal', 'direccion', 'jefaturaId'] as const;
 
 /** Que paso corrige cada error del backend. */
 const PASO_DEL_ERROR: Record<string, number> = {
@@ -81,7 +80,6 @@ const PASO_DEL_ERROR: Record<string, number> = {
   JEFATURA_NO_VALIDA: 2,
   JEFATURA_CICLICA: 2,
   FECHA_INGRESO_NO_VALIDA: 2,
-  NUMERO_EMPLEADO_EN_USO: 2,
   CUENTA_SIN_CORREO_INSTITUCIONAL: 3,
   CORREO_EN_USO: 3,
   ROL_NO_ASIGNABLE: 3,
@@ -161,7 +159,6 @@ function FormularioDeFuncionario({ opciones, detalle }: { opciones: OpcionesDeFo
       tipoNombramiento: detalle?.tipoNombramiento ?? 'propiedad',
       regimenVacacionesId: detalle?.regimenVacaciones.id ?? opciones.regimenes.find((r) => r.nombre === 'general')?.id ?? '',
       fechaIngreso: detalle?.fechaIngreso ?? hoy,
-      numeroEmpleado: detalle?.numeroEmpleado ?? '',
     }),
     [detalle, opciones, hoy],
   );
@@ -242,8 +239,6 @@ function FormularioDeFuncionario({ opciones, detalle }: { opciones: OpcionesDeFo
       if (!datos.regimenVacacionesId) return 'Elija el régimen de vacaciones.';
       if (!datos.fechaIngreso) return 'Indique la fecha de ingreso.';
       if (errorIngreso) return `Fecha de ingreso: ${errorIngreso}`;
-      const codigo = problemaDeCodigoDeEmpleado(datos.numeroEmpleado);
-      if (codigo) return codigo;
     }
     if (indice === 3 && !editando && crearCuenta) {
       return revisarRoles(marcados, (id) => roles?.find((r) => r.id === id)?.nombre ?? 'Rol');
@@ -300,7 +295,7 @@ function FormularioDeFuncionario({ opciones, detalle }: { opciones: OpcionesDeFo
           {
             titulo: 'Cuenta de acceso',
             sub: 'Opcional',
-            descripcion: 'Si la persona va a usar SIGEL, se le puede crear la cuenta ahora mismo: funcionario y cuenta se guardan juntos, o ninguno.',
+            descripcion: 'Si la persona va a usar SINERGIA, se le puede crear la cuenta ahora mismo: funcionario y cuenta se guardan juntos, o ninguno.',
           },
         ]),
     {

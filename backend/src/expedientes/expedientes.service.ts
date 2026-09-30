@@ -37,7 +37,7 @@ export interface MovimientoDelHistorial {
  * personales (telefono, direccion...) quedan en la bitacora pero no son
  * historial laboral (CONTEXTO: "Historial laboral (Ficha 17)").
  */
-const CAMPOS_LABORALES = ['puesto', 'departamento', 'jefatura', 'tipoNombramiento', 'regimenVacaciones', 'fechaIngreso', 'numeroEmpleado'];
+const CAMPOS_LABORALES = ['puesto', 'departamento', 'jefatura', 'tipoNombramiento', 'regimenVacaciones', 'fechaIngreso'];
 
 /** Tope de movimientos que se revisan por funcionario (sobra para una vida laboral). */
 const TOPE_DE_MOVIMIENTOS = 2000;

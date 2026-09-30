@@ -45,7 +45,7 @@ export type DatosPersonales = Partial<
 
 /** Lo laboral que Recursos Humanos cambia de si mismo. */
 export type DatosLaborales = Partial<
-  Pick<DatosDeFuncionario, 'puestoId' | 'departamentoId' | 'jefaturaId' | 'tipoNombramiento' | 'regimenVacacionesId' | 'fechaIngreso' | 'numeroEmpleado'>
+  Pick<DatosDeFuncionario, 'puestoId' | 'departamentoId' | 'jefaturaId' | 'tipoNombramiento' | 'regimenVacacionesId' | 'fechaIngreso'>
 >;
 
 export function consultarMiCuenta() {

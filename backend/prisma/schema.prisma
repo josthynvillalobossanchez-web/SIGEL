@@ -1,5 +1,5 @@
 // =====================================================================
-// SIGEL - Sistema Integral de Gestion Laboral
+// SINERGIA - Sistema Integrado de Nomina, Expediente, Recursos y Gestion de Incapacidades y Ausencias
 // Municipalidad de Palmares
 //
 // Esquema de Prisma para el SPRINT 1: autenticacion y usuarios,
@@ -256,7 +256,6 @@ model funcionario {
   fotoRuta            String? @db.VarChar(500)
 
   // ----- Datos laborales: solo Recursos Humanos -----
-  numeroEmpleado      String?           @db.VarChar(30)
   puestoId            String?           @db.Char(36)
   departamentoId      String?           @db.Char(36)
   /// Jefatura inmediata: define quien aprueba sus solicitudes.
@@ -296,7 +295,7 @@ model funcionario {
 // funcionario.
 // =====================================================================
 
-/// Catalogo administrable. Los tipos que genera SIGEL solo se pueden
+/// Catalogo administrable. Los tipos que genera SINERGIA solo se pueden
 /// renombrar, porque cada uno depende de una plantilla programada.
 model tipoDocumento {
   id                 String  @id @default(uuid()) @db.Char(36)

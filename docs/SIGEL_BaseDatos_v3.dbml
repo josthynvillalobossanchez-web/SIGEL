@@ -1,5 +1,6 @@
 // =====================================================================
-// SIGEL - Sistema Integral de Gestion Laboral
+// SINERGIA - Sistema Integrado de Nomina, Expediente, Recursos y Gestion de
+// Incapacidades y Ausencias (antes SIGEL)
 // Municipalidad de Palmares
 //
 // MODELO DE BASE DE DATOS - VERSION 3
@@ -59,7 +60,7 @@
 
 Project sigel {
   database_type: 'MySQL'
-  Note: 'SIGEL - Municipalidad de Palmares. Modelo v3: 30 tablas, alineado con el analisis funcional (Fases 1, 2 y 3) y con las decisiones confirmadas por la Jefatura de Informatica.'
+  Note: 'SINERGIA - Municipalidad de Palmares. Modelo v3: 30 tablas, alineado con el analisis funcional (Fases 1, 2 y 3) y con las decisiones confirmadas por la Jefatura de Informatica.'
 }
 
 
@@ -114,7 +115,7 @@ Enum tipoMovimientoVacaciones {
   saldoInicial
   acumulacion
   consumo
-  ajuste [note: 'Correccion manual de RRHH. Cubre tambien los casos de salida del funcionario, que se liquidan fuera de SIGEL.']
+  ajuste [note: 'Correccion manual de RRHH. Cubre tambien los casos de salida del funcionario, que se liquidan fuera de SINERGIA.']
   vencimiento [note: '[V3-2] Dias perdidos por exceder el tope de 2 periodos acumulados. Siempre negativo.']
 }
 
@@ -317,7 +318,6 @@ Table funcionario {
   // ----- Datos laborales: SOLO RRHH -----
   // [V3-9] Ningun funcionario puede modificar su propia informacion
   // laboral, aunque tenga el permiso de autoservicio.
-  numeroEmpleado varchar(30) [note: 'PENDIENTE de confirmar con RRHH si la Municipalidad lo maneja. Solo RRHH.']
   puestoId char(36) [ref: > puesto.id, note: '[V3-9] Solo RRHH']
   departamentoId char(36) [ref: > departamento.id, note: '[V3-9] Solo RRHH']
   jefaturaId char(36) [ref: > funcionario.id, note: '[V3-9] Solo RRHH. Jefatura inmediata: define quien aprueba sus solicitudes (T-1). NULO = tope de la jerarquia: esa persona aprueba sus propias solicitudes (confirmado). Si cambia, las solicitudes pendientes pasan a la nueva jefatura.']
@@ -325,7 +325,7 @@ Table funcionario {
   regimenVacacionesId char(36) [not null, ref: > regimenVacaciones.id, note: '[V3-1] Antes enum. Solo RRHH.']
   estado estadoFuncionario [not null, default: 'activo', note: '[V3-9] Solo RRHH']
   fechaIngreso date [not null, note: '[V3-9] Solo RRHH. Base del calculo de antiguedad para vacaciones.']
-  fechaSalida date [note: 'Nulo mientras trabaje. Deja de acumular vacaciones desde esta fecha (RN-08). La liquidacion se maneja fuera de SIGEL.']
+  fechaSalida date [note: 'Nulo mientras trabaje. Deja de acumular vacaciones desde esta fecha (RN-08). La liquidacion se maneja fuera de SINERGIA.']
   motivoSalida varchar(150) [note: 'Texto libre a proposito: solo se muestra en pantalla, no se usa como filtro de busqueda.']
 
   fechaRegistro datetime [not null, default: `now()`]
@@ -353,7 +353,7 @@ Table tipoDocumento {
   id char(36) [pk, note: 'UUID']
   nombre varchar(120) [not null, unique, note: 'cedula, curriculum, tituloUniversitario, hojaDelincuencia, accionPersonal, amonestacion, constanciaVacaciones...']
   descripcion varchar(255)
-  generadoPorSistema boolean [not null, default: false, note: 'Ficha 18: los tipos generados por SIGEL solo se pueden renombrar. Crearlos o eliminarlos exige desarrollo, porque cada uno depende de una plantilla programada.']
+  generadoPorSistema boolean [not null, default: false, note: 'Ficha 18: los tipos generados por SINERGIA solo se pueden renombrar. Crearlos o eliminarlos exige desarrollo, porque cada uno depende de una plantilla programada.']
   activo boolean [not null, default: true]
   Note: 'Catalogo administrable: agregar un tipo documental manual NO requiere tocar codigo. HU 23, Ficha 18, Diagrama 3b-2.'
 }
@@ -370,7 +370,7 @@ Table documento {
   tipoMime varchar(100) [not null, note: 'Validado en backend: application/pdf, image/jpeg, image/png']
   tamanoBytes bigint [not null, note: 'Maximo 26214400 = 25 MB']
 
-  generadoPorSistema boolean [not null, default: false, note: 'true = PDF producido por SIGEL al cerrar un proceso, o CV copiado desde el Talent Pool al contratar (Ficha 41)']
+  generadoPorSistema boolean [not null, default: false, note: 'true = PDF producido por SINERGIA al cerrar un proceso, o CV copiado desde el Talent Pool al contratar (Ficha 41)']
   fechaDocumento date
   fechaRegistro datetime [not null, default: `now()`]
   usuarioRegistroId char(36) [ref: > usuario.id, note: 'RRHH o el propio funcionario. Nulo si lo genero el sistema.']
@@ -400,7 +400,7 @@ Table tipoSolicitud {
   descuentaVacaciones boolean [not null, default: false]
   requiereJustificante boolean [not null, default: false]
   seMideEnHoras boolean [not null, default: false, note: 'true = el tramite se registra en horas (hora extra). false = en dias completos.']
-  tipoDocumentoGeneradoId char(36) [ref: > tipoDocumento.id, note: 'Tipo del PDF que SIGEL genera al cerrar el proceso. Nulo = este tramite no genera documento.']
+  tipoDocumentoGeneradoId char(36) [ref: > tipoDocumento.id, note: 'Tipo del PDF que SINERGIA genera al cerrar el proceso. Nulo = este tramite no genera documento.']
   colorCalendario varchar(9)
   activo boolean [not null, default: true]
   Note: 'Aqui esta la escalabilidad real del modulo: crear un tramite nuevo (por ejemplo licencia por estudio) es agregar una fila y marcar sus casillas, sin tocar codigo. Un solo proceso separado por una tabla de tipos, no seis modulos distintos.'
@@ -435,7 +435,7 @@ Table solicitud {
   motivoRechazo varchar(500) [note: 'Obligatorio al rechazar. RN-02, HU 29 CA03.']
 
   justificanteDocumentoId char(36) [ref: > documento.id, note: 'Adjunto del solicitante']
-  documentoGeneradoId char(36) [ref: > documento.id, note: 'PDF que SIGEL asocia al expediente al cerrar el proceso. HU 26, RF-DOC-05.']
+  documentoGeneradoId char(36) [ref: > documento.id, note: 'PDF que SINERGIA asocia al expediente al cerrar el proceso. HU 26, RF-DOC-05.']
   estadoDocumentoGenerado estadoDocumentoGenerado [not null, default: 'noAplica', note: 'Alimenta la bandeja de casos por atender de RRHH cuando la generacion del PDF falla (Diagrama 3c)']
 
   indexes {
@@ -592,7 +592,7 @@ Table consentimiento {
   id char(36) [pk, note: 'UUID']
   version varchar(20) [not null, unique]
   titulo varchar(180) [not null]
-  texto text [not null, note: 'Texto oficial de la Municipalidad. PENDIENTE: lo define Joseph.']
+  texto text [not null, note: 'Copia del archivo backend/contenido/consentimiento-talent-pool.txt al momento de la version. Si el archivo cambia, se guarda una version nueva. Texto oficial pendiente de Joseph (hoy borrador).']
   vigenteDesde date [not null]
   activo boolean [not null, default: true]
   Note: 'Versionado, para poder demostrar que texto acepto cada candidato y cuando. RN-05. Aceptarlo es un paso obligatorio del registro (Ficha 32, Diagrama 8).'

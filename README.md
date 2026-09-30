@@ -1,12 +1,12 @@
-# SIGEL
+# SINERGIA
 
-## Sistema Integral de Gestión Laboral
+## Sistema Integrado de Nómina, Expediente, Recursos y Gestión de Incapacidades y Ausencias
 
 Sistema web para la gestión centralizada de expedientes laborales de la Municipalidad de Palmares, Costa Rica.
 
 ## Descripción
 
-SIGEL tiene como objetivo centralizar la información laboral de los funcionarios municipales, facilitar la búsqueda y consulta de información y reducir la dependencia de expedientes físicos y archivos dispersos.
+SINERGIA tiene como objetivo centralizar la información laboral de los funcionarios municipales, facilitar la búsqueda y consulta de información y reducir la dependencia de expedientes físicos y archivos dispersos.
 
 El sistema contempla la gestión de expedientes laborales, documentos, usuarios y roles, vacaciones, incapacidades, permisos, licencias, capacitaciones y otros procesos relacionados con la gestión laboral, de acuerdo con los requerimientos aprobados del proyecto.
 
@@ -14,7 +14,7 @@ El sistema contempla la gestión de expedientes laborales, documentos, usuarios 
 
 El sistema será utilizado por el personal autorizado de la Municipalidad de Palmares y permitirá administrar la información correspondiente a los procesos contemplados dentro del alcance aprobado del proyecto.
 
-SIGEL será una aplicación independiente y contará con su propia base de datos. Durante el desarrollo del proyecto no se contempla la interoperabilidad con otros sistemas institucionales.
+SINERGIA será una aplicación independiente y contará con su propia base de datos. Durante el desarrollo del proyecto no se contempla la interoperabilidad con otros sistemas institucionales.
 
 ## Tecnologías
 
@@ -97,6 +97,6 @@ Al 25 de setiembre de 2026 el backend tiene terminada la primera épica: autenti
 
 ## Proyecto
 
-**SIGEL — Municipalidad de Palmares**
+**SINERGIA — Municipalidad de Palmares**
 
 Proyecto desarrollado en el marco de la Práctica Profesional Supervisada.

@@ -102,7 +102,7 @@ function VistaDeExpediente({ funcionarioId }: { funcionarioId?: string }) {
         etiqueta="Datos del funcionario"
         iniciales={inicialesDeFuncionario(f)}
         titulo={nombreCompleto(f)}
-        identificacion={`Cédula ${f.cedula}${f.numeroEmpleado ? ` · Código ${f.numeroEmpleado}` : ''}`}
+        identificacion={`Cédula ${f.cedula}`}
         chips={
           <>
             <ChipDeFuncionario estado={f.estado} />

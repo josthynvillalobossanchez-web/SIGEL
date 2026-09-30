@@ -58,6 +58,19 @@ const PUEDE_SER_JEFATURA: Prisma.funcionarioWhereInput = {
   },
 };
 
+/**
+ * "Necesita nueva jefatura" (decision de Josthyn, 30/09): funcionario ACTIVO
+ * cuya jefatura ya no puede serlo (salio de la Municipalidad, le quitaron el
+ * rol Aprobador o le inactivaron la cuenta). No se adivina quien es la nueva:
+ * la jefatura vieja se conserva (para saber quien era) y Recursos Humanos la
+ * cambia. La lista de Funcionarios lo marca y lo filtra (?jefatura=revisar)
+ * e Inicio muestra cuantos hay.
+ */
+const JEFATURA_POR_REVISAR: Prisma.funcionarioWhereInput = {
+  estado: 'activo',
+  jefatura: { is: { NOT: PUEDE_SER_JEFATURA } },
+};
+
 /** Campos que cada quien cambia de si mismo en "Mi cuenta" (todo lo personal menos la cedula). */
 export const CAMPOS_PERSONALES_PROPIOS = [
   'nombre',
@@ -79,7 +92,6 @@ export const CAMPOS_LABORALES = [
   'tipoNombramiento',
   'regimenVacacionesId',
   'fechaIngreso',
-  'numeroEmpleado',
 ] as const;
 
 /** Como se edita: sobre otra persona (Funcionarios) o sobre si mismo (Mi cuenta). */
@@ -114,7 +126,6 @@ export const ETIQUETAS: Record<string, string> = {
   tipoNombramiento: 'tipo de nombramiento',
   regimenVacaciones: 'régimen de vacaciones',
   fechaIngreso: 'fecha de ingreso',
-  numeroEmpleado: 'código de empleado',
 };
 
 /** Una referencia a catalogo tal como se devuelve: id y nombre. */
@@ -143,6 +154,10 @@ export interface FuncionarioEnLista {
    * registrar su salida ni su reingreso (regla 3: "para arriba no").
    */
   tieneMasAcceso: boolean;
+  /** Funcionarios ACTIVOS que tienen a esta persona como jefatura. */
+  cantidadACargo: number;
+  /** Su jefatura ya no puede serlo: Recursos Humanos debe asignarle otra (JEFATURA_POR_REVISAR). */
+  revisarJefatura: boolean;
 }
 
 /** Ficha completa (ventana "Ver funcionario" y pagina "Editar funcionario"). */
@@ -157,9 +172,6 @@ export interface DetalleDeFuncionario extends FuncionarioEnLista {
   fechaIngreso: string;
   fechaSalida: string | null;
   motivoSalida: string | null;
-  numeroEmpleado: string | null;
-  /** Funcionarios ACTIVOS que tienen a esta persona como jefatura. */
-  cantidadACargo: number;
   cuenta: { id: string; correo: string; estado: 'activo' | 'inactivo' | 'bloqueado' } | null;
   fechaRegistro: string;
 }
@@ -192,7 +204,6 @@ const SELECCION_DETALLE = {
   fechaIngreso: true,
   fechaSalida: true,
   motivoSalida: true,
-  numeroEmpleado: true,
   fechaRegistro: true,
   profesion: { select: { id: true, nombre: true } },
   puesto: { select: { id: true, nombre: true } },
@@ -265,16 +276,20 @@ export class FuncionariosService {
     const donde: Prisma.funcionarioWhereInput = {
       estado: filtros.estado,
       departamentoId: filtros.departamentoId,
-      AND: palabras.map((palabra) => ({
-        OR: [
-          { cedula: { contains: palabra } },
-          { nombre: { contains: palabra } },
-          { primerApellido: { contains: palabra } },
-          { segundoApellido: { contains: palabra } },
-          { correoInstitucional: { contains: palabra } },
-          { correoPersonal: { contains: palabra } },
-        ],
-      })),
+      AND: [
+        // "Necesitan nueva jefatura" (Inicio y el filtro de la lista).
+        ...(filtros.jefatura === 'revisar' ? [JEFATURA_POR_REVISAR] : []),
+        ...palabras.map((palabra) => ({
+          OR: [
+            { cedula: { contains: palabra } },
+            { nombre: { contains: palabra } },
+            { primerApellido: { contains: palabra } },
+            { segundoApellido: { contains: palabra } },
+            { correoInstitucional: { contains: palabra } },
+            { correoPersonal: { contains: palabra } },
+          ],
+        })),
+      ],
     };
 
     const [total, filas] = await this.prisma.$transaction([
@@ -296,17 +311,22 @@ export class FuncionariosService {
           puesto: { select: { id: true, nombre: true } },
           departamento: { select: { id: true, nombre: true } },
           usuario: { select: { id: true } },
+          jefaturaId: true,
+          _count: { select: { personalACargo: { where: { estado: 'activo' } } } },
         },
       }),
     ]);
 
     const conMasAcceso = await this.conMasAcceso(this.prisma, filas.map((f) => f.id), quienActua);
+    const jefaturasValidas = await this.jefaturasValidas(filas.map((f) => f.jefaturaId));
     return armarPagina(
-      filas.map(({ usuario, ...f }) => ({
+      filas.map(({ usuario, jefaturaId, _count, ...f }) => ({
         ...f,
         tieneCuenta: usuario !== null,
         esPropio: f.id === quienActua.funcionarioId,
         tieneMasAcceso: conMasAcceso.has(f.id),
+        cantidadACargo: _count.personalACargo,
+        revisarJefatura: f.estado === 'activo' && jefaturaId !== null && !jefaturasValidas.has(jefaturaId),
       })),
       total,
       pagina,
@@ -317,7 +337,17 @@ export class FuncionariosService {
   async consultarUno(id: string, quienActua: UsuarioAutenticado): Promise<DetalleDeFuncionario> {
     const fila = await this.cargar(this.prisma, id);
     const conMasAcceso = await this.conMasAcceso(this.prisma, [id], quienActua);
-    return this.aDetalle(fila, quienActua, conMasAcceso.has(id));
+    const jefaturasValidas = await this.jefaturasValidas([fila.jefatura?.id ?? null]);
+    const revisar = fila.estado === 'activo' && fila.jefatura !== null && !jefaturasValidas.has(fila.jefatura.id);
+    return { ...this.aDetalle(fila, quienActua, conMasAcceso.has(id)), revisarJefatura: revisar };
+  }
+
+  /** De estas jefaturas, cuales todavia pueden serlo (PUEDE_SER_JEFATURA). */
+  private async jefaturasValidas(ids: (string | null)[]): Promise<Set<string>> {
+    const unicos = [...new Set(ids.filter((x): x is string => x !== null))];
+    if (unicos.length === 0) return new Set();
+    const filas = await this.prisma.funcionario.findMany({ where: { id: { in: unicos }, ...PUEDE_SER_JEFATURA }, select: { id: true } });
+    return new Set(filas.map((f) => f.id));
   }
 
   /** Listas para los formularios: solo lo ACTIVO. */
@@ -382,7 +412,7 @@ export class FuncionariosService {
     this.revisarFechas(nacimiento, ingreso);
 
     const resultado = await this.prisma.$transaction(async (tx) => {
-      await this.verificarUnicos(tx, { cedula, correoInstitucional: datos.correoInstitucional, numeroEmpleado: datos.numeroEmpleado });
+      await this.verificarUnicos(tx, { cedula, correoInstitucional: datos.correoInstitucional });
       const refs = await this.validarReferencias(tx, {
         profesionId: datos.profesionId ?? null,
         puestoId: datos.puestoId,
@@ -409,7 +439,6 @@ export class FuncionariosService {
           tipoNombramiento: datos.tipoNombramiento,
           regimenVacacionesId: datos.regimenVacacionesId,
           fechaIngreso: ingreso,
-          numeroEmpleado: datos.numeroEmpleado ?? null,
           estado: 'activo',
         },
         select: { id: true, nombre: true, primerApellido: true, segundoApellido: true },
@@ -506,7 +535,7 @@ export class FuncionariosService {
       };
 
       // ---- Texto simple ----
-      for (const campo of ['nombre', 'primerApellido', 'segundoApellido', 'correoPersonal', 'correoInstitucional', 'telefonoPersonal', 'direccion', 'numeroEmpleado'] as const) {
+      for (const campo of ['nombre', 'primerApellido', 'segundoApellido', 'correoPersonal', 'correoInstitucional', 'telefonoPersonal', 'direccion'] as const) {
         // El DTO ya garantiza que los obligatorios (nombre, correo personal...) no llegan en null.
         if (anotar(campo, datos[campo], actual[campo])) (cambios as Record<string, unknown>)[campo] = datos[campo];
       }
@@ -575,7 +604,6 @@ export class FuncionariosService {
         tx,
         {
           correoInstitucional: 'correoInstitucional' in cambios ? (cambios.correoInstitucional as string | null) : undefined,
-          numeroEmpleado: 'numeroEmpleado' in cambios ? (cambios.numeroEmpleado as string | null) : undefined,
         },
         id,
       );
@@ -637,14 +665,10 @@ export class FuncionariosService {
       if (salida > sumarAnios(hoyEnCostaRica(), 1)) {
         throw new BadRequestException({ codigo: 'FECHA_SALIDA_NO_VALIDA', message: 'La fecha de salida no puede pasar de un año hacia adelante.' });
       }
-      if (actual._count.personalACargo > 0) {
-        const n = actual._count.personalACargo;
-        throw new ConflictException({
-          codigo: 'FUNCIONARIO_CON_PERSONAL_A_CARGO',
-          message: `${n} funcionario${n === 1 ? ' tiene' : 's tienen'} a ${nombre} como jefatura. Asígneles otra jefatura antes de registrar la salida, para que sus solicitudes no queden sin quien las apruebe.`,
-          cantidadACargo: n,
-        });
-      }
+      // Si tiene personal a cargo, la salida SI se registra (decision de
+      // Josthyn, 30/09): no se adivina la jefatura nueva. Esas personas
+      // quedan marcadas como "necesita nueva jefatura" (JEFATURA_POR_REVISAR)
+      // y Recursos Humanos se la asigna. La ventana de salida ya lo avisa.
 
       // La cuenta, si tiene y sigue activa o bloqueada: se inactiva.
       if (actual.usuario && actual.usuario.estado !== 'inactivo') {
@@ -743,7 +767,7 @@ export class FuncionariosService {
     return fila;
   }
 
-  private aDetalle(f: FilaDeDetalle, quienActua: UsuarioAutenticado, tieneMasAcceso: boolean): DetalleDeFuncionario {
+  private aDetalle(f: FilaDeDetalle, quienActua: UsuarioAutenticado, tieneMasAcceso: boolean): Omit<DetalleDeFuncionario, 'revisarJefatura'> {
     return {
       id: f.id,
       cedula: f.cedula,
@@ -765,7 +789,6 @@ export class FuncionariosService {
       fechaIngreso: aFechaSola(f.fechaIngreso)!,
       fechaSalida: aFechaSola(f.fechaSalida),
       motivoSalida: f.motivoSalida,
-      numeroEmpleado: f.numeroEmpleado,
       cantidadACargo: f._count.personalACargo,
       cuenta: f.usuario,
       tieneCuenta: f.usuario !== null,
@@ -816,10 +839,10 @@ export class FuncionariosService {
     }
   }
 
-  /** Cedula, correo institucional y codigo de empleado no se repiten. */
+  /** Cedula y correo institucional no se repiten. */
   private async verificarUnicos(
     tx: Prisma.TransactionClient,
-    valores: { cedula?: string; correoInstitucional?: string | null; numeroEmpleado?: string | null },
+    valores: { cedula?: string; correoInstitucional?: string | null },
     exceptoId?: string,
   ): Promise<void> {
     const otro = exceptoId ? { NOT: { id: exceptoId } } : {};
@@ -831,12 +854,6 @@ export class FuncionariosService {
       (await tx.funcionario.findFirst({ where: { correoInstitucional: valores.correoInstitucional, ...otro }, select: { id: true } }))
     ) {
       throw new ConflictException({ codigo: 'CORREO_INSTITUCIONAL_EN_USO', message: 'Ese correo institucional ya lo tiene otro funcionario.' });
-    }
-    if (
-      valores.numeroEmpleado &&
-      (await tx.funcionario.findFirst({ where: { numeroEmpleado: valores.numeroEmpleado, ...otro }, select: { id: true } }))
-    ) {
-      throw new ConflictException({ codigo: 'NUMERO_EMPLEADO_EN_USO', message: 'Ese código de empleado ya lo tiene otro funcionario.' });
     }
   }
 

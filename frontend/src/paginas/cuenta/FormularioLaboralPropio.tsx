@@ -8,12 +8,12 @@ import { useMemo } from 'react';
 import { nombreDeRegimen, type DetalleDeFuncionario, type OpcionesDeFormulario } from '../../api/funcionarios';
 import { actualizarMisDatosLaborales, type DatosLaborales, type PerfilPropio } from '../../api/miCuenta';
 import { CampoFecha } from '../../componentes/CampoFecha';
-import { Lista, Texto } from '../../componentes/CamposDeFormulario';
+import { Lista } from '../../componentes/CamposDeFormulario';
 import { Mensaje } from '../../componentes/Mensaje';
 import { PieDeGuardado } from '../../componentes/PieDeGuardado';
 import { hoyEnCostaRica } from '../../utilidades/fechas';
 import { useFormularioDeCambios } from '../../utilidades/useFormularioDeCambios';
-import { maximoDeIngreso, minimoDeIngreso, problemaDeCodigoDeEmpleado, problemaDeIngreso } from '../../utilidades/validaciones';
+import { maximoDeIngreso, minimoDeIngreso, problemaDeIngreso } from '../../utilidades/validaciones';
 import { ChipDeFuncionario } from '../funcionarios/ChipDeFuncionario';
 import { listasConActuales, opcionesDeJefatura } from '../funcionarios/listasDeFormulario';
 
@@ -27,7 +27,6 @@ function laboralesDesde(f: DetalleDeFuncionario): Formulario {
     tipoNombramiento: f.tipoNombramiento,
     regimenVacacionesId: f.regimenVacaciones.id,
     fechaIngreso: f.fechaIngreso,
-    numeroEmpleado: f.numeroEmpleado ?? '',
   };
 }
 
@@ -53,8 +52,7 @@ export function FormularioLaboralPropio({
         (!datos.puestoId && original.puestoId ? 'Elija el puesto.' : null) ??
         (!datos.departamentoId && original.departamentoId ? 'Elija el departamento.' : null) ??
         (!datos.fechaIngreso ? 'La fecha de ingreso es obligatoria.' : null) ??
-        (ingreso ? `Fecha de ingreso: ${ingreso}` : null) ??
-        problemaDeCodigoDeEmpleado(datos.numeroEmpleado)
+        (ingreso ? `Fecha de ingreso: ${ingreso}` : null)
       );
     },
     enviar: (cambios) => actualizarMisDatosLaborales(cambios as DatosLaborales),
@@ -79,7 +77,6 @@ export function FormularioLaboralPropio({
             vacio="— Sin jefatura: tope de la jerarquía —"
             ayuda={opciones.jefaturas.length ? 'Solo quienes tienen el rol Aprobador.' : 'Nadie tiene todavía el rol Aprobador.'}
           />
-          <Texto id="mcCodigo" etiqueta="Código de empleado" valor={datos.numeroEmpleado} alCambiar={poner('numeroEmpleado')} max={30} />
           <Lista
             id="mcNombramiento"
             etiqueta="Tipo de nombramiento"

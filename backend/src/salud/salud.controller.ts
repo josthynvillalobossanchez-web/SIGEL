@@ -16,7 +16,7 @@ export class SaludController {
   async consultar() {
     const baseDeDatos = await this.prisma.estaViva();
     return {
-      sistema: 'SIGEL',
+      sistema: 'SINERGIA',
       estado: baseDeDatos ? 'operativo' : 'sin base de datos',
       baseDeDatos: baseDeDatos ? 'conectada' : 'no disponible',
       fechaHora: new Date().toISOString(),

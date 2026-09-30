@@ -27,7 +27,7 @@ export function PaginaNoEncontrada() {
       <div className="pagina-cab">
         <div>
           <h1>Página no encontrada</h1>
-          <p>La dirección que abrió no existe en SIGEL. Revise el enlace o use el menú.</p>
+          <p>La dirección que abrió no existe en SINERGIA. Revise el enlace o use el menú.</p>
         </div>
       </div>
       <Mensaje tipo="info">

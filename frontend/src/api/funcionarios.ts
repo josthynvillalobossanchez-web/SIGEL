@@ -33,6 +33,10 @@ export interface FuncionarioEnLista {
   esPropio: boolean;
   /** Su cuenta tiene permisos que quien mira no tiene: no se le edita, ni salida ni reingreso. */
   tieneMasAcceso: boolean;
+  /** Funcionarios activos que tienen a esta persona como jefatura. */
+  cantidadACargo: number;
+  /** Su jefatura salio o ya no es Aprobadora: Recursos Humanos debe asignarle otra. */
+  revisarJefatura: boolean;
 }
 
 /** GET /funcionarios/:id */
@@ -47,8 +51,6 @@ export interface DetalleDeFuncionario extends FuncionarioEnLista {
   fechaIngreso: string;
   fechaSalida: string | null;
   motivoSalida: string | null;
-  numeroEmpleado: string | null;
-  cantidadACargo: number;
   cuenta: { id: string; correo: string; estado: 'activo' | 'inactivo' | 'bloqueado' } | null;
   fechaRegistro: string;
 }
@@ -81,7 +83,6 @@ export interface DatosDeFuncionario {
   tipoNombramiento: TipoDeNombramiento;
   regimenVacacionesId: string;
   fechaIngreso: string;
-  numeroEmpleado: string | null;
 }
 
 export interface FiltrosDeFuncionarios {
@@ -90,6 +91,8 @@ export interface FiltrosDeFuncionarios {
   busqueda?: string;
   estado?: EstadoDeFuncionario;
   departamentoId?: string;
+  /** "revisar": solo quienes necesitan nueva jefatura. */
+  jefatura?: 'revisar';
 }
 
 /* ------------------------------------------------------------------ */

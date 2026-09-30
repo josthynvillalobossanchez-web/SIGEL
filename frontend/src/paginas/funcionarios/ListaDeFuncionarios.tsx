@@ -10,13 +10,18 @@
  *                                atenuado y su ayuda dice por que.
  *   - "Registrar funcionario" -> pagina /funcionarios/nuevo, por pasos.
  *
- * Filtros y ficha abierta en la URL (?busqueda=&estado=&departamento=&pagina=&ver=).
+ * Filtros y ficha abierta en la URL (?busqueda=&estado=&departamento=&jefatura=&pagina=&ver=).
+ *
+ * "Revisar jefatura" (decision del 30/09): si la jefatura de alguien sale de
+ * la Municipalidad o deja de ser Aprobadora, esa persona queda marcada y
+ * Recursos Humanos ve arriba cuantas son, con el filtro ?jefatura=revisar.
+ * No se adivina la jefatura nueva: la asigna RRHH con "Editar funcionario".
  */
 import { useState } from 'react';
 import { Paginacion } from '../../componentes/Paginacion';
 import { useBusquedaDiferida } from '../../utilidades/useBusquedaDiferida';
 import { useConsulta } from '../../utilidades/useConsulta';
-import { useNavigate } from 'react-router';
+import { Link, useNavigate } from 'react-router';
 import { useParametrosEnUrl } from '../../utilidades/parametrosEnUrl';
 import { consultarFuncionarios, type EstadoDeFuncionario, type FuncionarioEnLista } from '../../api/funcionarios';
 import { consultarCatalogos } from '../../api/catalogos';
@@ -26,7 +31,7 @@ import { BotonConAyuda, BotonIcono } from '../../componentes/Botones';
 import { useSesion } from '../../sesion/SesionProveedor';
 import { inicialesDeFuncionario, nombreCompleto } from '../../utilidades/texto';
 import { ChipDeFuncionario } from './ChipDeFuncionario';
-import { ModalFicha, ModalReingreso, ModalSalida } from './ModalesDeFuncionario';
+import { ChipRevisarJefatura, ModalFicha, ModalReingreso, ModalSalida, personasACargo } from './ModalesDeFuncionario';
 import { motivoParaEditar, motivoParaExpediente, motivoParaSalida } from './motivos';
 
 const TAMANO_DE_PAGINA = 20;
@@ -49,6 +54,7 @@ export function ListaDeFuncionarios() {
   const busquedaEnUrl = parametros.get('busqueda') ?? '';
   const estado = (parametros.get('estado') ?? '') as EstadoDeFuncionario | '';
   const departamentoId = parametros.get('departamento') ?? '';
+  const soloRevisar = parametros.get('jefatura') === 'revisar';
   const pagina = Math.max(1, Number(parametros.get('pagina')) || 1);
   const verId = parametros.get('ver');
 
@@ -73,18 +79,25 @@ export function ListaDeFuncionarios() {
         busqueda: busquedaEnUrl || undefined,
         estado: estado || undefined,
         departamentoId: departamentoId || undefined,
+        jefatura: soloRevisar ? 'revisar' : undefined,
       }),
-    [pagina, busquedaEnUrl, estado, departamentoId],
+    [pagina, busquedaEnUrl, estado, departamentoId, soloRevisar],
   );
+
+  // Cuantas personas necesitan nueva jefatura (solo le sirve a quien puede editar).
+  const puedeEditar = tienePermisos('funcionarios.editar');
+  const porRevisar = useConsulta(puedeEditar ? () => consultarFuncionarios({ jefatura: 'revisar', tamano: 1 }) : null, [puedeEditar]);
 
   function alGuardar(texto: string) {
     setVentana(null);
     setAviso(texto);
     recargar();
+    porRevisar.recargar();
   }
 
   const bloqueoRegistrar = tienePermisos('funcionarios.crear') ? null : 'su cuenta no tiene permiso para registrar funcionarios.';
-  const hayFiltros = Boolean(busquedaEnUrl || estado || departamentoId);
+  const hayFiltros = Boolean(busquedaEnUrl || estado || departamentoId || soloRevisar);
+  const cuantosPorRevisar = porRevisar.datos?.total ?? 0;
 
   return (
     <section className="pagina">
@@ -143,7 +156,26 @@ export function ListaDeFuncionarios() {
             ))}
           </select>
         </label>
+        {(soloRevisar || cuantosPorRevisar > 0) && (
+          <button
+            type="button"
+            className="filtro"
+            aria-pressed={soloRevisar}
+            data-ayuda="Mostrar solo a quienes necesitan nueva jefatura (la suya salió o dejó de ser Aprobadora)"
+            onClick={() => cambiar({ jefatura: soloRevisar ? '' : 'revisar' })}
+          >
+            Revisar jefatura
+          </button>
+        )}
       </div>
+
+      {puedeEditar && cuantosPorRevisar > 0 && !soloRevisar && (
+        <Mensaje tipo="advert">
+          {personasACargo(cuantosPorRevisar)} {cuantosPorRevisar === 1 ? 'necesita' : 'necesitan'} nueva jefatura: la suya salió de la
+          Municipalidad o dejó de ser Aprobadora.{' '}
+          <Link to="/funcionarios?jefatura=revisar">Ver quiénes</Link>
+        </Mensaje>
+      )}
 
       <div aria-live="polite">{aviso && <Mensaje tipo="exito">{aviso}</Mensaje>}</div>
       {error && <Mensaje tipo="error">{error}</Mensaje>}
@@ -212,6 +244,7 @@ export function ListaDeFuncionarios() {
                       <td data-etiqueta="Departamento">{f.departamento?.nombre ?? <span className="sec-dato">Sin departamento</span>}</td>
                       <td data-etiqueta="Estado">
                         <ChipDeFuncionario estado={f.estado} />
+                        {f.revisarJefatura && <ChipRevisarJefatura />}
                       </td>
                       <td className="acciones">
                         <BotonIcono icono="ojo" texto="Ver ficha resumida" sobre={nombre} alHacerClic={() => cambiar({ ver: f.id })} />
@@ -274,7 +307,7 @@ export function ListaDeFuncionarios() {
       )}
       {ventana?.tipo === 'salida' && (
         <ModalSalida
-          funcionario={{ id: ventana.f.id, nombre: nombreCompleto(ventana.f), tieneCuenta: ventana.f.tieneCuenta }}
+          funcionario={{ id: ventana.f.id, nombre: nombreCompleto(ventana.f), tieneCuenta: ventana.f.tieneCuenta, cantidadACargo: ventana.f.cantidadACargo }}
           alCerrar={() => setVentana(null)}
           alGuardar={alGuardar}
         />

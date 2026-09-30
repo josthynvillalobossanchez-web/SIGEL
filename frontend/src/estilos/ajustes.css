@@ -468,7 +468,7 @@ input.solo-lectura { background: var(--neutro-bg); color: var(--texto-sec); curs
 
 /* Controles nativos del navegador (icono del calendario en los campos de
    fecha, flechas de las listas, barras de desplazamiento) con el MISMO tema
-   que eligio la persona. Sin esto, con Windows en modo oscuro y SIGEL en
+   que eligio la persona. Sin esto, con Windows en modo oscuro y SINERGIA en
    claro, el icono del calendario se pintaba blanco sobre blanco (28/09). */
 :root[data-theme="light"] { color-scheme: light; }
 :root[data-theme="dark"] { color-scheme: dark; }

@@ -245,14 +245,6 @@ export function PasoDatosLaborales({
               max={maximoDeIngreso(hoy)}
               error={errorIngreso}
             />
-            <Texto
-              id="fnCodigo"
-              etiqueta="Código de empleado"
-              valor={datos.numeroEmpleado}
-              alCambiar={poner('numeroEmpleado')}
-              max={30}
-              ayuda="Opcional. No se repite."
-            />
           </div>
         </>
   );
@@ -340,7 +332,6 @@ export function RevisarRegistro({
             <DatoRevisar t="Nombramiento" v={textoDe('tipoNombramiento', datos.tipoNombramiento)} />
             <DatoRevisar t="Régimen" v={textoDe('regimenVacacionesId', datos.regimenVacacionesId)} />
             <DatoRevisar t="Ingreso" v={textoDe('fechaIngreso', datos.fechaIngreso)} />
-            <DatoRevisar t="Código de empleado" v={datos.numeroEmpleado || '—'} />
             <DatoRevisar
               t="Cuenta de acceso"
               v={
@@ -447,7 +438,6 @@ const ETIQUETAS: Record<keyof Formulario, string> = {
   tipoNombramiento: 'Tipo de nombramiento',
   regimenVacacionesId: 'Régimen de vacaciones',
   fechaIngreso: 'Fecha de ingreso',
-  numeroEmpleado: 'Código de empleado',
 };
 
 /* ------------------------------------------------------------------ */

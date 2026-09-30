@@ -149,7 +149,7 @@ export function RecuperarContrasena() {
             <Mensaje tipo="exito">{avisoReenvio}</Mensaje>
           ) : (
             <Mensaje tipo="exito">
-              Si <b>{correo.trim()}</b> tiene una cuenta en SIGEL, le enviamos un código. Revise su correo e
+              Si <b>{correo.trim()}</b> tiene una cuenta en SINERGIA, le enviamos un código. Revise su correo e
               ingréselo aquí.
             </Mensaje>
           )}
@@ -217,7 +217,7 @@ export function RecuperarContrasena() {
             </span>
             <h1>Contraseña actualizada</h1>
             <p className="sub" style={{ marginBottom: 6 }}>
-              Ya puede ingresar a SIGEL con su contraseña nueva.
+              Ya puede ingresar a SINERGIA con su contraseña nueva.
             </p>
           </div>
           <Link className="btn btn-primario btn-bloque" to="/iniciar-sesion" replace>

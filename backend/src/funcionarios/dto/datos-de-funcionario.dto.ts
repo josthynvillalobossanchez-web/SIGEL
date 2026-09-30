@@ -141,13 +141,6 @@ export class RegistrarFuncionarioDto {
   @Matches(FECHA, { message: 'La fecha de ingreso debe venir como AAAA-MM-DD.' })
   fechaIngreso!: string;
 
-  /** Codigo de empleado de la Municipalidad (formato por definir con Joseph). */
-  @IsOptional()
-  @Transform(limpiar)
-  @ValidateIf((_o, v) => v !== null)
-  @Matches(/^[0-9A-Za-z-]{1,30}$/, { message: 'El código de empleado solo puede tener números, letras y guiones (hasta 30).' })
-  numeroEmpleado?: string | null;
-
   // ----- Cuenta de acceso (opcional) -----
   @IsOptional()
   @ValidateNested()
@@ -251,12 +244,6 @@ export class EditarFuncionarioDto {
   @IsString({ message: 'La fecha de ingreso no puede quedar vacía.' })
   @Matches(FECHA, { message: 'La fecha de ingreso debe venir como AAAA-MM-DD.' })
   fechaIngreso?: string;
-
-  @IsOptional()
-  @Transform(limpiar)
-  @ValidateIf((_o, v) => v !== null)
-  @Matches(/^[0-9A-Za-z-]{1,30}$/, { message: 'El código de empleado solo puede tener números, letras y guiones (hasta 30).' })
-  numeroEmpleado?: string | null;
 }
 
 /** "Registrar salida": fecha y motivo (obligatorio, queda en el expediente). */

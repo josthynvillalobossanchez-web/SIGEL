@@ -65,7 +65,7 @@ export class FuncionariosController {
    * Con "cuenta": { roles: [...] } crea tambien su cuenta (pide ademas
    * usuarios.crear); la respuesta trae la contrasena temporal UNA sola vez.
    * Errores propios: CEDULA_EN_USO, CORREO_INSTITUCIONAL_EN_USO,
-   * NUMERO_EMPLEADO_EN_USO, PUESTO/DEPARTAMENTO/PROFESION/REGIMEN_NO_VALIDO,
+   * PUESTO/DEPARTAMENTO/PROFESION/REGIMEN_NO_VALIDO,
    * JEFATURA_NO_VALIDA, FECHA_*_NO_VALIDA, CUENTA_SIN_CORREO_INSTITUCIONAL
    * y los de crear una cuenta (CORREO_EN_USO, ROL_NO_ASIGNABLE, ...).
    */
@@ -99,8 +99,10 @@ export class FuncionariosController {
   /**
    * POST /api/funcionarios/:id/salida  { fechaSalida, motivoSalida }
    * Queda inactivo y su cuenta se inactiva a la vez.
+   * Si tiene personal a cargo, la salida igual se registra y ese personal
+   * queda "por revisar jefatura" (?jefatura=revisar).
    * Errores propios: FUNCIONARIO_YA_INACTIVO, FECHA_SALIDA_NO_VALIDA,
-   * FUNCIONARIO_CON_PERSONAL_A_CARGO, CUENTA_CON_MAYOR_ACCESO.
+   * CUENTA_CON_MAYOR_ACCESO.
    */
   @RequierePermisos('funcionarios.ver', 'funcionarios.editar')
   @Post(':id/salida')

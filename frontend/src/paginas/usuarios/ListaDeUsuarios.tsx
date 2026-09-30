@@ -2,7 +2,7 @@
  * Pagina "Usuarios" (seccion pgUsuarios del prototipo).
  *
  * Lista las cuentas con busqueda, filtro por estado y paginacion.
- * Regla de SIGEL: lo que se CONSULTA va en ventana; lo que se CREA o EDITA
+ * Regla de SINERGIA: lo que se CONSULTA va en ventana; lo que se CREA o EDITA
  * va en una pagina aparte, por pasos.
  *   - Tocar una fila          -> ventana "Ver usuario" (solo lectura), con el
  *                                boton "Editar usuario".

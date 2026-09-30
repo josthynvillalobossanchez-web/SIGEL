@@ -1,13 +1,13 @@
 /*
  * Tema claro / oscuro. Funciona igual que en el prototipo:
- *   - Se guarda la eleccion en localStorage con la clave "sigel-tema".
+ *   - Se guarda la eleccion en localStorage con la clave "sinergia-tema".
  *   - Se aplica poniendo data-theme="light" | "dark" en <html>.
  *   - Si la persona nunca eligio, se usa el del sistema operativo.
  * index.html aplica el tema guardado antes de pintar (para que no parpadee).
  */
 import { useCallback, useEffect, useState } from 'react';
 
-const CLAVE = 'sigel-tema';
+const CLAVE = 'sinergia-tema';
 type Tema = 'light' | 'dark';
 
 function temaActual(): Tema {

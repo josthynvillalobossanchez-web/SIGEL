@@ -10,8 +10,10 @@ src/generated/
 .env.*
 !.env.example
 
-# Archivos del expediente guardados en desarrollo
+# Archivos del expediente (backend/archivos) y registros de la aplicacion
+# (backend/registros): se quedan en el servidor, TI los respalda. No van a git.
 archivos/
+registros/
 
 # Logs y temporales
 *.log

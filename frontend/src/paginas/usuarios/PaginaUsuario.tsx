@@ -211,6 +211,15 @@ function FormularioDeUsuario({ cuenta }: { cuenta?: DetalleDeCuenta }) {
   const persona = editando ? cuenta!.funcionario : elegido;
   const nombre = persona ? nombreCompleto(persona) : '';
 
+  // Jefatura = rol Aprobador PERMANENTE (28/09). Si se le quita (o pasa a tener
+  // fecha) a quien tiene personal a cargo, ese personal queda "por revisar
+  // jefatura" en Funcionarios (30/09): se avisa antes de guardar.
+  const aprobadorId = roles?.find((r) => r.nombre === 'Aprobador')?.id;
+  const aCargo = cuenta?.funcionario?.cantidadACargo ?? 0;
+  const pierdeJefatura = Boolean(
+    aprobadorId && aCargo > 0 && iniciales[aprobadorId] && !iniciales[aprobadorId].conFecha && !(marcados[aprobadorId] && !marcados[aprobadorId].conFecha),
+  );
+
   const PASOS: PasoDeFormulario[] = [
     {
       titulo: 'Cuenta',
@@ -406,13 +415,19 @@ function FormularioDeUsuario({ cuenta }: { cuenta?: DetalleDeCuenta }) {
           </dl>
         )}
         {paso === 2 && editando && cambios && <ListaDeCambios cambios={cambios} nombreDeRol={nombreDeRol} />}
+        {paso === 2 && pierdeJefatura && (
+          <Mensaje tipo="advert">
+            {nombre} es jefatura de {aCargo === 1 ? '1 persona' : `${aCargo} personas`}. Sin el rol Aprobador permanente deja de serlo: esas
+            personas quedarán marcadas con «Revisar jefatura» en Funcionarios para que se les asigne una nueva.
+          </Mensaje>
+        )}
       </FormularioPorPasos>
 
       {/* ---------------- Exito ---------------- */}
       {creada && (
         <ModalExito titulo="Usuario creado con éxito" alAceptar={() => navegar(LISTA)}>
           <p>
-            <b>{nombre}</b> ya tiene cuenta en SIGEL con el correo <b>{creada.correo}</b>.
+            <b>{nombre}</b> ya tiene cuenta en SINERGIA con el correo <b>{creada.correo}</b>.
           </p>
           <p className="nota-modal" style={{ margin: '10px 0 6px' }}>
             Roles:{' '}

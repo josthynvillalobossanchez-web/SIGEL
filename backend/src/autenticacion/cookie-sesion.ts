@@ -1,7 +1,7 @@
 import type { CookieOptions } from 'express';
 
 /** Nombre de la cookie donde viaja la sesion. */
-export const COOKIE_SESION = 'sigel_sesion';
+export const COOKIE_SESION = 'sinergia_sesion';
 
 /**
  * Convierte "45s", "30m", "8h" o "7d" a milisegundos. Un numero suelto se

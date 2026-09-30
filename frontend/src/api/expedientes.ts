@@ -17,7 +17,7 @@ export interface Expediente {
 
 export interface MovimientoDelHistorial {
   id: string;
-  /** Cuando se registro en SIGEL (ISO). */
+  /** Cuando se registro en SINERGIA (ISO). */
   fechaHora: string;
   tipo: 'ingreso' | 'cambio' | 'salida' | 'reingreso';
   titulo: string;

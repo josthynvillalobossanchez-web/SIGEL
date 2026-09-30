@@ -70,8 +70,11 @@ export function DatosLaboralesVista({ f, compacto }: { f: DetalleDeFuncionario; 
     <dl className={`info-rejilla vista-datos${compacto ? ' compacto' : ''}`}>
       <Dato titulo="Puesto" valor={f.puesto?.nombre} />
       <Dato titulo="Departamento" valor={f.departamento?.nombre} />
-      <Dato titulo="Jefatura inmediata" valor={f.jefatura?.nombre ?? 'Sin jefatura (tope de la jerarquía)'} />
-      <Dato titulo="Código de empleado" valor={f.numeroEmpleado} num />
+      <Dato
+        titulo="Jefatura inmediata"
+        valor={f.jefatura?.nombre ?? 'Sin jefatura (tope de la jerarquía)'}
+        detalle={f.revisarJefatura ? 'Ya no puede aprobar (salió o dejó de ser Aprobadora): Recursos Humanos debe asignar otra.' : null}
+      />
       <Dato titulo="Tipo de nombramiento" valor={NOMBRES_DE_NOMBRAMIENTO[f.tipoNombramiento]} />
       <Dato titulo="Régimen de vacaciones" valor={nombreDeRegimen(f.regimenVacaciones.nombre)} detalle={f.regimenVacaciones.descripcion} />
       <Dato titulo="Fecha de ingreso" valor={formatearFechaSola(f.fechaIngreso)} num />
@@ -83,7 +86,7 @@ export function DatosLaboralesVista({ f, compacto }: { f: DetalleDeFuncionario; 
           <Dato titulo="Motivo de salida" valor={f.motivoSalida} />
         </>
       )}
-      <Dato titulo="Registrado en SIGEL" valor={formatearFecha(f.fechaRegistro)} num />
+      <Dato titulo="Registrado en SINERGIA" valor={formatearFecha(f.fechaRegistro)} num />
     </dl>
   );
 }

@@ -5,7 +5,7 @@
  *
  * Comportamiento del menu lateral (igual que el prototipo):
  *   - Pantalla ancha: se puede plegar con el boton redondo (".tirador").
- *     La eleccion se recuerda en localStorage ("sigel-lateral").
+ *     La eleccion se recuerda en localStorage ("sinergia-lateral").
  *   - Celular/tableta (< 1024 px): se abre con el boton de hamburguesa y se
  *     cierra al tocar fuera (".velo-nav") o al elegir una opcion.
  *   - Subsecciones ("nav-sub"): las paginas de crear y editar aparecen
@@ -28,7 +28,7 @@ import { MENU, puedeVerOpcion } from './menu';
 import { inicialesDesdeCorreo } from '../utilidades/texto';
 import logoParaBarra from '../recursos/logo-oscuro.png';
 
-const CLAVE_LATERAL = 'sigel-lateral';
+const CLAVE_LATERAL = 'sinergia-lateral';
 
 function lateralGuardadoOculto(): boolean {
   try {
@@ -139,7 +139,7 @@ function MarcoInterno() {
         <div className="marca">
           <img src={logoParaBarra} alt="Municipalidad de Palmares" />
           <div className="marca-txt">
-            <b>SIGEL</b>
+            <b>SINERGIA</b>
             <small>Municipalidad de Palmares</small>
           </div>
         </div>

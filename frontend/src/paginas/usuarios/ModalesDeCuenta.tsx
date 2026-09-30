@@ -74,6 +74,8 @@ export function ModalCambiarEstado({ cuenta, alCerrar, alGuardar }: PropiedadesB
   const [ocupado, setOcupado] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const pideMotivo = estado !== 'activo';
+  // Si es jefatura, inactivarla deja a su personal "por revisar jefatura" (30/09).
+  const aCargo = useConsulta(() => consultarCuenta(cuenta.id), [cuenta.id]).datos?.funcionario?.cantidadACargo ?? 0;
 
   async function guardar() {
     if (estado === cuenta.estado) return setError('La cuenta ya está en ese estado: elija otro.');
@@ -133,6 +135,12 @@ export function ModalCambiarEstado({ cuenta, alCerrar, alGuardar }: PropiedadesB
             aria-required="true"
           />
         </div>
+      )}
+      {estado === 'inactivo' && cuenta.estado !== 'inactivo' && aCargo > 0 && (
+        <Mensaje tipo="advert">
+          Es jefatura de {aCargo === 1 ? '1 persona' : `${aCargo} personas`}. Con la cuenta inactiva deja de poder aprobar: esas personas
+          quedarán marcadas con «Revisar jefatura» en Funcionarios para que se les asigne una nueva.
+        </Mensaje>
       )}
       <Mensaje tipo="info">
         No confundir con el bloqueo de tres minutos por intentos fallidos: ese es automático, temporal y no cambia el

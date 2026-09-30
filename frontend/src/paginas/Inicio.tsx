@@ -52,7 +52,7 @@ export function Inicio() {
             {saludo()}
             {f ? `, ${f.nombre}` : ''}
           </h1>
-          <p>Sistema Integral de Gestión Laboral de la Municipalidad de Palmares.</p>
+          <p>Sistema Integrado de Nómina, Expediente, Recursos y Gestión de Incapacidades y Ausencias de la Municipalidad de Palmares.</p>
         </div>
       </div>
 
@@ -89,9 +89,12 @@ function Resumen() {
   const { tienePermisos } = useSesion();
   const verFuncionarios = tienePermisos('funcionarios.ver');
   const verUsuarios = tienePermisos('usuarios.ver');
+  const editarFuncionarios = tienePermisos('funcionarios.editar');
   const activos = useConsulta(verFuncionarios ? () => consultarFuncionarios({ estado: 'activo', tamano: 1 }) : null, []).datos;
   const bloqueadas = useConsulta(verUsuarios ? () => consultarCuentas({ estado: 'bloqueado', tamano: 1 }) : null, []).datos;
   const inactivas = useConsulta(verUsuarios ? () => consultarCuentas({ estado: 'inactivo', tamano: 1 }) : null, []).datos;
+  // Personal cuya jefatura salio o dejo de ser Aprobadora (decision del 30/09).
+  const porRevisar = useConsulta(editarFuncionarios ? () => consultarFuncionarios({ jefatura: 'revisar', tamano: 1 }) : null, []).datos;
 
   const cifras = [
     verFuncionarios && { valor: activos?.total, texto: 'funcionarios activos', a: '/funcionarios?estado=activo', ayuda: 'Ver la lista de funcionarios activos' },
@@ -102,6 +105,12 @@ function Resumen() {
       ayuda: 'Cuentas bloqueadas por intentos fallidos o por Recursos Humanos',
     },
     verUsuarios && { valor: inactivas?.total, texto: 'cuentas inactivas', a: '/usuarios?estado=inactivo', ayuda: 'Cuentas sin acceso (por ejemplo, por salida)' },
+    editarFuncionarios && {
+      valor: porRevisar?.total,
+      texto: 'necesitan nueva jefatura',
+      a: '/funcionarios?jefatura=revisar',
+      ayuda: 'Personas cuya jefatura salió o dejó de ser Aprobadora: asígneles otra',
+    },
   ].filter((c): c is { valor: number | undefined; texto: string; a: string; ayuda: string } => Boolean(c));
   if (cifras.length === 0) return null;
 

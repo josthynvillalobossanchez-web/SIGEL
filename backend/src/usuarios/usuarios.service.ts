@@ -232,6 +232,9 @@ export class UsuariosService {
             primerApellido: true,
             segundoApellido: true,
             correoInstitucional: true,
+            // Personal a cargo: la pantalla avisa si se le quita el rol
+            // Aprobador o se inactiva la cuenta (su personal queda por revisar).
+            _count: { select: { personalACargo: { where: { estado: 'activo' } } } },
           },
         },
         roles: {
@@ -268,8 +271,13 @@ export class UsuariosService {
 
     const motivoNoModificable = this.motivoNoModificable(usuarioId, permisosEfectivos, quienActua);
 
+    // El conteo sale como cantidadACargo (_count queda fuera de la respuesta).
+    const funcionario = usuario.funcionario
+      ? { ...usuario.funcionario, _count: undefined, cantidadACargo: usuario.funcionario._count.personalACargo }
+      : null;
     return {
       ...usuario,
+      funcionario,
       permisosEfectivos,
       puedoModificar: quienActua ? motivoNoModificable === null : false,
       motivoNoModificable,
@@ -491,11 +499,11 @@ export class UsuariosService {
     try {
       await this.correo.enviar({
         para: cuenta.correo,
-        asunto: 'SIGEL - Su cuenta de acceso',
+        asunto: 'SINERGIA - Su cuenta de acceso',
         cuerpo: [
           'Buen día,',
           '',
-          'Recursos Humanos creó su cuenta en SIGEL, el Sistema Integral de Gestión Laboral.',
+          'Recursos Humanos creó su cuenta en SINERGIA, el Sistema Integrado de Nómina, Expediente, Recursos y Gestión de Incapacidades y Ausencias.',
           '',
           `Correo de ingreso:     ${cuenta.correo}`,
           `Contraseña temporal:   ${cuenta.contrasenaTemporal}`,
@@ -1422,7 +1430,7 @@ export class UsuariosService {
     const cuerpo = [
       'Buen día,',
       '',
-      'El correo de ingreso de su cuenta en SIGEL cambio:',
+      'El correo de ingreso de su cuenta en SINERGIA cambio:',
       '',
       `Correo anterior:  ${anterior}`,
       `Correo nuevo:     ${nuevo}`,
@@ -1435,7 +1443,7 @@ export class UsuariosService {
 
     for (const para of [anterior, nuevo]) {
       try {
-        await this.correo.enviar({ para, asunto: 'SIGEL - Cambio en su correo de ingreso', cuerpo });
+        await this.correo.enviar({ para, asunto: 'SINERGIA - Cambio en su correo de ingreso', cuerpo });
       } catch (error) {
         this.registro.error(
           'No se pudo enviar el aviso de cambio de correo',

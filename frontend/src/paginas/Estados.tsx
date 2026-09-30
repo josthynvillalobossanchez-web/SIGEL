@@ -10,7 +10,7 @@ export function PantallaDeCarga() {
   return (
     <div className="carga-inicial" role="status" aria-live="polite">
       <span className="girador" aria-hidden="true" />
-      <span>Cargando SIGEL…</span>
+      <span>Cargando SINERGIA…</span>
     </div>
   );
 }
@@ -19,10 +19,10 @@ export function PantallaDeCarga() {
 export function SinServidor() {
   const { recargar } = useSesion();
   return (
-    <PantallaDeAcceso subtitulo="Sistema Integral de Gestión Laboral · Municipalidad de Palmares">
+    <PantallaDeAcceso subtitulo="Sistema Integrado de Nómina, Expediente, Recursos y Gestión de Incapacidades y Ausencias · Municipalidad de Palmares">
       <div className="card">
         <h1>No hay conexión con el sistema</h1>
-        <p className="sub">SIGEL no respondió. Puede ser un problema de red o que el servidor esté en mantenimiento.</p>
+        <p className="sub">SINERGIA no respondió. Puede ser un problema de red o que el servidor esté en mantenimiento.</p>
         <Mensaje tipo="info">Si el problema continúa, avise al Departamento de TI.</Mensaje>
         <button className="btn btn-primario btn-bloque" type="button" onClick={() => void recargar()}>
           Intentar de nuevo

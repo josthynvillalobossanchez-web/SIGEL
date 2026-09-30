@@ -297,20 +297,27 @@ export class AutenticacionService {
       }),
     ]);
 
-    await this.correo.enviar({
-      para: usuario.correo,
-      asunto: 'SIGEL - Código para recuperar su contraseña',
-      cuerpo: [
-        'Buen día,',
-        '',
-        `Su código para recuperar la contraseña de SIGEL es: ${codigo}`,
-        '',
-        `El código vence en ${MINUTOS_VIGENCIA_CODIGO} minutos y solo se puede usar una vez.`,
-        'Si usted no solicitó este cambio, ignore este mensaje: su contraseña sigue igual.',
-        '',
-        'Municipalidad de Palmares',
-      ].join('\n'),
-    });
+    // Si el envio falla NO se responde distinto (seria una pista de que el
+    // correo existe): se anota en los registros para TI y se sigue igual.
+    try {
+      await this.correo.enviar({
+        para: usuario.correo,
+        asunto: 'SINERGIA - Código para recuperar su contraseña',
+        cuerpo: [
+          'Buen día,',
+          '',
+          `Su código para recuperar la contraseña de SINERGIA es: ${codigo}`,
+          '',
+          `El código vence en ${MINUTOS_VIGENCIA_CODIGO} minutos y solo se puede usar una vez.`,
+          'Si usted no solicitó este cambio, ignore este mensaje: su contraseña sigue igual.',
+          '',
+          'Municipalidad de Palmares',
+        ].join('\n'),
+      });
+    } catch (error) {
+      this.registro.error(`No se pudo enviar el código de recuperación al usuario ${usuario.id}`, error instanceof Error ? error.message : String(error));
+      return;
+    }
 
     // Se registra la cuenta, jamas el codigo.
     this.registro.log(`Se envió un código de recuperación al usuario ${usuario.id}`);

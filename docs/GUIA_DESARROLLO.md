@@ -1,4 +1,4 @@
-# Guía de desarrollo de SIGEL
+# Guía de desarrollo de SINERGIA
 
 Esta guía explica cómo dejar el proyecto corriendo en su máquina y qué hace cada
 comando. Está escrita para quien nunca ha usado Docker.
@@ -9,7 +9,7 @@ comando. Está escrita para quien nunca ha usado Docker.
 
 ## 1. La idea general
 
-SIGEL tiene tres piezas:
+SINERGIA tiene tres piezas:
 
 | Pieza | Qué es | Dónde corre |
 |---|---|---|
@@ -25,7 +25,7 @@ el proyecto. Si algo se daña, se borra el contenedor y se levanta otro.
 Durante el desarrollo, el backend y el frontend corren fuera de Docker porque así
 recargan al instante cada vez que se guarda un archivo. **Antes de las pruebas finales
 y del despliegue** se dockerizan también, para que toda la Municipalidad pueda levantar
-SIGEL con un solo comando.
+SINERGIA con un solo comando.
 
 Estos son los archivos que hacen el trabajo:
 
@@ -174,7 +174,7 @@ npm run dev
 Abra `http://localhost:3000/api/salud` en el navegador. Debe responder algo así:
 
 ```json
-{ "sistema": "SIGEL", "estado": "operativo", "baseDeDatos": "conectada" }
+{ "sistema": "SINERGIA", "estado": "operativo", "baseDeDatos": "conectada" }
 ```
 
 Si dice `no disponible`, la API está bien pero no alcanza la base: revise que el
@@ -276,8 +276,8 @@ SIGEL\
   en el frontend, lo mismo en `utilidades/texto.ts` (`problemaDeNombre`, `normalizarTelefono`).
   Todo campo de texto lleva `maxLength` igual al del backend.
 - **Baja lógica**, nunca borrado físico, en la información con historial.
-- Los archivos del expediente **no** se guardan en MySQL: se copian al servidor de
-  archivos y la base guarda la ruta.
+- Los archivos del expediente **no** se guardan en MySQL: se copian a
+  `backend/archivos/` (`RUTA_ARCHIVOS`) y la base guarda la ruta.
 - Cada funcionalidad se protege con un permiso `modulo.accion` verificado **en el
   backend**. La validación del frontend nunca es suficiente.
 - Las contraseñas se guardan con **Argon2id** y jamás se registran en la bitácora ni en
@@ -492,8 +492,8 @@ y abrir `http://localhost:5173`. Vite reenvía todo lo que empiece con `/api` al
 (`vite.config.ts`), así que la cookie de sesión funciona sin configurar CORS.
 
 Otros comandos: `npm run revisar-tipos` (TypeScript sin compilar) y `npm run build`
-(genera `frontend/dist/`, que en producción sirve el servidor web junto con un proxy de
-`/api` hacia el backend).
+(genera `frontend/dist/`, que en producción sirve el propio backend en el mismo dominio
+que `/api`; ver la sección 10).
 
 **Cómo está organizado `src/`:**
 
@@ -581,7 +581,7 @@ queda atenuado, no hace nada, y el globo y el lector de pantalla dicen por qué.
 
 | Rama | Para qué |
 |---|---|
-| `main` | SIGEL completo, para la Municipalidad de Palmares |
+| `main` | SINERGIA completo, para la Municipalidad de Palmares |
 | `piscinas` | Se creará a partir de `main` cuando el expediente esté terminado, sin el módulo de Talent Pool, para adaptarlo al proyecto de las piscinas municipales |
 
 La idea es terminar primero todo lo del expediente, sacar la rama `piscinas` desde ahí y
@@ -607,3 +607,155 @@ seguir con el Talent Pool en `main`.
 | `ECONNRESET` o `EPERM` durante `npm install` | Cierre VS Code, pause OneDrive, borre `node_modules` y `package-lock.json`, corra `npm cache verify` y reinstale |
 | `git push` responde `403 Permission denied` | Git se está autenticando con otra cuenta de GitHub. Esa cuenta debe ser colaboradora del repositorio |
 | Se perdió la contraseña de una cuenta | `npm run contrasena:restablecer -- correo@munipalmares.go.cr`. Genera una nueva, la imprime una sola vez y obliga a cambiarla en el primer ingreso. **Nunca** comente validaciones del código para entrar |
+
+---
+
+## 10. Despliegue en la VM Windows (servidor de la Municipalidad)
+
+Lo que dijo Joseph el 30/09/2026, para no volver a preguntarlo:
+
+| Tema | Respuesta |
+|---|---|
+| Servidor | Máquina virtual **Windows**. Se puede instalar **Docker**. |
+| HTTPS | **Sí.** |
+| Dominio | Un **subdominio dentro de munipalmares**, en esa misma VM, provisional al principio. Lo proponemos nosotros: **`sinergia.munipalmares.go.cr`**. |
+| Proxy inverso | **No hay.** Nginx está instalado en la VM, pero no se usa. |
+| Base de datos | Con **TLS**. |
+| Bitácora | Solo se consulta en el sistema (no se exporta). Se conserva **mínimo 3 meses**. |
+| Internet | Hay, en el servidor y en las computadoras. Sin internet no se entra a SINERGIA. |
+| Correo | Una cuenta de **Gmail** que la Municipalidad ya usa para esto (sección 10.5). |
+
+Por eso **SINERGIA se sirve solo**: el mismo proceso de Node atiende HTTPS, la API (`/api`) y la
+interfaz compilada, todo en el mismo dominio (la cookie de sesión funciona sin CORS).
+
+### 10.1 Carpetas que quedan en el servidor
+
+| Carpeta | Qué guarda | Variable | En git |
+|---|---|---|---|
+| `backend/registros/` | Registros (logs): un archivo por día, `sigel-AAAA-MM-DD.log`, hora de Costa Rica. Nunca llevan contraseñas, códigos ni la `DATABASE_URL`. | `RUTA_REGISTROS` | No |
+| `backend/contenido/` | Textos que se muestran tal cual, por ahora el consentimiento informado del Talent Pool (`consentimiento-talent-pool.txt`, borrador). Para cambiarlo se reemplaza el contenido del archivo. | — | Sí |
+| `backend/archivos/` | Archivos del expediente. Nunca se sirven como carpeta pública: la descarga pasa por el backend, que revisa el permiso. | `RUTA_ARCHIVOS` | No |
+
+SINERGIA **no borra nada** de estas carpetas. TI decide su respaldo (las dos) y, si quiere, la
+limpieza de registros viejos. Las rutas relativas se cuentan desde `backend/`, así que el
+backend siempre se arranca **desde esa carpeta**.
+
+### 10.2 Base de datos (Docker + TLS)
+
+MySQL corre en Docker igual que en desarrollo. Para TLS hace falta un certificado que traiga
+el nombre del servidor (`127.0.0.1` y `localhost`). **El que MySQL genera solo al arrancar no
+sirve**: no trae ese nombre y SINERGIA lo rechaza (probado el 30/09). Se genera así, en **Git Bash**,
+dentro de la carpeta `SIGEL` (la variable `MSYS_NO_PATHCONV=1` evita que Git Bash cambie el
+`/CN=`):
+
+```bash
+mkdir certificados-bd && cd certificados-bd
+export MSYS_NO_PATHCONV=1
+openssl req -x509 -newkey rsa:2048 -nodes -days 3650 -subj "/CN=SINERGIA BD CA" -keyout ca-key.pem -out ca.pem
+openssl req -newkey rsa:2048 -nodes -subj "/CN=127.0.0.1" -keyout server-key.pem -out server.csr
+printf "subjectAltName=IP:127.0.0.1,DNS:localhost" > san.txt
+openssl x509 -req -in server.csr -CA ca.pem -CAkey ca-key.pem -CAcreateserial -days 825 -extfile san.txt -out server-cert.pem
+openssl verify -CAfile ca.pem server-cert.pem      # debe decir: OK
+```
+
+`ca-key.pem` se guarda aparte, en un lugar seguro de TI (solo sirve para renovar). El
+certificado del servidor vence en 825 días: se renueva repitiendo las tres últimas líneas.
+Los `.pem` están en `.gitignore`.
+
+Luego, en la raíz de `SIGEL`, un archivo **`docker-compose.override.yml`** (solo existe en el
+servidor, también en `.gitignore`):
+
+```yaml
+services:
+  mysql:
+    ports: !override
+      - "127.0.0.1:3307:3306"          # la base solo se ve desde la propia VM
+    volumes:
+      - ./certificados-bd/ca.pem:/etc/mysql/certs/ca.pem:ro
+      - ./certificados-bd/server-cert.pem:/etc/mysql/certs/server-cert.pem:ro
+      - ./certificados-bd/server-key.pem:/etc/mysql/certs/server-key.pem:ro
+    command:
+      - --ssl-ca=/etc/mysql/certs/ca.pem
+      - --ssl-cert=/etc/mysql/certs/server-cert.pem
+      - --ssl-key=/etc/mysql/certs/server-key.pem
+      - --require-secure-transport=ON  # rechaza cualquier conexion sin cifrar
+```
+
+`docker compose up -d` lo toma solo (`!override` necesita Docker Compose 2.24 o más nuevo).
+
+### 10.3 Variables del `.env` del servidor
+
+Se parte de `backend/.env.example`. Además de lo de la sección 4.1, en el servidor:
+
+| Variable | Valor en el servidor |
+|---|---|
+| `PUERTO` | `443` |
+| `CERTIFICADO_HTTPS` / `LLAVE_HTTPS` | Rutas a los `.pem` del certificado del subdominio que dé TI. Si TI lo entrega en `.pfx`, se convierte con `openssl pkcs12`. |
+| `ORIGEN_FRONTEND` | `https://sinergia.munipalmares.go.cr` (o el subdominio que quede) |
+| `RUTA_FRONTEND` | `../frontend/dist` |
+| `COOKIE_SEGURA` | `true` |
+| `BD_TLS` | `true` |
+| `BD_TLS_CA` | Ruta al `certificados-bd/ca.pem` de la sección 10.2 |
+| `RUTA_ARCHIVOS` / `RUTA_REGISTROS` | Se dejan como vienen (`./archivos`, `./registros`) |
+| `SEED_ADMIN_CONTRASENA` | **Vacía**: la semilla genera una al azar, se anota una sola vez y se cambia al entrar |
+| `JWT_SECRETO` | Uno nuevo, distinto al de desarrollo |
+| `CORREO_*` | Ver sección 10.5 |
+
+### 10.4 Compilar y arrancar
+
+```powershell
+docker compose up -d
+cd backend
+npm ci
+npx prisma generate
+npx prisma migrate deploy        # aplica las migraciones sin borrar datos
+npm run db:seed                  # solo la primera vez y cuando cambian permisos
+npm run build
+cd ..\frontend
+npm ci
+npm run build                    # genera frontend\dist
+cd ..\backend
+npm run start:prod               # SINERGIA queda en https://<subdominio>
+```
+
+Al arrancar, los registros dicen la dirección (`https://...`), de qué carpeta sirve la
+interfaz y dónde quedan los registros. Antes de arrancar, revisar que nada más use el puerto
+443 (`netstat -ano | findstr :443`): ni IIS ni el Nginx instalado.
+
+Mientras se dockerizan frontend y backend (queda para el final, ver CONTEXTO §2), TI deja el
+proceso corriendo como servicio de Windows con la herramienta que prefiera.
+
+### 10.5 Correo (cuenta de Gmail)
+
+Joseph dio acceso a la cuenta de Gmail que la Municipalidad usa para enviar correos. SINERGIA la
+usa por SMTP. Gmail **no acepta la contraseña normal** de la cuenta para esto: hay que crear una
+**contraseña de aplicación** (una sola vez):
+
+1. Entrar a la cuenta de Gmail → *Gestionar tu cuenta de Google* → *Seguridad* y activar la
+   **verificación en dos pasos** (si no está).
+2. En la misma cuenta, abrir *Contraseñas de aplicaciones* (`myaccount.google.com/apppasswords`),
+   escribir `SINERGIA` como nombre y crearla. Google muestra **16 letras una sola vez**.
+3. En `backend/.env` del servidor (nunca en otro lado):
+
+   ```
+   CORREO_TRANSPORTE=smtp
+   CORREO_SERVIDOR=smtp.gmail.com
+   CORREO_PUERTO=465
+   CORREO_USUARIO=<la cuenta>@gmail.com
+   CORREO_CONTRASENA=<las 16 letras, sin espacios>
+   CORREO_NOMBRE_REMITENTE=SINERGIA - Municipalidad de Palmares
+   ```
+
+4. Reiniciar el backend. En los registros debe salir `Correo listo: smtp.gmail.com:465 como ...`.
+   Si sale `No se pudo conectar con el correo`, el motivo viene al final (por ejemplo `535` =
+   usuario o contraseña de aplicación incorrectos).
+
+Tener en cuenta:
+
+- Si alguien cambia la contraseña normal de la cuenta de Gmail, Google **anula** las contraseñas de
+  aplicación: hay que crear otra y cambiarla en el `.env`.
+- Una cuenta de Gmail normal tiene un límite diario de envíos (del orden de cientos). Para lo que
+  manda SINERGIA (bienvenidas, códigos de recuperación, avisos) alcanza de sobra.
+- En desarrollo se deja `CORREO_TRANSPORTE=consola`: nada sale, el mensaje se ve en la terminal.
+- Los correos llevan contraseñas temporales y códigos: su contenido **nunca** se escribe en los
+  registros, solo "Correo enviado a X: asunto".

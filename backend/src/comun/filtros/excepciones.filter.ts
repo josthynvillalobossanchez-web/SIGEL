@@ -9,7 +9,7 @@ import {
 import type { Request, Response } from 'express';
 
 /**
- * Forma unica en la que SIGEL responde cualquier error.
+ * Forma unica en la que SINERGIA responde cualquier error.
  *
  * El frontend se guia por "codigo", no por el texto de "message": el texto
  * puede cambiar o reescribirse, el codigo no. Asi una pantalla puede

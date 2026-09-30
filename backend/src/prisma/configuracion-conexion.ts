@@ -7,6 +7,8 @@
  * (migrate, studio, seed) y ellos no entienden las opciones del driver.
  */
 
+import { readFileSync } from 'node:fs';
+
 interface ConfiguracionMariaDb {
   host: string;
   port: number;
@@ -14,7 +16,7 @@ interface ConfiguracionMariaDb {
   password: string;
   database: string;
   connectionLimit: number;
-  ssl?: boolean;
+  ssl?: boolean | { ca: Buffer };
   allowPublicKeyRetrieval?: boolean;
 }
 
@@ -43,7 +45,14 @@ export function configuracionDeConexion(url: string): ConfiguracionMariaDb {
    * el caso de desarrollo contra el contenedor de Docker.
    */
   if (process.env.BD_TLS === 'true') {
-    configuracion.ssl = true;
+    // Con BD_TLS_CA se confia en el certificado de ESA autoridad (el ca.pem
+    // que se genera con la GUIA, seccion "Despliegue"). Sin ella, el
+    // certificado del servidor debe ser de una autoridad reconocida por el
+    // sistema. Nunca se desactiva la verificacion: el certificado tambien debe
+    // traer el nombre del servidor (127.0.0.1 / localhost). Por eso el que
+    // MySQL genera solo al arrancar no sirve (probado el 30/09).
+    const autoridad = process.env.BD_TLS_CA?.trim();
+    configuracion.ssl = autoridad ? { ca: readFileSync(autoridad) } : true;
   } else {
     configuracion.allowPublicKeyRetrieval = true;
   }

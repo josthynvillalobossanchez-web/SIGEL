@@ -1,5 +1,5 @@
 /**
- * Semilla inicial de SIGEL.
+ * Semilla inicial de SINERGIA.
  *
  * Carga lo minimo que el sistema necesita para arrancar:
  *   - el catalogo de permisos por clave "modulo.accion",
@@ -166,13 +166,13 @@ const TIPOS_DOCUMENTO = [
   { nombre: 'Curriculum', descripcion: 'Se copia desde el Talent Pool al contratar', generadoPorSistema: true },
   {
     nombre: 'Constancia de vacaciones',
-    descripcion: 'La genera SIGEL al aprobarse una solicitud de vacaciones',
+    descripcion: 'La genera SINERGIA al aprobarse una solicitud de vacaciones',
     generadoPorSistema: true,
   },
 ];
 
 async function main(): Promise<void> {
-  console.log('Sembrando datos base de SIGEL...');
+  console.log('Sembrando datos base de SINERGIA...');
 
   // --- Permisos ---
   for (const permiso of PERMISOS) {

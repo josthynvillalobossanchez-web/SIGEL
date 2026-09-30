@@ -3,7 +3,7 @@
  * ("Registrar funcionario": migas, pagina-cab, pasos, card form-pasos,
  * panel-paso con barra de progreso, pie-form con "Paso 1 de 3").
  *
- * Regla de SIGEL (Josthyn, 26/09): lo que solo se CONSULTA va en una
+ * Regla de SINERGIA (Josthyn, 26/09): lo que solo se CONSULTA va en una
  * ventana; lo que se CREA o EDITA va en una pagina aparte como esta,
  * dividida en pasos para no tener que bajar, y con su subseccion en el
  * menu lateral (diseno/menu.ts).

@@ -78,7 +78,8 @@ export interface DetalleDeCuenta {
   ultimoAcceso: string | null;
   fechaCreacion: string;
   fechaActualizacion: string | null;
-  funcionario: (FuncionarioResumido & { correoInstitucional: string | null }) | null;
+  /** cantidadACargo: personas activas que la tienen como jefatura. */
+  funcionario: (FuncionarioResumido & { correoInstitucional: string | null; cantidadACargo: number }) | null;
   roles: RolDeCuenta[];
   permisos: PermisoIndividual[];
   /** Lo que la cuenta puede hacer de verdad (roles + excepciones vigentes). */

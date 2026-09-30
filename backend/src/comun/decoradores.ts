@@ -7,7 +7,7 @@ import type { Request } from 'express';
  *
  *   registrar(@DireccionIp() ip: string) { ... }
  *
- * Ojo para el despliegue: si SIGEL queda detras de un proxy inverso, hay que
+ * Ojo para el despliegue: si SINERGIA queda detras de un proxy inverso, hay que
  * habilitar "trust proxy" en main.ts. Sin eso, todas las peticiones se ven
  * como si vinieran del proxy y la bitacora guardaria siempre la misma IP.
  */

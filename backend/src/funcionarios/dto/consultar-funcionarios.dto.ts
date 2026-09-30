@@ -22,4 +22,9 @@ export class ConsultarFuncionariosDto extends PaginacionDto {
   @IsOptional()
   @IsUUID(undefined, { message: 'El departamento indicado no es válido.' })
   departamentoId?: string;
+
+  /** "revisar": solo quienes necesitan nueva jefatura (la suya salio o perdio el rol Aprobador). */
+  @IsOptional()
+  @IsIn(['revisar'], { message: 'El filtro de jefatura indicado no existe.' })
+  jefatura?: 'revisar';
 }

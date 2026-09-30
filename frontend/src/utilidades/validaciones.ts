@@ -79,13 +79,6 @@ export function problemaDeCedula(cedula: string): string | null {
   return null;
 }
 
-/** Codigo de empleado (opcional). */
-export function problemaDeCodigoDeEmpleado(codigo: string): string | null {
-  return codigo.trim() && !/^[0-9A-Za-z-]{1,30}$/.test(codigo.trim())
-    ? 'El código de empleado solo puede tener números, letras y guiones (hasta 30).'
-    : null;
-}
-
 /* ------------------------------------------------------------------ */
 /* Fechas (AAAA-MM-DD)                                                 */
 /* ------------------------------------------------------------------ */
