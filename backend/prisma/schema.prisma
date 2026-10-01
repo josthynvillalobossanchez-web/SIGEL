@@ -90,11 +90,28 @@ model usuario {
   permisos             usuarioPermiso[]             @relation("permisosDelUsuario")
   permisosAsignados    usuarioPermiso[]             @relation("permisosAsignadosPorEsteUsuario")
   tokensRecuperacion   tokenRecuperacionContrasena[]
+  sesiones             sesion[]
   documentosRegistrados documento[]                 @relation("documentosRegistradosPorUsuario")
   documentosDadosDeBaja documento[]                 @relation("documentosDadosDeBajaPorUsuario")
   movimientosBitacora  bitacoraCambio[]
 
   @@index([estado])
+}
+
+/// Una sesion abierta. Su id viaja dentro del token (campo jti): el guard
+/// solo acepta tokens cuya sesion exista, no este revocada y no haya vencido.
+/// Asi "Salir" y el cambio de contrasena cierran la sesion de verdad.
+model sesion {
+  id               String    @id @db.Char(36)
+  usuarioId        String    @db.Char(36)
+  fechaCreacion    DateTime  @default(now())
+  fechaExpiracion  DateTime
+  fechaRevocacion  DateTime?
+
+  usuario usuario @relation(fields: [usuarioId], references: [id])
+
+  @@index([usuarioId, fechaRevocacion], map: "idxSesionUsuario")
+  @@index([fechaExpiracion], map: "idxSesionExpiracion")
 }
 
 /// Codigo de un solo uso para restablecer la contrasena. Se guarda hasheado.
@@ -105,6 +122,9 @@ model tokenRecuperacionContrasena {
   fechaCreacion   DateTime  @default(now())
   fechaExpiracion DateTime
   fechaUso        DateTime?
+  /// Codigos equivocados que se han probado contra este codigo. Al llegar
+  /// al maximo el codigo se anula y hay que pedir uno nuevo.
+  intentosFallidos Int      @default(0) @db.SmallInt
 
   usuario usuario @relation(fields: [usuarioId], references: [id])
 

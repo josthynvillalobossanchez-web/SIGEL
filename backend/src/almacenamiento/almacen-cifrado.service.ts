@@ -29,8 +29,8 @@ const RUTA_VALIDA = new RegExp(`^(expedientes|fotos)/${UUID}/${UUID}\\.enc$`);
  * Rotacion de llave: cada archivo guarda con cual version se cifro. Para
  * cambiar la llave se sube ARCHIVOS_LLAVE_VERSION, la anterior pasa a
  * ARCHIVOS_LLAVES_ANTERIORES ("1:base64,2:base64") y los archivos viejos
- * siguen abriendo. (Recifrar los viejos con la nueva queda como pendiente
- * si algun dia se necesita: ver COSAS_POR_CORREGIR.)
+ * siguen abriendo. Para recifrar los viejos con la nueva: `npm run
+ * archivos:recifrar` (prisma/recifrar-archivos.ts, GUIA_DESARROLLO.md §10.6).
  */
 @Injectable()
 export class AlmacenCifradoService {

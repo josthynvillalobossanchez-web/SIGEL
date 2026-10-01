@@ -16,7 +16,8 @@
     "db:reset": "prisma migrate reset",
     "contrasena:restablecer": "tsx prisma/restablecer-contrasena.ts",
     "db:datos-de-prueba": "tsx prisma/datos-de-prueba.ts",
-    "archivos:generar-llave": "tsx prisma/generar-llave-de-archivos.ts"
+    "archivos:generar-llave": "tsx prisma/generar-llave-de-archivos.ts",
+    "archivos:recifrar": "tsx prisma/recifrar-archivos.ts"
   },
   "dependencies": {
     "@nestjs/common": "^12.0.0",
@@ -32,6 +33,7 @@
     "class-validator": "^0.15.0",
     "cookie-parser": "^1.4.7",
     "dotenv": "^17.0.0",
+    "helmet": "^8.3.0",
     "mariadb": "^3.4.5",
     "nodemailer": "9.1.1",
     "reflect-metadata": "^0.2.2",

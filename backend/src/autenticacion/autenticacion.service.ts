@@ -1,6 +1,7 @@
 import { BadRequestException, Injectable, Logger, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
-import { randomInt } from 'node:crypto';
+import type { Prisma } from '../generated/prisma/client.js';
+import { randomInt, randomUUID } from 'node:crypto';
 import * as argon2 from 'argon2';
 import { BitacoraService } from '../bitacora/bitacora.service.js';
 import { CorreoService } from '../correo/correo.service.js';
@@ -26,6 +27,13 @@ const MINUTOS_BLOQUEO = 3;
 const MINUTOS_VIGENCIA_CODIGO = 15;
 
 /**
+ * Codigos equivocados que se toleran contra un mismo codigo de recuperacion.
+ * Un codigo tiene un millon de combinaciones: sin este tope, alguien con
+ * paciencia podria probarlas todas dentro de los 15 minutos de vigencia.
+ */
+const MAXIMO_INTENTOS_CODIGO = 5;
+
+/**
  * Lo que el servicio le entrega al controlador. El token no llega asi al
  * navegador: el controlador lo guarda en la cookie de sesion.
  */
@@ -43,6 +51,8 @@ export interface SesionIniciada {
 export interface ContenidoToken {
   sub: string;
   correo: string;
+  /** Id de la sesion en la tabla "sesion"; lo agrega el JWT al firmar. */
+  jti?: string;
 }
 
 @Injectable()
@@ -120,15 +130,24 @@ export class AutenticacionService {
       data: { intentosFallidos: 0, bloqueadoHasta: null, ultimoAcceso: ahora },
     });
 
+    // Cada ingreso abre una sesion propia. Su id viaja en el token (jti) y es
+    // lo que permite revocarla despues.
+    const duracionMs = duracionEnMilisegundos(process.env.JWT_EXPIRACION ?? '8h');
+    const sesionId = randomUUID();
+    await this.prisma.sesion.create({
+      data: { id: sesionId, usuarioId: usuario.id, fechaExpiracion: new Date(ahora.getTime() + duracionMs) },
+    });
+    await this.limpiarSesionesVencidas();
+
     const contenido: ContenidoToken = { sub: usuario.id, correo: usuario.correo };
-    const token = await this.jwt.signAsync(contenido);
+    const token = await this.jwt.signAsync(contenido, { jwtid: sesionId });
 
     // Se registra el identificador, nunca el correo, la contrasena ni el token.
     this.registro.log(`Ingreso correcto del usuario ${usuario.id}`);
 
     return {
       token,
-      duracionMs: duracionEnMilisegundos(process.env.JWT_EXPIRACION ?? '8h'),
+      duracionMs,
       usuario: {
         id: usuario.id,
         correo: usuario.correo,
@@ -176,6 +195,7 @@ export class AutenticacionService {
     usuarioId: string,
     datos: CambiarContrasenaDto,
     direccionIp?: string,
+    sesionActualId?: string,
   ): Promise<void> {
     const usuario = await this.prisma.usuario.findUnique({
       where: { id: usuarioId },
@@ -232,6 +252,9 @@ export class AutenticacionService {
           bloqueadoHasta: null,
         },
       });
+
+      // Las demas sesiones (otros equipos, un token robado) dejan de servir.
+      await this.revocarSesionesDe(tx, usuario.id, sesionActualId);
 
       await this.bitacora.registrar(
         {
@@ -353,7 +376,7 @@ export class AutenticacionService {
         fechaExpiracion: { gt: new Date() },
       },
       orderBy: { fechaCreacion: 'desc' },
-      select: { id: true, codigoHash: true },
+      select: { id: true, codigoHash: true, intentosFallidos: true },
     });
 
     if (!token) {
@@ -363,6 +386,28 @@ export class AutenticacionService {
     const codigoCorrecto = await argon2.verify(token.codigoHash, datos.codigo.trim());
 
     if (!codigoCorrecto) {
+      const intentos = token.intentosFallidos + 1;
+      const agotado = intentos >= MAXIMO_INTENTOS_CODIGO;
+
+      // Al agotar los intentos el codigo se anula (queda como usado) y el
+      // siguiente intento, aunque sea el correcto, ya no lo encuentra.
+      await this.prisma.tokenRecuperacionContrasena.update({
+        where: { id: token.id },
+        data: agotado
+          ? { intentosFallidos: intentos, fechaUso: new Date() }
+          : { intentosFallidos: intentos },
+      });
+
+      if (agotado) {
+        this.registro.warn(
+          `Se anuló un código de recuperación del usuario ${usuario.id} por demasiados intentos`,
+        );
+        throw new BadRequestException({
+          codigo: 'CODIGO_AGOTADO',
+          message: 'Demasiados intentos. Solicite un código nuevo.',
+        });
+      }
+
       throw this.codigoInvalido();
     }
 
@@ -409,6 +454,9 @@ export class AutenticacionService {
         where: { id: token.id },
         data: { fechaUso: new Date() },
       });
+
+      // Quien recupera la cuenta no esta logueado: se cierran todas sus sesiones.
+      await this.revocarSesionesDe(tx, usuario.id);
 
       /**
        * Este es el movimiento mas importante de los dos que se auditan aqui:
@@ -507,5 +555,76 @@ export class AutenticacionService {
       codigo: 'CREDENCIALES_INVALIDAS',
       message: 'Correo o contraseña incorrectos.',
     });
+  }
+
+  /**
+   * El token es valido solo si su sesion existe, es de ese usuario, no esta
+   * revocada y no ha vencido. Lo llama el guard en cada peticion.
+   */
+  async sesionVigente(sesionId: string | undefined, usuarioId: string): Promise<boolean> {
+    if (!sesionId) return false;
+    const sesion = await this.prisma.sesion.findUnique({
+      where: { id: sesionId },
+      select: { usuarioId: true, fechaRevocacion: true, fechaExpiracion: true },
+    });
+    return Boolean(
+      sesion &&
+        sesion.usuarioId === usuarioId &&
+        sesion.fechaRevocacion === null &&
+        sesion.fechaExpiracion > new Date(),
+    );
+  }
+
+  /**
+   * "Salir": revoca la sesion del token recibido. Si el token no sirve (ya
+   * vencio, esta alterado, no hay cookie) no hay nada que revocar y no es un
+   * error: la cookie igual se borra.
+   */
+  async cerrarSesion(token: string | undefined): Promise<void> {
+    if (!token) return;
+    try {
+      const contenido = await this.jwt.verifyAsync<ContenidoToken>(token);
+      if (!contenido.jti) return;
+      await this.prisma.sesion.updateMany({
+        where: { id: contenido.jti, fechaRevocacion: null },
+        data: { fechaRevocacion: new Date() },
+      });
+      this.registro.log(`El usuario ${contenido.sub} cerró sesión`);
+    } catch {
+      // Token invalido: nada que revocar.
+    }
+  }
+
+  /**
+   * Revoca las sesiones abiertas de un usuario, salvo la indicada (la que
+   * esta haciendo el cambio, para no sacar a la persona de lo que hace).
+   */
+  private revocarSesionesDe(
+    tx: Prisma.TransactionClient,
+    usuarioId: string,
+    salvoSesionId?: string,
+  ) {
+    return tx.sesion.updateMany({
+      where: {
+        usuarioId,
+        fechaRevocacion: null,
+        ...(salvoSesionId ? { id: { not: salvoSesionId } } : {}),
+      },
+      data: { fechaRevocacion: new Date() },
+    });
+  }
+
+  /**
+   * Borra las sesiones que vencieron hace mas de un dia. Se hace al abrir una
+   * sesion nueva: no hace falta un proceso aparte y la tabla no crece sin fin.
+   */
+  private async limpiarSesionesVencidas(): Promise<void> {
+    try {
+      await this.prisma.sesion.deleteMany({
+        where: { fechaExpiracion: { lt: new Date(Date.now() - 24 * 3600_000) } },
+      });
+    } catch (error) {
+      this.registro.warn(`No se pudo limpiar las sesiones vencidas: ${String(error)}`);
+    }
   }
 }

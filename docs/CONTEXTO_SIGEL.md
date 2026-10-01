@@ -188,7 +188,7 @@ contraseña temporal.
 | Método y ruta | Permiso | Para qué |
 |---|---|---|
 | `POST /api/autenticacion/iniciar-sesion` | público | Inicia sesión y deja la cookie |
-| `POST /api/autenticacion/cerrar-sesion` | público | Borra la cookie |
+| `POST /api/autenticacion/cerrar-sesion` | público | Revoca la sesión en el servidor y borra la cookie |
 | `GET /api/autenticacion/mi-sesion` | con sesión | Datos, roles y permisos efectivos |
 | `POST /api/autenticacion/cambiar-contrasena` | con sesión | Cambio propio y del primer ingreso |
 | `POST /api/autenticacion/solicitar-recuperacion` | público | Envía el código al correo |
@@ -345,7 +345,7 @@ sensible, pestañas Información personal · Información laboral · Documentos 
 Capacitaciones muestra su explicación hasta el Sprint 2; Documentos se completó en la épica 3.
 
 **Decisiones de la gestión documental (épica 3, 30/09):**
-- **Cifrado**: todo archivo se guarda cifrado con **AES-256-GCM** en `backend/archivos/` (`expedientes/<funcionario>/<uuid>.enc`, `fotos/...`); la base solo tiene la ruta relativa, el hash SHA-256 y los datos. La llave maestra va en el `.env` (`ARCHIVOS_LLAVE`, 32 bytes en base64; el backend no arranca sin ella) y se amarra a la ruta de cada archivo (copiarlo a otra ruta lo vuelve ilegible). Joseph / TI guardan una **copia aparte**: perder la llave es perder todos los documentos (GUIA §10.6). Hay versión de llave para rotarla; falta la herramienta que recifre lo viejo (COSAS #20).
+- **Cifrado**: todo archivo se guarda cifrado con **AES-256-GCM** en `backend/archivos/` (`expedientes/<funcionario>/<uuid>.enc`, `fotos/...`); la base solo tiene la ruta relativa, el hash SHA-256 y los datos. La llave maestra va en el `.env` (`ARCHIVOS_LLAVE`, 32 bytes en base64; el backend no arranca sin ella) y se amarra a la ruta de cada archivo (copiarlo a otra ruta lo vuelve ilegible). Joseph / TI guardan una **copia aparte**: perder la llave es perder todos los documentos (GUIA §10.6). Hay versión de llave para rotarla; la herramienta `npm run archivos:recifrar` recifra lo viejo con la llave nueva (GUIA §10.6).
 - **Formatos**: solo PDF, JPG y PNG; **cada tipo de documento elige cuáles acepta** al crearlo o editarlo (p. ej. «Título profesional»: JPG y PNG). Se valida extensión, tipo declarado, la **firma real del archivo** y el tamaño (documentos 25 MB, fotografía 5 MB). Se guarda el hash y se verifica al descargar.
 - **Quién hace qué**: cada persona sube a **su** expediente y edita / da de baja **solo lo que ella subió**; Recursos Humanos sube a cualquiera, edita y da de baja cualquier documento manual y **restaura**. Los documentos generados por SINERGIA solo se ven (RRHH puede darlos de baja). Las bajas solo las ven quienes pueden restaurar. El archivo **nunca se reemplaza**: si se subió el equivocado, se da de baja y se sube el correcto. Cambiar el tipo exige que el tipo nuevo acepte el formato del archivo.
 - **Tipos de documento**: administración en `/tipos-documento` (`tiposDocumento.editar`), no se borran, se inactivan; los dos que genera SINERGIA (constancia de vacaciones y curriculum) solo cambian de nombre y no se inactivan. Los manuales no pueden ser de sistema ni estar inactivos al subir.

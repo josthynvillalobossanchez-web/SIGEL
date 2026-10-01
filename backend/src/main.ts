@@ -3,6 +3,7 @@ import { Logger, ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import type { NestExpressApplication } from '@nestjs/platform-express';
 import cookieParser from 'cookie-parser';
+import helmet from 'helmet';
 import type { NextFunction, Request, Response } from 'express';
 import { existsSync, readFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
@@ -29,6 +30,10 @@ async function arrancar(): Promise<void> {
     logger: registros,
     httpsOptions: opcionesHttps(),
   });
+
+  // Cabeceras de seguridad (CSP, X-Frame-Options, nosniff...). Va PRIMERO para que
+  // lleguen en todas las respuestas, incluidos los errores.
+  app.use(helmet(opcionesDeCabeceras(Boolean(process.env.CERTIFICADO_HTTPS?.trim()))));
 
   // Todas las rutas cuelgan de /api
   app.setGlobalPrefix('api');
@@ -71,6 +76,44 @@ async function arrancar(): Promise<void> {
   aviso.log(`API escuchando en ${protocolo}://localhost:${puerto}/api`);
   if (interfaz) aviso.log(`Interfaz servida desde ${interfaz}`);
   aviso.log(`Registros en ${registros.ruta}`);
+}
+
+/**
+ * Cabeceras de seguridad (helmet) a la medida de SINERGIA.
+ *
+ * La politica de contenido (CSP) dice de donde puede cargar cosas la pagina:
+ *   - scripts: solo los propios (por eso el tema se aplica con /tema.js y no con un script en el HTML);
+ *   - estilos: propios y Google Fonts ('unsafe-inline' porque React pone estilos en linea);
+ *   - tipografia: Google Fonts;
+ *   - imagenes: propias, data: y blob: (la vista previa de la fotografia);
+ *   - marcos: propios y blob: (el visor muestra el PDF en un marco con direccion temporal);
+ *   - nadie puede meter SINERGIA en un marco ajeno (frame-ancestors 'none').
+ * Las respuestas de archivos (documentos y fotos) ponen despues su propia CSP
+ * todavia mas estricta. HSTS y "upgrade-insecure-requests" solo con HTTPS: en
+ * desarrollo (HTTP en localhost) romperian la carga.
+ */
+function opcionesDeCabeceras(conHttps: boolean): Parameters<typeof helmet>[0] {
+  return {
+    contentSecurityPolicy: {
+      directives: {
+        defaultSrc: ["'self'"],
+        scriptSrc: ["'self'"],
+        styleSrc: ["'self'", 'https://fonts.googleapis.com', "'unsafe-inline'"],
+        fontSrc: ["'self'", 'https://fonts.gstatic.com', 'data:'],
+        imgSrc: ["'self'", 'data:', 'blob:'],
+        frameSrc: ["'self'", 'blob:'],
+        connectSrc: ["'self'"],
+        objectSrc: ["'none'"],
+        baseUri: ["'self'"],
+        formAction: ["'self'"],
+        frameAncestors: ["'none'"],
+        upgradeInsecureRequests: conHttps ? [] : null,
+      },
+    },
+    strictTransportSecurity: conHttps ? { maxAge: 15552000, includeSubDomains: true } : false,
+    crossOriginResourcePolicy: { policy: 'same-site' },
+    referrerPolicy: { policy: 'no-referrer' },
+  };
 }
 
 /**
