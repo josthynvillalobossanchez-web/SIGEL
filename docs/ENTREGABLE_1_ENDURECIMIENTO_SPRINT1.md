@@ -85,11 +85,11 @@ Origen: #5c-bis. Hoy `POST /api/usuarios` devuelve la contraseña temporal una v
 - Recordar: cuenta Gmail normal, compartida con otros sistemas, sin dominio propio (los correos
   pueden caer en «no deseado»); por eso el correo se reserva para lo muy importante.
 
-### E. Herramienta de recifrado — [Dev] — antes del despliegue
+### E. Herramienta de recifrado — [Dev] — **hecha (01/10/2026)**
 Origen: #20. Explicada paso a paso en la sección 3.
-- [ ] Programar `npm run archivos:recifrar` (simulacro por defecto).
-- [ ] Pruebas con archivos de dos versiones de llave.
-- [ ] Documentar el procedimiento en GUIA_DESARROLLO.md §10.6.
+- [x] Programar `npm run archivos:recifrar` (simulacro por defecto).
+- [x] Pruebas con archivos de dos versiones de llave.
+- [x] Documentar el procedimiento en GUIA_DESARROLLO.md §10.6.
 
 ### F. Antivirus al subir — antes del despliegue — [Joseph] decide, [TI] instala, [Dev] programa
 Origen: #22. Explicado en la sección 4.
@@ -159,8 +159,8 @@ queda ninguno con la versión vieja, esa llave se puede retirar del `.env`.
 4. **Simulacro** (no cambia nada): `npm run archivos:recifrar` muestra cuántos archivos hay por
    versión de llave y cuáles se recifrarían, y avisa de cualquier archivo ilegible.
 5. **Ejecutar de verdad**: `npm run archivos:recifrar -- --aplicar`. Por cada archivo con versión
-   vieja: lo descifra en memoria, comprueba que su hash coincide con el guardado, lo cifra con la
-   llave nueva, lo escribe en un archivo temporal y **solo entonces lo reemplaza** (si algo falla
+   vieja: lo descifra en memoria, lo cifra con la llave nueva (el sello de GCM ya comprueba que no está
+   alterado; la herramienta no consulta la base de datos), comprueba que la copia descifra igual, lo escribe en un archivo temporal y **solo entonces lo reemplaza** (si algo falla
    a mitad, el archivo original queda intacto). Se puede interrumpir y volver a correr: salta los
    que ya están en la versión nueva.
 6. **Verificar**: volver a correr el simulacro. Debe decir **0 archivos con versión vieja** y 0
@@ -237,7 +237,7 @@ revisar sin escribirlo a disco:
 | B. Intentos por código de recuperación | Dev | **Hecha** | Migración pendiente de correr por Josthyn |
 | C. Cierre de sesión real | Dev | **Hecha** | Migración pendiente de correr por Josthyn |
 | D. Contraseña temporal solo por correo | Josthyn / Dev | Espera a probar el correo en el servidor | |
-| E. Herramienta de recifrado | Dev | Antes del despliegue | |
+| E. Herramienta de recifrado | Dev | **Hecha** | Sin migración. Probada con `pruebas-recifrar.mjs` |
 | F. Antivirus al subir | Joseph / TI / Dev | Antes del despliegue; espera decisión | |
 | G. Política de depuración | Joseph | Antes del despliegue (sin código) | |
 | H. «Atrás» del navegador | Dev | Pendiente (baja) | |

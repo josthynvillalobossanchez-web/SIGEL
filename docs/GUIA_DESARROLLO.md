@@ -830,8 +830,28 @@ Lo que TI respalda: la base de datos, `backend/archivos/` y, **por otro camino**
    archivo guarda con qué versión se cifró). Mientras haya archivos de la versión 1, **no se
    borra la llave vieja**.
 
-Todavía **no existe** una herramienta que recifre los archivos viejos con la llave nueva (está
-anotada en `docs/_trabajo/COSAS_POR_CORREGIR.md`).
+**Recifrar los archivos viejos con la llave nueva.** Existe la herramienta
+`npm run archivos:recifrar` (en `backend/`, lee el mismo `.env` que el backend). No toca la base de
+datos ni borra nada. Pasos:
+
+1. **Respaldo completo antes de empezar:** base de datos y carpeta `backend/archivos/`.
+2. Hacer la rotación de arriba (llave nueva, versión subida, vieja en `ARCHIVOS_LLAVES_ANTERIORES`) y
+   reiniciar el backend.
+3. **Simulacro** (no cambia nada): `npm run archivos:recifrar`. Muestra cuántos archivos hay por
+   versión de llave, cuántos se recifrarían y cuáles son ilegibles (alterados, o cifrados con una
+   versión cuya llave no está en el `.env`). Esos **no se tocan**; TI decide qué hacer con ellos.
+4. **Recifrar de verdad:** `npm run archivos:recifrar -- --aplicar`. Por cada archivo viejo lo
+   descifra en memoria, lo cifra con la llave nueva, comprueba que la copia descifra igual y solo
+   entonces reemplaza el original (si algo falla, el original queda intacto). Se puede interrumpir
+   y volver a correr: salta los que ya están al día. Conviene hacerlo en horario de poco uso.
+5. **Verificar:** correr el simulacro otra vez. Debe decir **0 por recifrar y 0 ilegibles**, y avisa
+   que ya se puede retirar la llave vieja. Descargar un par de documentos desde SINERGIA.
+6. **Retirar la llave vieja** de `ARCHIVOS_LLAVES_ANTERIORES` solo si el paso 5 dio 0, y reiniciar.
+   Guardar aparte la copia de la llave nueva (la vieja se conserva en el respaldo anterior mientras
+   ese respaldo exista).
+7. Anotar la fecha y quién lo hizo.
+
+El comando termina con error (código 1) si hubo archivos ilegibles o con error.
 
 **Qué protege y qué no.**
 
