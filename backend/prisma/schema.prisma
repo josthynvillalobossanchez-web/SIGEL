@@ -48,6 +48,38 @@ enum tipoNombramiento {
   contratacionServicios
 }
 
+enum estadoSolicitud {
+  borrador
+  pendiente
+  aprobada
+  rechazada
+  cancelada
+}
+
+enum estadoDocumentoGenerado {
+  /// El tipo de tramite no genera documento.
+  noAplica
+  /// Corresponde generarlo y aun no se ha generado.
+  pendiente
+  /// PDF generado y asociado al expediente.
+  generado
+  /// La generacion fallo: RRHH decide si lo sube manualmente.
+  fallido
+}
+
+/// El saldo de vacaciones es la SUMA de estos movimientos; nunca se
+/// sobreescribe un campo. Los dias perdidos por exceder el tope quedan como
+/// un movimiento negativo de tipo vencimiento, no como un borrado.
+enum tipoMovimientoVacaciones {
+  saldoInicial
+  acumulacion
+  consumo
+  /// Correccion manual de RRHH.
+  ajuste
+  /// Dias perdidos por exceder el tope de periodos. Siempre negativo.
+  vencimiento
+}
+
 enum accionBitacora {
   crear
   modificar
@@ -91,6 +123,10 @@ model usuario {
   permisosAsignados    usuarioPermiso[]             @relation("permisosAsignadosPorEsteUsuario")
   tokensRecuperacion   tokenRecuperacionContrasena[]
   sesiones             sesion[]
+  solicitudesHechas    solicitud[]                  @relation("solicitudesHechasPorUsuario")
+  solicitudesAAprobar  solicitud[]                  @relation("solicitudesDelAprobador")
+  solicitudesResueltas solicitud[]                  @relation("solicitudesResueltasPorUsuario")
+  movimientosVacacionesRegistrados movimientoVacaciones[]
   documentosRegistrados documento[]                 @relation("documentosRegistradosPorUsuario")
   documentosDadosDeBaja documento[]                 @relation("documentosDadosDeBajaPorUsuario")
   movimientosBitacora  bitacoraCambio[]
@@ -252,6 +288,7 @@ model regimenVacaciones {
   activo                     Boolean @default(true)
 
   funcionarios funcionario[]
+  reglas       reglaVacaciones[]
 }
 
 /// AUTOSERVICIO: el funcionario mantiene sus datos personales y de
@@ -299,6 +336,8 @@ model funcionario {
   regimenVacaciones regimenVacaciones @relation(fields: [regimenVacacionesId], references: [id])
   usuario           usuario?
   documentos        documento[]
+  solicitudes       solicitud[]
+  movimientosVacaciones movimientoVacaciones[]
   movimientosBitacora bitacoraCambio[]
 
   @@index([cedula], map: "idxFuncionarioCedula")
@@ -328,6 +367,7 @@ model tipoDocumento {
   formatosPermitidos String  @default("pdf,jpg,png") @db.VarChar(20)
 
   documentos documento[]
+  tiposSolicitud tipoSolicitud[]
 }
 
 /// La descarga y la visualizacion siempre pasan por el backend, que
@@ -372,13 +412,153 @@ model documento {
   tipoDocumento  tipoDocumento @relation(fields: [tipoDocumentoId], references: [id])
   usuarioRegistro usuario?     @relation("documentosRegistradosPorUsuario", fields: [usuarioRegistroId], references: [id])
   usuarioBaja     usuario?     @relation("documentosDadosDeBajaPorUsuario", fields: [usuarioBajaId], references: [id])
+  comoJustificante solicitud[]  @relation("justificanteDeSolicitud")
+  comoGenerado     solicitud[]  @relation("documentoGeneradoDeSolicitud")
 
   @@index([funcionarioId, tipoDocumentoId], map: "idxDocumentoFuncionarioTipo")
   @@index([funcionarioId, vigente], map: "idxDocumentoVigente")
 }
 
 // =====================================================================
-// 4. TRANSVERSALES
+// 4. SOLICITUDES Y VACACIONES (Sprint 2)
+// =====================================================================
+
+/// Una sola tabla de solicitudes para todos los tramites, separados por
+/// este catalogo: crear un tramite nuevo es agregar una fila, no un modulo.
+model tipoSolicitud {
+  id                   String  @id @default(uuid()) @db.Char(36)
+  /// Clave interna estable (vacaciones, permisoConGoce, permisoSinGoce...).
+  clave                String  @unique @db.VarChar(40)
+  nombre               String  @unique @db.VarChar(60)
+  descripcion          String? @db.VarChar(255)
+  /// Se pinta en el calendario inteligente como dia no disponible.
+  afectaDisponibilidad Boolean @default(true)
+  descuentaVacaciones  Boolean @default(false)
+  requiereJustificante Boolean @default(false)
+  /// true = se registra en horas (hora extra); false = en dias completos.
+  seMideEnHoras        Boolean @default(false)
+  /// Tipo del PDF que SINERGIA genera al aprobar. Nulo = no genera documento.
+  tipoDocumentoGeneradoId String? @db.Char(36)
+  colorCalendario      String? @db.VarChar(9)
+  activo               Boolean @default(true)
+
+  tipoDocumentoGenerado tipoDocumento? @relation(fields: [tipoDocumentoGeneradoId], references: [id])
+  solicitudes           solicitud[]
+}
+
+model solicitud {
+  id                   String           @id @default(uuid()) @db.Char(36)
+  /// Numero legible, por ejemplo VAC-2026-0001.
+  consecutivo          String           @unique @db.VarChar(30)
+  tipoSolicitudId      String           @db.Char(36)
+  /// Funcionario AFECTADO por el tramite.
+  funcionarioId        String           @db.Char(36)
+  /// Quien ejecuto la accion; si difiere del funcionario, es un tramite
+  /// hecho por RRHH en nombre de otra persona.
+  usuarioSolicitanteId String           @db.Char(36)
+  /// Jefatura inmediata del afectado (T-1). Si esta en el tope de la
+  /// jerarquia, coincide con el solicitante y se autoaprueba.
+  aprobadorId          String?          @db.Char(36)
+  estado               estadoSolicitud  @default(pendiente)
+  /// Se marca cuando el aprobador abre la solicitud. Mientras sea false, el
+  /// solicitante puede cancelarla; despues ya no.
+  leidaPorAprobador    Boolean          @default(false)
+
+  fechaSolicitud       DateTime         @default(now())
+  fechaInicio          DateTime         @db.Date
+  fechaFin             DateTime         @db.Date
+  horaInicio           DateTime?        @db.Time(0)
+  horaFin              DateTime?        @db.Time(0)
+  /// Dias habiles, sin feriados ni fines de semana. Solo dias enteros.
+  cantidadDias         Decimal?         @db.Decimal(5, 2)
+  cantidadHoras        Decimal?         @db.Decimal(6, 2)
+  motivo               String?          @db.VarChar(500)
+
+  fechaResolucion      DateTime?
+  /// Quien aprobo, rechazo o cancelo.
+  usuarioResolucionId  String?          @db.Char(36)
+  /// Obligatorio al rechazar.
+  motivoRechazo        String?          @db.VarChar(500)
+
+  justificanteDocumentoId String?       @db.Char(36)
+  documentoGeneradoId     String?       @db.Char(36)
+  estadoDocumentoGenerado estadoDocumentoGenerado @default(noAplica)
+
+  tipoSolicitud        tipoSolicitud    @relation(fields: [tipoSolicitudId], references: [id])
+  funcionario          funcionario      @relation(fields: [funcionarioId], references: [id])
+  usuarioSolicitante   usuario          @relation("solicitudesHechasPorUsuario", fields: [usuarioSolicitanteId], references: [id])
+  aprobador            usuario?         @relation("solicitudesDelAprobador", fields: [aprobadorId], references: [id])
+  usuarioResolucion    usuario?         @relation("solicitudesResueltasPorUsuario", fields: [usuarioResolucionId], references: [id])
+  justificante         documento?       @relation("justificanteDeSolicitud", fields: [justificanteDocumentoId], references: [id])
+  documentoGenerado    documento?       @relation("documentoGeneradoDeSolicitud", fields: [documentoGeneradoId], references: [id])
+  movimientosVacaciones movimientoVacaciones[]
+
+  @@index([funcionarioId, fechaInicio], map: "idxSolicitudFuncionario")
+  @@index([aprobadorId, estado], map: "idxSolicitudBandeja")
+  @@index([fechaInicio, fechaFin], map: "idxSolicitudCalendario")
+  @@index([estadoDocumentoGenerado], map: "idxSolicitudDocumentoPendiente")
+}
+
+/// Feriados de ley y asuetos municipales. RRHH los carga por anio y los
+/// puede editar; sirven para contar dias habiles y para el calendario.
+model diaNoLaborable {
+  id              String  @id @default(uuid()) @db.Char(36)
+  fecha           DateTime @unique @db.Date
+  nombre          String  @db.VarChar(120)
+  /// true = feriado de ley que se repite cada anio; false = asueto de ese anio.
+  recurrenteAnual Boolean @default(true)
+  activo          Boolean @default(true)
+
+  @@index([fecha], map: "idxDiaNoLaborableFecha")
+}
+
+/// Tramos del regimen: por ejemplo 15 dias hasta 6 anios, 20 desde los 6.
+/// Cambiar estos valores no requiere tocar codigo.
+model reglaVacaciones {
+  id                  String   @id @default(uuid()) @db.Char(36)
+  regimenVacacionesId String   @db.Char(36)
+  /// Anios de servicio cumplidos desde los cuales aplica el tramo.
+  aniosMinimos        Int      @db.SmallInt
+  /// Nulo = sin limite superior.
+  aniosMaximos        Int?     @db.SmallInt
+  diasPorPeriodo      Decimal  @db.Decimal(5, 2)
+  vigenteDesde        DateTime @db.Date
+  activo              Boolean  @default(true)
+
+  regimen regimenVacaciones @relation(fields: [regimenVacacionesId], references: [id])
+
+  @@unique([regimenVacacionesId, aniosMinimos], map: "uqReglaVacaciones")
+}
+
+model movimientoVacaciones {
+  id               String                    @id @default(uuid()) @db.Char(36)
+  funcionarioId    String                    @db.Char(36)
+  tipo             tipoMovimientoVacaciones
+  /// Positivo suma, negativo resta.
+  cantidadDias     Decimal                   @db.Decimal(6, 2)
+  fechaMovimiento  DateTime                  @db.Date
+  /// Periodo al que pertenecen los dias (por ejemplo 2025-2026): permite
+  /// saber cuantos periodos lleva acumulados.
+  periodo          String?                   @db.VarChar(20)
+  /// Solo en acumulacion y saldo inicial: cuando esos dias se pierden si no
+  /// se usan.
+  fechaVencimiento DateTime?                 @db.Date
+  solicitudId      String?                   @db.Char(36)
+  /// Nulo cuando lo genera el sistema (acumulacion o vencimiento).
+  usuarioRegistroId String?                  @db.Char(36)
+  observacion      String?                   @db.VarChar(500)
+  fechaRegistro    DateTime                  @default(now())
+
+  funcionario     funcionario @relation(fields: [funcionarioId], references: [id])
+  solicitud       solicitud?  @relation(fields: [solicitudId], references: [id])
+  usuarioRegistro usuario?    @relation(fields: [usuarioRegistroId], references: [id])
+
+  @@index([funcionarioId, fechaMovimiento], map: "idxMovimientoFuncionario")
+  @@index([funcionarioId, fechaVencimiento], map: "idxMovimientoVencimiento")
+}
+
+// =====================================================================
+// 5. TRANSVERSALES
 // =====================================================================
 
 /// Registro inmutable: la aplicacion nunca hace UPDATE ni DELETE sobre

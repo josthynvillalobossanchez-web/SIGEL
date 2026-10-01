@@ -83,6 +83,14 @@ const PERMISOS: { clave: string; modulo: string; descripcion: string }[] = [
     modulo: 'solicitudes',
     descripcion: 'Aprobar o rechazar las solicitudes del personal a cargo (puede ser jefatura inmediata)',
   },
+  // Lo usa Recursos Humanos: ver las solicitudes y el calendario de todo el
+  // personal, y hacer solicitudes en nombre de otra persona (Ficha 25). No
+  // aprueba: aprobar sigue siendo de la jefatura inmediata (T-1).
+  {
+    clave: 'solicitudes.administrar',
+    modulo: 'solicitudes',
+    descripcion: 'Ver las solicitudes y el calendario de todo el personal y registrar solicitudes en nombre de otra persona',
+  },
 ];
 
 // ---------------------------------------------------------------------
@@ -132,6 +140,7 @@ const ROLES: { nombre: string; descripcion: string; permisos: string[] | 'todos'
       'perfilPropio.editar',
       'solicitudes.crear',
       'solicitudes.aprobar',
+      'solicitudes.administrar',
     ],
   },
   {
@@ -165,6 +174,67 @@ const REGIMENES = [
     descripcion: '30 días para los funcionarios amparados al régimen anterior.',
     periodosMaximosAcumulables: 2,
     diasAvisoAntesDeVencer: 60,
+  },
+];
+
+// Tramos de vacaciones por regimen. aniosMinimos/aniosMaximos son anios de
+// servicio CUMPLIDOS: "general" da 15 dias por periodo durante los primeros 6
+// anios (0 a 5 cumplidos) y 20 desde que cumple 6. Si la normativa cambia, se
+// editan estas filas (no el codigo).
+const REGLAS_VACACIONES = [
+  { regimen: 'general', aniosMinimos: 0, aniosMaximos: 5, diasPorPeriodo: 15 },
+  { regimen: 'general', aniosMinimos: 6, aniosMaximos: null, diasPorPeriodo: 20 },
+  { regimen: 'anterior', aniosMinimos: 0, aniosMaximos: null, diasPorPeriodo: 30 },
+];
+
+// Tramites que se piden desde "Solicitudes". Las horas extra NO van aqui: son
+// solo un registro que hace RRHH (decision del 30/09). Las incapacidades
+// tienen su propia tabla porque no pasan por aprobacion.
+const TIPOS_SOLICITUD = [
+  {
+    clave: 'vacaciones',
+    nombre: 'Vacaciones',
+    descripcion: 'Descuentan del saldo de vacaciones y generan una constancia al aprobarse',
+    descuentaVacaciones: true,
+    requiereJustificante: false,
+    generaConstancia: true,
+    colorCalendario: '#2f7d5b',
+  },
+  {
+    clave: 'permisoConGoce',
+    nombre: 'Permiso con goce de salario',
+    descripcion: 'Ausencia autorizada sin rebajo de salario ni de vacaciones',
+    descuentaVacaciones: false,
+    requiereJustificante: false,
+    generaConstancia: false,
+    colorCalendario: '#3b6fb6',
+  },
+  {
+    clave: 'permisoSinGoce',
+    nombre: 'Permiso sin goce de salario',
+    descripcion: 'Ausencia autorizada con rebajo de salario',
+    descuentaVacaciones: false,
+    requiereJustificante: false,
+    generaConstancia: false,
+    colorCalendario: '#8a6d3b',
+  },
+  {
+    clave: 'licencia',
+    nombre: 'Licencia',
+    descripcion: 'Licencias previstas por la normativa (por ejemplo matrimonio o fallecimiento de un familiar)',
+    descuentaVacaciones: false,
+    requiereJustificante: true,
+    generaConstancia: false,
+    colorCalendario: '#7b5ea7',
+  },
+  {
+    clave: 'capacitacion',
+    nombre: 'Capacitación que choca con el horario',
+    descripcion: 'Curso o actividad de formación que se cruza con la jornada laboral',
+    descuentaVacaciones: false,
+    requiereJustificante: false,
+    generaConstancia: false,
+    colorCalendario: '#c2762b',
   },
 ];
 
@@ -239,6 +309,36 @@ async function main(): Promise<void> {
     });
   }
   console.log(`  Tipos de documento: ${TIPOS_DOCUMENTO.length}`);
+
+  // --- Tramos de vacaciones ---
+  for (const regla of REGLAS_VACACIONES) {
+    const regimen = await prisma.regimenVacaciones.findUniqueOrThrow({ where: { nombre: regla.regimen } });
+    await prisma.reglaVacaciones.upsert({
+      where: { regimenVacacionesId_aniosMinimos: { regimenVacacionesId: regimen.id, aniosMinimos: regla.aniosMinimos } },
+      // Si RRHH ya ajusto los dias, el seed no los pisa.
+      update: {},
+      create: {
+        regimenVacacionesId: regimen.id,
+        aniosMinimos: regla.aniosMinimos,
+        aniosMaximos: regla.aniosMaximos,
+        diasPorPeriodo: regla.diasPorPeriodo,
+        vigenteDesde: new Date('2000-01-01'),
+      },
+    });
+  }
+  console.log(`  Tramos de vacaciones: ${REGLAS_VACACIONES.length}`);
+
+  // --- Tipos de solicitud ---
+  const constancia = await prisma.tipoDocumento.findUniqueOrThrow({ where: { nombre: 'Constancia de vacaciones' } });
+  for (const { generaConstancia, ...tipo } of TIPOS_SOLICITUD) {
+    await prisma.tipoSolicitud.upsert({
+      where: { clave: tipo.clave },
+      // Solo se crean: el nombre y los demas ajustes los puede cambiar RRHH.
+      update: {},
+      create: { ...tipo, tipoDocumentoGeneradoId: generaConstancia ? constancia.id : null },
+    });
+  }
+  console.log(`  Tipos de solicitud: ${TIPOS_SOLICITUD.length}`);
 
   // --- Cuenta del Super Administrador ---
   const correo = process.env.SEED_ADMIN_CORREO ?? 'informatica@munipalmares.go.cr';

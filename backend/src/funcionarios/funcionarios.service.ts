@@ -14,6 +14,7 @@ import { aFechaSola, hoyEnCostaRica, interpretarFechaSola, sumarAnios } from '..
 import type { Prisma } from '../generated/prisma/client.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { UsuariosService, type CuentaCreada } from '../usuarios/usuarios.service.js';
+import { VacacionesService } from '../vacaciones/vacaciones.service.js';
 import { normalizarCedula } from './cedula.js';
 import type { ConsultarFuncionariosDto } from './dto/consultar-funcionarios.dto.js';
 import type {
@@ -266,6 +267,7 @@ export class FuncionariosService {
     private readonly prisma: PrismaService,
     private readonly bitacora: BitacoraService,
     private readonly usuarios: UsuariosService,
+    private readonly vacaciones: VacacionesService,
   ) {}
 
   /* ---------------------------------------------------------------- */
@@ -472,6 +474,10 @@ export class FuncionariosService {
         tx,
       );
 
+      // El saldo inicial de vacaciones es el punto de partida de la acumulacion:
+      // se anota siempre (aunque sea 0) para que la persona empiece a acumular.
+      await this.vacaciones.cargarSaldoInicial(tx, creado.id, datos.saldoInicialVacaciones ?? 0, quienActua, direccionIp);
+
       const cuenta = datos.cuenta
         ? await this.usuarios.crearCuentaEnTransaccion(tx, { funcionarioId: creado.id, roles: datos.cuenta.roles }, quienActua, direccionIp)
         : null;
@@ -614,6 +620,18 @@ export class FuncionariosService {
       );
 
       await tx.funcionario.update({ where: { id }, data: cambios });
+
+      // Cambio de jefatura: las solicitudes que siguen pendientes pasan a la
+      // jefatura nueva (decision confirmada). Sin jefatura nueva, la persona
+      // queda en el tope de la jerarquia y es su propia cuenta quien las ve.
+      if ('jefaturaId' in cambios) {
+        const nueva = cambios.jefaturaId
+          ? await tx.usuario.findUnique({ where: { funcionarioId: cambios.jefaturaId as string }, select: { id: true } })
+          : await tx.usuario.findUnique({ where: { funcionarioId: id }, select: { id: true } });
+        if (nueva) {
+          await tx.solicitud.updateMany({ where: { funcionarioId: id, estado: 'pendiente' }, data: { aprobadorId: nueva.id } });
+        }
+      }
 
       const lista = Object.keys(despues).map((campo) => ETIQUETAS[campo] ?? campo);
       await this.bitacora.registrar(

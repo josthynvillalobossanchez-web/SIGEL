@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { UsuariosModule } from '../usuarios/usuarios.module.js';
+import { VacacionesModule } from '../vacaciones/vacaciones.module.js';
 import { FuncionariosController } from './funcionarios.controller.js';
 import { FuncionariosService } from './funcionarios.service.js';
 
@@ -8,7 +9,7 @@ import { FuncionariosService } from './funcionarios.service.js';
  * transaccion del registro ("crear tambien su cuenta").
  */
 @Module({
-  imports: [UsuariosModule],
+  imports: [UsuariosModule, VacacionesModule],
   controllers: [FuncionariosController],
   providers: [FuncionariosService],
   exports: [FuncionariosService],

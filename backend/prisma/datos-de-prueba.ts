@@ -83,6 +83,23 @@ async function main(): Promise<void> {
       },
     });
 
+    // Saldo inicial de vacaciones (punto de partida de la acumulacion).
+    const conSaldo = await prisma.movimientoVacaciones.findFirst({
+      where: { funcionarioId: funcionario.id, tipo: 'saldoInicial' },
+      select: { id: true },
+    });
+    if (!conSaldo) {
+      await prisma.movimientoVacaciones.create({
+        data: {
+          funcionarioId: funcionario.id,
+          tipo: 'saldoInicial',
+          cantidadDias: 15,
+          fechaMovimiento: new Date(new Date().toISOString().slice(0, 10)),
+          observacion: 'Saldo de prueba.',
+        },
+      });
+    }
+
     const cuenta = funcionario.usuario ? `ya tiene cuenta: ${funcionario.usuario.correo}` : 'sin cuenta';
     console.log(
       `  ${funcionario.id}  ${funcionario.nombre} ${funcionario.primerApellido} ${funcionario.segundoApellido}  [${cuenta}]`,
