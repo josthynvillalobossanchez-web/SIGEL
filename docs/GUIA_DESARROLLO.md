@@ -322,7 +322,7 @@ aparece marcado como público, exige sesión.
 | Método y ruta | Acceso | Para qué |
 |---|---|---|
 | `POST /autenticacion/iniciar-sesion` | público | Inicia sesión y deja la cookie de sesión |
-| `POST /autenticacion/cerrar-sesion` | público | Borra la cookie |
+| `POST /autenticacion/cerrar-sesion` | público | Revoca la sesión en el servidor y borra la cookie |
 | `GET /autenticacion/mi-sesion` | con sesión | Datos de la cuenta, roles y permisos efectivos |
 | `POST /autenticacion/cambiar-contrasena` | con sesión | Cambio propio y del primer ingreso |
 | `POST /autenticacion/solicitar-recuperacion` | público | Envía un código de 6 dígitos al correo |

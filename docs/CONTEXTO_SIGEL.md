@@ -188,7 +188,7 @@ contraseña temporal.
 | Método y ruta | Permiso | Para qué |
 |---|---|---|
 | `POST /api/autenticacion/iniciar-sesion` | público | Inicia sesión y deja la cookie |
-| `POST /api/autenticacion/cerrar-sesion` | público | Borra la cookie |
+| `POST /api/autenticacion/cerrar-sesion` | público | Revoca la sesión en el servidor y borra la cookie |
 | `GET /api/autenticacion/mi-sesion` | con sesión | Datos, roles y permisos efectivos |
 | `POST /api/autenticacion/cambiar-contrasena` | con sesión | Cambio propio y del primer ingreso |
 | `POST /api/autenticacion/solicitar-recuperacion` | público | Envía el código al correo |

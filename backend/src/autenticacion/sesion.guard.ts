@@ -49,6 +49,12 @@ export class SesionGuard implements CanActivate {
       throw this.sinSesion('La sesión expiró o no es válida.');
     }
 
+    // El token debe traer el id de una sesion abierta y sin revocar. Los
+    // tokens anteriores a este control no lo traen y dejan de servir.
+    if (!(await this.autenticacion.sesionVigente(contenido.jti, contenido.sub))) {
+      throw this.sinSesion('La sesión expiró o no es válida.');
+    }
+
     /**
      * Se vuelve a consultar el usuario en cada peticion, en lugar de confiar
      * en lo que diga el token. Cuesta una consulta, pero a cambio los cambios
@@ -85,7 +91,7 @@ export class SesionGuard implements CanActivate {
       }
     }
 
-    peticion.usuario = usuario;
+    peticion.usuario = { ...usuario, sesionId: contenido.jti };
     return true;
   }
 

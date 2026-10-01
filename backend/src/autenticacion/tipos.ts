@@ -13,6 +13,8 @@ export interface UsuarioAutenticado {
   debeCambiarContrasena: boolean;
   roles: string[];
   permisos: string[];
+  /** Id de la sesion con la que llego la peticion (el jti del token). */
+  sesionId?: string;
 }
 
 /** Peticion a la que el guard ya le adjunto el usuario. */

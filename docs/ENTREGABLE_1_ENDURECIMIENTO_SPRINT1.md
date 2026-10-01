@@ -60,13 +60,19 @@ Origen: #5d. Hoy el código de 6 dígitos solo está protegido por el límite po
   `20261002000000_intentos_codigo_recuperacion`; el servicio responde `CODIGO_AGOTADO`
   al quinto fallo y el código queda marcado como usado.
 
-### C. Cierre de sesión real (revocar tokens) — [Dev] — antes del despliegue
+### C. Cierre de sesión real (revocar tokens) — [Dev] — **hecha (01/10/2026)**
 Origen: #4. Hoy un token robado sirve hasta que vence, aunque la persona haya cerrado sesión.
-- [ ] Decidir el método (recomendado: guardar en base un identificador de sesión `jti` por
+- [x] Decidir el método (recomendado: guardar en base un identificador de sesión `jti` por
   token y marcarlo revocado al cerrar sesión o al cambiar la contraseña). **Migración.**
-- [ ] El guard rechaza tokens revocados; «Salir» y «cambiar contraseña» revocan.
-- [ ] Limpieza periódica de sesiones vencidas.
-- [ ] Pruebas: un token usado después de «Salir» da 401.
+- [x] El guard rechaza tokens revocados; «Salir» y «cambiar contraseña» revocan.
+- [x] Limpieza periódica de sesiones vencidas.
+- [x] Pruebas: un token usado después de «Salir» da 401 (`pruebas-sesiones.mjs`).
+- **Cómo quedó:** tabla `sesion` (migración `20261002010000_sesiones_revocables`). Cada ingreso crea
+  una fila y su id viaja en el token como `jti`. El guard exige que la fila exista, sea del usuario,
+  no esté revocada ni vencida. «Salir» revoca solo esa sesión; cambiar la contraseña revoca las demás
+  (la actual sigue); restablecer con código revoca todas. La limpieza (sesiones vencidas hace más de
+  un día) corre al iniciar sesión, sin proceso aparte. **Efecto al desplegar:** los tokens emitidos antes
+  no traen `jti`, así que todos tendrán que iniciar sesión una vez.
 
 ### D. Contraseña temporal solo por correo — [Josthyn] y después [Dev] — **no se hace hasta probar el correo en el servidor**
 Origen: #5c-bis. Hoy `POST /api/usuarios` devuelve la contraseña temporal una vez.
@@ -229,7 +235,7 @@ revisar sin escribirlo a disco:
 |---|---|---|---|
 | A. Cabeceras de seguridad | Dev | Hecha (falta commit y `npm install helmet`) | 30/09/2026 |
 | B. Intentos por código de recuperación | Dev | **Hecha** | Migración pendiente de correr por Josthyn |
-| C. Cierre de sesión real | Dev | Antes del despliegue | |
+| C. Cierre de sesión real | Dev | **Hecha** | Migración pendiente de correr por Josthyn |
 | D. Contraseña temporal solo por correo | Josthyn / Dev | Espera a probar el correo en el servidor | |
 | E. Herramienta de recifrado | Dev | Antes del despliegue | |
 | F. Antivirus al subir | Joseph / TI / Dev | Antes del despliegue; espera decisión | |

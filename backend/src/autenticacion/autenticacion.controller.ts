@@ -1,6 +1,6 @@
-import { Body, Controller, Get, HttpCode, HttpStatus, Post, Res } from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, HttpStatus, Post, Req, Res } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
-import type { Response } from 'express';
+import type { Request, Response } from 'express';
 import { AutenticacionService } from './autenticacion.service.js';
 import { COOKIE_SESION, opcionesCookie } from './cookie-sesion.js';
 import { DireccionIp } from '../comun/decoradores.js';
@@ -48,14 +48,17 @@ export class AutenticacionController {
   /**
    * POST /api/autenticacion/cerrar-sesion
    *
-   * Borra la cookie del navegador. Ojo: el token sigue siendo valido hasta
-   * que expira, asi que esto no revoca la sesion del lado del servidor. Eso
-   * esta anotado como pendiente para produccion.
+   * Revoca la sesion del lado del servidor (el token deja de servir aunque
+   * alguien lo hubiera copiado) y borra la cookie del navegador.
    */
   @Publico()
   @Post('cerrar-sesion')
   @HttpCode(HttpStatus.OK)
-  cerrarSesion(@Res({ passthrough: true }) respuesta: Response): { mensaje: string } {
+  async cerrarSesion(
+    @Req() peticion: Request,
+    @Res({ passthrough: true }) respuesta: Response,
+  ): Promise<{ mensaje: string }> {
+    await this.autenticacion.cerrarSesion(peticion.cookies?.[COOKIE_SESION] as string | undefined);
     respuesta.clearCookie(COOKIE_SESION, opcionesCookie(0));
     return { mensaje: 'Sesión cerrada.' };
   }
@@ -104,7 +107,7 @@ export class AutenticacionController {
     @Body() datos: CambiarContrasenaDto,
     @DireccionIp() direccionIp: string | undefined,
   ): Promise<{ mensaje: string }> {
-    await this.autenticacion.cambiarContrasenaPropia(usuario.id, datos, direccionIp);
+    await this.autenticacion.cambiarContrasenaPropia(usuario.id, datos, direccionIp, usuario.sesionId);
     return { mensaje: 'Contraseña actualizada.' };
   }
 
