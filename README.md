@@ -50,6 +50,10 @@ El desarrollo del proyecto se realiza utilizando Scrum, mediante iteraciones pla
 | Sprint 2 | Gestión de vacaciones · Permisos, licencias e incapacidades · Capacitaciones y horas extra |
 | Sprint 3 | Talent Pool · Notificaciones · Auditoría |
 
+## Herramientas y asistencia
+
+Todo el proyecto (análisis de apoyo, código, pruebas automáticas y documentación) se desarrolló con la asistencia de Claude, el asistente de inteligencia artificial de Anthropic, usado como apoyo de programación a lo largo del proyecto y con distintos modelos. Las decisiones de diseño y de negocio, la revisión del resultado y las pruebas finales fueron del desarrollador (Josthyn Villalobos Sánchez), con la supervisión de Joseph Granda Vargas, Jefe de TI de la Municipalidad.
+
 ## Seguridad
 
 El sistema se desarrolla considerando controles de autenticación, autorización, permisos granulares por clave `modulo.accion`, validación de datos en el backend, protección de archivos, auditoría y buenas prácticas de seguridad. Las contraseñas se almacenan con Argon2id y los identificadores públicos son UUID.

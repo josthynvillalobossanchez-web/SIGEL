@@ -369,7 +369,7 @@ aparece marcado como público, exige sesión.
 | `PATCH /documentos/:id` | sesión (decide el servicio) | `{ titulo?, tipoDocumentoId?, descripcion?, fechaDocumento? }`; el archivo no se reemplaza. La persona edita lo que ella subió (`documentos.editarPropio`); RRHH cualquier documento manual (`documentos.editar`); los generados por SINERGIA solo se ven |
 | `POST /documentos/:id/baja` | sesión (decide el servicio) | `{ motivo? }`. Baja lógica: `documentos.darDeBajaPropio` (lo que subió ella) o `documentos.darDeBaja` |
 | `POST /documentos/:id/restauracion` | `documentos.restaurar` | Devuelve un documento dado de baja a vigente |
-| `GET /funcionarios/:id/foto` | ella misma, o `funcionarios.ver` | La fotografía (JPG o PNG); 404 `SIN_FOTOGRAFIA` si no tiene |
+| `GET /funcionarios/:id/foto` | ella misma, `funcionarios.ver` o `usuarios.ver` | La fotografía (JPG o PNG); 404 `SIN_FOTOGRAFIA` si no tiene. Sin límite de peticiones por minuto (las listas piden una por fila). Las listas y fichas de funcionarios y de usuarios traen `tieneFoto`, nunca la ruta |
 | `PUT /funcionarios/:id/foto` | ella misma (`perfilPropio.editar`) o `funcionarios.editar` | Multipart, campo `archivo`; JPG o PNG, máximo 5 MB. No se cambia la de una cuenta con más acceso |
 | `DELETE /funcionarios/:id/foto` | igual | Quita la fotografía (el archivo anterior queda guardado en el servidor) |
 | `GET /tipos-documento` | con sesión | `?soloActivos=&paraSubir=`; cada tipo trae `formatos[]`, `generadoPorSistema` y `cantidadDocumentos` |
