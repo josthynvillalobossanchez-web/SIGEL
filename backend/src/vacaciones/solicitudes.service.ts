@@ -18,6 +18,7 @@ import type {
   CrearSolicitudDto,
   RechazarSolicitudDto,
 } from './dto/solicitudes.dto.js';
+import { DiasNoLaborablesService } from './dias-no-laborables.service.js';
 import { PERMISO_ADMINISTRAR, VacacionesService, sumarMovimientos } from './vacaciones.service.js';
 
 /** Prefijo del consecutivo por tipo: VAC-2026-0001. Un tipo nuevo sin prefijo usa SOL. */
@@ -101,7 +102,15 @@ interface SolicitudPreparada {
     requiereJustificante: boolean;
     tipoDocumentoGeneradoId: string | null;
   };
-  funcionario: { id: string; nombreCompleto: string; usuarioId: string | null; jefaturaUsuarioId: string | null; tieneJefatura: boolean };
+  funcionario: {
+    id: string;
+    nombreCompleto: string;
+    usuarioId: string | null;
+    jefaturaUsuarioId: string | null;
+    tieneJefatura: boolean;
+    /** La registra la propia jefatura de la persona: queda aprobada al instante. */
+    laRegistraSuJefatura: boolean;
+  };
   inicio: Date;
   fin: Date;
   dias: number;
@@ -129,6 +138,7 @@ export class SolicitudesService {
     private readonly prisma: PrismaService,
     private readonly bitacora: BitacoraService,
     private readonly vacaciones: VacacionesService,
+    private readonly feriados: DiasNoLaborablesService,
   ) {}
 
   /* ================================================================== */
@@ -170,7 +180,8 @@ export class SolicitudesService {
         diasHabiles: p.dias,
         desglose: p.desglose,
         saldo: saldo ? { libre: saldo.libre, quedaria: redondear(saldo.libre - p.dias) } : null,
-        autoaprobada: !p.funcionario.tieneJefatura,
+        autoaprobada: seApruebaAlCrear(p),
+        laApruebaSuJefatura: p.funcionario.laRegistraSuJefatura,
       };
     } catch (error) {
       if (error instanceof BadRequestException || error instanceof ConflictException) {
@@ -194,8 +205,9 @@ export class SolicitudesService {
 
           // Se vuelve a validar dentro del bloqueo (traslapes y saldo).
           const p = await this.preparar(datos, quienActua, tx);
-          const autoaprueba = !p.funcionario.tieneJefatura;
-          const aprobadorId = autoaprueba ? (p.funcionario.usuarioId ?? quienActua.id) : p.funcionario.jefaturaUsuarioId;
+          const autoaprueba = seApruebaAlCrear(p);
+          // Sin jefatura, la aprueba la propia persona; con jefatura, siempre la jefatura (aunque la registre ella y quede aprobada).
+          const aprobadorId = p.funcionario.tieneJefatura ? p.funcionario.jefaturaUsuarioId : (p.funcionario.usuarioId ?? quienActua.id);
           const ahora = new Date();
 
           const fila = await tx.solicitud.create({
@@ -251,7 +263,9 @@ export class SolicitudesService {
                 registroAfectadoId: fila.id,
                 accion: 'aprobar',
                 direccionIp,
-                descripcion: 'Aprobada automáticamente: la persona está en el tope de la jerarquía.',
+                descripcion: p.funcionario.laRegistraSuJefatura
+                  ? 'Aprobada al registrarla: la registró la propia jefatura de la persona.'
+                  : 'Aprobada automáticamente: la persona está en el tope de la jerarquía.',
               },
               tx,
             );
@@ -355,16 +369,93 @@ export class SolicitudesService {
     return this.detalleSinPermisos(id);
   }
 
-  /** El solicitante cancela, solo mientras la jefatura no la haya abierto (Ficha 23). */
+  /**
+   * Cancelar. Dos casos:
+   *  - Pendiente: quien la hizo (o la persona) mientras la jefatura no la
+   *    haya abierto (Ficha 23).
+   *  - Aprobada: solo quien se la aprobo a si mismo (tope de la jerarquia,
+   *    decision 01/10) y antes de que empiece. Si descontaba vacaciones, los
+   *    dias vuelven al saldo con un movimiento de devolucion (nada se borra).
+   *    La pantalla pide doble confirmacion: no se puede deshacer.
+   */
   async cancelar(id: string, quienActua: UsuarioAutenticado, direccionIp?: string): Promise<SolicitudDeLista> {
     const s = await this.prisma.solicitud.findUnique({
       where: { id },
-      select: { id: true, consecutivo: true, estado: true, leidaPorAprobador: true, usuarioSolicitanteId: true, funcionarioId: true },
+      select: {
+        id: true,
+        consecutivo: true,
+        estado: true,
+        leidaPorAprobador: true,
+        usuarioSolicitanteId: true,
+        funcionarioId: true,
+        aprobadorId: true,
+        fechaInicio: true,
+        cantidadDias: true,
+        tipoSolicitud: { select: { nombre: true, descuentaVacaciones: true } },
+      },
     });
     if (!s) throw this.noEncontrada();
-    if (s.usuarioSolicitanteId !== quienActua.id) {
+    const esSuya = s.usuarioSolicitanteId === quienActua.id || (quienActua.funcionarioId !== null && s.funcionarioId === quienActua.funcionarioId);
+    if (!esSuya) {
       throw new ForbiddenException({ codigo: 'SOLICITUD_AJENA', message: 'Solo quien hizo la solicitud puede cancelarla.' });
     }
+
+    if (s.estado === 'aprobada') {
+      const seLaAproboASiMismo = s.aprobadorId === quienActua.id && s.funcionarioId === quienActua.funcionarioId;
+      if (!seLaAproboASiMismo) {
+        throw new ConflictException({
+          codigo: 'SOLICITUD_YA_RESUELTA',
+          message: 'Esta solicitud ya la aprobó su jefatura. Para cambiarla, coordínelo directamente con ella.',
+        });
+      }
+      if (s.fechaInicio <= hoyEnCostaRica()) {
+        throw new ConflictException({
+          codigo: 'SOLICITUD_YA_INICIADA',
+          message: 'Esta solicitud ya empezó: no se puede cancelar. Si hace falta corregir el saldo, Recursos Humanos puede hacer un ajuste.',
+        });
+      }
+      await this.prisma.$transaction(async (tx) => {
+        await tx.$queryRaw`SELECT id FROM funcionario WHERE id = ${s.funcionarioId} FOR UPDATE`;
+        const resultado = await tx.solicitud.updateMany({
+          where: { id, estado: 'aprobada' },
+          data: { estado: 'cancelada', fechaResolucion: new Date(), usuarioResolucionId: quienActua.id },
+        });
+        if (resultado.count === 0) throw this.yaResuelta('cancelada');
+        if (s.tipoSolicitud.descuentaVacaciones) {
+          // Devolucion: un consumo positivo con la misma fecha, asi el saldo de cualquier dia queda como si nunca se hubiera pedido.
+          const consumido = await tx.movimientoVacaciones.aggregate({ where: { solicitudId: id, tipo: 'consumo' }, _sum: { cantidadDias: true } });
+          const aDevolver = -Number(consumido._sum.cantidadDias ?? 0);
+          if (aDevolver > 0) {
+            await tx.movimientoVacaciones.create({
+              data: {
+                funcionarioId: s.funcionarioId,
+                tipo: 'consumo',
+                cantidadDias: aDevolver,
+                fechaMovimiento: s.fechaInicio,
+                solicitudId: id,
+                usuarioRegistroId: quienActua.id,
+                observacion: `Devolución: se canceló ${s.consecutivo}`,
+              },
+            });
+          }
+        }
+        await this.bitacora.registrar(
+          {
+            usuarioId: quienActua.id,
+            funcionarioAfectadoId: s.funcionarioId,
+            entidad: 'solicitud',
+            registroAfectadoId: id,
+            accion: 'cancelar',
+            direccionIp,
+            datosAnteriores: { estado: 'aprobada' },
+            descripcion: `Canceló la solicitud aprobada ${s.consecutivo}${s.tipoSolicitud.descuentaVacaciones ? ` y se devolvieron ${Number(s.cantidadDias ?? 0)} día(s) al saldo` : ''}.`,
+          },
+          tx,
+        );
+      });
+      return this.detalleSinPermisos(id);
+    }
+
     if (s.estado !== 'pendiente') {
       throw new ConflictException({ codigo: 'SOLICITUD_YA_RESUELTA', message: 'Solo se pueden cancelar solicitudes pendientes.' });
     }
@@ -498,7 +589,9 @@ export class SolicitudesService {
       if (!quienActua.funcionarioId || !quienActua.permisos.includes('solicitudes.aprobar')) {
         throw new ForbiddenException({ codigo: 'CALENDARIO_NO_PERMITIDO', message: 'Solo las jefaturas ven el calendario de su equipo.' });
       }
-      donde.funcionario = { jefaturaId: quienActua.funcionarioId };
+      // El equipo y la propia jefatura (sus dias tambien cuentan para planificar).
+      donde.funcionario = { OR: [{ jefaturaId: quienActua.funcionarioId }, { id: quienActua.funcionarioId }] };
+      if (filtros.departamentoId) donde.funcionario = { AND: [donde.funcionario, { departamentoId: filtros.departamentoId }] };
     } else {
       if (!quienActua.permisos.includes(PERMISO_ADMINISTRAR)) {
         throw new ForbiddenException({ codigo: 'CALENDARIO_NO_PERMITIDO', message: 'Solo Recursos Humanos ve el calendario de todo el personal.' });
@@ -557,9 +650,6 @@ export class SolicitudesService {
 
     // ---- A nombre de quien ----
     const enNombreDeTercero = Boolean(datos.funcionarioId && datos.funcionarioId !== quienActua.funcionarioId);
-    if (enNombreDeTercero && !quienActua.permisos.includes(PERMISO_ADMINISTRAR)) {
-      throw new ForbiddenException({ codigo: 'SOLICITUD_AJENA', message: 'Solo Recursos Humanos puede hacer solicitudes en nombre de otra persona.' });
-    }
     const funcionarioId = datos.funcionarioId ?? quienActua.funcionarioId;
     if (!funcionarioId) throw this.sinFuncionario();
 
@@ -578,6 +668,17 @@ export class SolicitudesService {
     });
     if (!persona) {
       throw new NotFoundException({ codigo: 'FUNCIONARIO_NO_ENCONTRADO', message: 'No se encontró el funcionario indicado.' });
+    }
+    // En nombre de otra persona: RRHH a cualquiera; la jefatura, a su personal a cargo (decision 01/10).
+    if (enNombreDeTercero) {
+      const esSuJefatura =
+        quienActua.permisos.includes('solicitudes.aprobar') && quienActua.funcionarioId !== null && persona.jefaturaId === quienActua.funcionarioId;
+      if (!quienActua.permisos.includes(PERMISO_ADMINISTRAR) && !esSuJefatura) {
+        throw new ForbiddenException({
+          codigo: 'SOLICITUD_AJENA',
+          message: 'Solo puede hacer solicitudes a nombre de su personal a cargo (o Recursos Humanos, de cualquiera).',
+        });
+      }
     }
     if (persona.estado !== 'activo') {
       throw new BadRequestException({ codigo: 'FUNCIONARIO_INACTIVO', message: 'La persona no está activa: no se pueden registrar solicitudes a su nombre.' });
@@ -679,6 +780,7 @@ export class SolicitudesService {
         usuarioId: persona.usuario?.id ?? null,
         jefaturaUsuarioId: jefaturaUsuario?.id ?? null,
         tieneJefatura: Boolean(persona.jefaturaId),
+        laRegistraSuJefatura: enNombreDeTercero && jefaturaUsuario !== null && jefaturaUsuario.id === quienActua.id,
       },
       inicio,
       fin,
@@ -701,16 +803,13 @@ export class SolicitudesService {
     }
   }
 
-  private async feriadosEntre(
+  /** Feriados del catalogo entre dos fechas (se repiten solos cada anio: ver feriados.ts). */
+  private feriadosEntre(
     desde: Date,
     hasta: Date,
     cliente: Prisma.TransactionClient | PrismaService = this.prisma,
   ): Promise<Map<string, string>> {
-    const filas = await cliente.diaNoLaborable.findMany({
-      where: { activo: true, fecha: { gte: desde, lte: hasta } },
-      select: { fecha: true, nombre: true },
-    });
-    return new Map(filas.map((f) => [aFechaSola(f.fecha)!, f.nombre]));
+    return this.feriados.entre(desde, hasta, cliente);
   }
 
   private async siguienteConsecutivo(tx: Prisma.TransactionClient, clave: string): Promise<string> {
@@ -856,6 +955,11 @@ export class SolicitudesService {
       message: 'Su cuenta no está asociada a un funcionario, así que no tiene solicitudes propias.',
     });
   }
+}
+
+/** Queda aprobada al crearla: no tiene jefatura (tope) o la registra su propia jefatura. */
+function seApruebaAlCrear(p: SolicitudPreparada): boolean {
+  return !p.funcionario.tieneJefatura || p.funcionario.laRegistraSuJefatura;
 }
 
 /** Error de llave unica de Prisma (P2002). */

@@ -29,13 +29,13 @@ export function Paginacion({
         Mostrando {desde}–{hasta} de {total} {total === 1 ? nombre[0] : nombre[1]}
       </span>
       <div className="paginas">
-        <button className="pag-btn" type="button" disabled={pagina <= 1} onClick={() => alCambiar(pagina - 1)} data-ayuda="Página anterior">
+        <button className="pag-btn" type="button" disabled={pagina <= 1} data-ayuda="Ir a la página anterior" onClick={() => alCambiar(pagina - 1)}>
           Anterior
         </button>
         <span className="pag-btn" aria-current="page" aria-label={`Página ${pagina} de ${totalPaginas}`}>
           {pagina} / {totalPaginas}
         </span>
-        <button className="pag-btn" type="button" disabled={pagina >= totalPaginas} onClick={() => alCambiar(pagina + 1)} data-ayuda="Página siguiente">
+        <button className="pag-btn" type="button" data-ayuda="Ir a la página siguiente" disabled={pagina >= totalPaginas} onClick={() => alCambiar(pagina + 1)}>
           Siguiente
         </button>
       </div>

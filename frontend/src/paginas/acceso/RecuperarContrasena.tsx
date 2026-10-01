@@ -125,7 +125,7 @@ export function RecuperarContrasena() {
             />
             <span className="ayuda">Si no recuerda cuál es, Recursos Humanos puede indicárselo.</span>
           </div>
-          <button className="btn btn-primario btn-bloque" type="submit" disabled={enviando} aria-busy={enviando}>
+          <button className="btn btn-primario btn-bloque" type="submit" disabled={enviando} aria-busy={enviando} data-ayuda="Enviar un código de verificación a su correo">
             {enviando ? 'Enviando…' : 'Enviar código'}
           </button>
         </form>
@@ -136,6 +136,7 @@ export function RecuperarContrasena() {
           <button
             className="volver"
             type="button"
+            data-ayuda="Volver al paso anterior para escribir de nuevo el correo"
             onClick={() => {
               setPaso('pedir-codigo');
               setError(null);
@@ -188,11 +189,11 @@ export function RecuperarContrasena() {
             alCambiar={setRepetida}
             autocompletar="new-password"
           />
-          <button className="btn btn-primario btn-bloque" type="submit" disabled={enviando} aria-busy={enviando}>
+          <button className="btn btn-primario btn-bloque" type="submit" disabled={enviando} aria-busy={enviando} data-ayuda="Guardar la contraseña nueva de su cuenta">
             {enviando ? 'Guardando…' : 'Guardar contraseña'}
           </button>
           <p style={{ textAlign: 'center', marginTop: 14 }}>
-            <button className="btn-texto" type="button" onClick={() => pedirCodigo()} disabled={enviando}>
+            <button className="btn-texto" type="button" data-ayuda="Enviar un código nuevo a su correo" onClick={() => pedirCodigo()} disabled={enviando}>
               Enviar otro código
             </button>
           </p>
@@ -220,7 +221,7 @@ export function RecuperarContrasena() {
               Ya puede ingresar a SINERGIA con su contraseña nueva.
             </p>
           </div>
-          <Link className="btn btn-primario btn-bloque" to="/iniciar-sesion" replace>
+          <Link className="btn btn-primario btn-bloque" to="/iniciar-sesion" replace data-ayuda="Ir a la pantalla de ingreso para entrar con su contraseña nueva">
             Ir al inicio de sesión
           </Link>
         </div>

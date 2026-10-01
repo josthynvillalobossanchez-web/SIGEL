@@ -5,12 +5,7 @@ import { DireccionIp } from '../comun/decoradores.js';
 import type { PaginaDeResultados } from '../comun/dto/paginacion.dto.js';
 import { uuidValido } from '../comun/pipes/uuid.pipe.js';
 import { DiasNoLaborablesService, type DiaNoLaborable } from './dias-no-laborables.service.js';
-import {
-  ConsultarDiasNoLaborablesDto,
-  CrearDiaNoLaborableDto,
-  EditarDiaNoLaborableDto,
-  ProponerAnioDto,
-} from './dto/dias-no-laborables.dto.js';
+import { ConsultarFechasDto, CrearDiaNoLaborableDto, EditarDiaNoLaborableDto } from './dto/dias-no-laborables.dto.js';
 import {
   ConsultarCalendarioDto,
   ConsultarSolicitudesDto,
@@ -195,19 +190,29 @@ export class SolicitudesController {
   }
 }
 
-/** Feriados y asuetos. Leer: cualquiera con solicitudes. Escribir: RRHH (catalogos.editar). */
+/**
+ * Catalogo de feriados (01/10/2026): se digitan una vez y se repiten solos.
+ * Leer: cualquiera con solicitudes. Escribir: RRHH (catalogos.editar).
+ */
 @Controller('dias-no-laborables')
 export class DiasNoLaborablesController {
   constructor(private readonly dias: DiasNoLaborablesService) {}
 
-  /** GET /api/dias-no-laborables?anio=2026 */
+  /** GET /api/dias-no-laborables  El catalogo, con la proxima fecha de cada uno. */
   @RequierePermisos('solicitudes.crear')
   @Get()
-  listar(@Query() filtros: ConsultarDiasNoLaborablesDto): Promise<DiaNoLaborable[]> {
-    return this.dias.listar(filtros.anio);
+  catalogo(): Promise<DiaNoLaborable[]> {
+    return this.dias.catalogo();
   }
 
-  /** POST /api/dias-no-laborables   { fecha, nombre, recurrenteAnual? }. Error: FECHA_YA_REGISTRADA. */
+  /** GET /api/dias-no-laborables/fechas?anio=2026  Las fechas activas de ese anio, ya calculadas. */
+  @RequierePermisos('solicitudes.crear')
+  @Get('fechas')
+  fechas(@Query() filtros: ConsultarFechasDto): Promise<{ fecha: string; nombre: string }[]> {
+    return this.dias.fechasDelAnio(filtros.anio);
+  }
+
+  /** POST /api/dias-no-laborables  { nombre, regla, mes?, dia?, fecha? }. Error: FECHA_YA_REGISTRADA. */
   @RequierePermisos('catalogos.editar')
   @Post()
   crear(
@@ -218,19 +223,15 @@ export class DiasNoLaborablesController {
     return this.dias.crear(datos, quienActua, direccionIp);
   }
 
-  /** POST /api/dias-no-laborables/proponer   { anio }: copia los recurrentes del anio anterior. */
+  /** POST /api/dias-no-laborables/de-ley  Agrega los feriados de ley de Costa Rica que falten. */
   @RequierePermisos('catalogos.editar')
-  @Post('proponer')
+  @Post('de-ley')
   @HttpCode(HttpStatus.OK)
-  proponer(
-    @Body() datos: ProponerAnioDto,
-    @UsuarioActual() quienActua: UsuarioAutenticado,
-    @DireccionIp() direccionIp: string | undefined,
-  ): Promise<DiaNoLaborable[]> {
-    return this.dias.proponerAnio(datos.anio, quienActua, direccionIp);
+  deLey(@UsuarioActual() quienActua: UsuarioAutenticado, @DireccionIp() direccionIp: string | undefined): Promise<DiaNoLaborable[]> {
+    return this.dias.cargarDeLey(quienActua, direccionIp);
   }
 
-  /** PATCH /api/dias-no-laborables/:id   { nombre?, recurrenteAnual?, activo? } */
+  /** PATCH /api/dias-no-laborables/:id   { nombre?, regla?, mes?, dia?, fecha?, activo? } */
   @RequierePermisos('catalogos.editar')
   @Patch(':id')
   editar(

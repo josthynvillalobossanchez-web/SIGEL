@@ -99,7 +99,7 @@ export function PaginaEditarUsuario() {
 function VolverALaLista() {
   const navegar = useNavigate();
   return (
-    <button className="volver" type="button" onClick={() => navegar(LISTA)}>
+    <button className="volver" type="button" data-ayuda="Volver a la lista de usuarios" onClick={() => navegar(LISTA)}>
       <Icono nombre="volver" tamano={17} /> Volver a usuarios
     </button>
   );
@@ -298,7 +298,7 @@ function FormularioDeUsuario({ cuenta }: { cuenta?: DetalleDeCuenta }) {
                     </div>
                   </div>
                   {!editando && (
-                    <button className="btn btn-texto" type="button" onClick={() => setElegido(null)} data-ayuda="Elegir a otra persona">
+                    <button className="btn btn-texto" type="button" data-ayuda="Elegir a otra persona" onClick={() => setElegido(null)}>
                       Cambiar
                     </button>
                   )}
@@ -335,6 +335,7 @@ function FormularioDeUsuario({ cuenta }: { cuenta?: DetalleDeCuenta }) {
                           role="option"
                           aria-selected="false"
                           className="item-sel"
+                          data-ayuda={`Elegir a ${nombreCompleto(f)} para la cuenta nueva`}
                           onClick={() => {
                             setElegido(f);
                             setCorreo(f.correoInstitucional ?? '');

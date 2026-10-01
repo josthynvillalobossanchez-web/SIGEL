@@ -74,7 +74,7 @@ export function PaginaExcepcion() {
           <Mensaje tipo="info">Esa excepción ya no está vigente (venció o la eliminaron). Puede agregar una nueva.</Mensaje>
         )}
         {(error || bloqueo || noEncontrada) && (
-          <button className="volver" type="button" onClick={() => navegar(`/usuarios?permisos=${id}`)}>
+          <button className="volver" type="button" data-ayuda="Volver a los permisos individuales de esta cuenta" onClick={() => navegar(`/usuarios?permisos=${id}`)}>
             <Icono nombre="volver" tamano={17} /> Volver a los permisos individuales
           </button>
         )}

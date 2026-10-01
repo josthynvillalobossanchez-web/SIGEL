@@ -112,6 +112,8 @@ export function Modal({
 
   function enviar(e: FormEvent) {
     e.preventDefault();
+    // Si la ventana se abre dentro de otro formulario (p. ej. el asistente por pasos), que el envio no suba hasta el.
+    e.stopPropagation();
     if (!ocupado && !confirmarDesactivado) alEnviar?.();
   }
 
@@ -156,7 +158,7 @@ export function Modal({
       <div className="modal-pie">
         {pie ?? (
           <>
-            <button className="btn btn-secundario" type="button" onClick={alCerrar} disabled={ocupado}>
+            <button className="btn btn-secundario" type="button" onClick={alCerrar} disabled={ocupado} data-ayuda={alEnviar ? 'Cerrar sin guardar' : 'Cerrar esta ventana'}>
               {textoCerrar ?? (alEnviar ? 'Cancelar' : 'Cerrar')}
             </button>
             {alEnviar && (
@@ -165,6 +167,7 @@ export function Modal({
                 type="submit"
                 disabled={ocupado || confirmarDesactivado}
                 aria-busy={ocupado}
+                data-ayuda={`${textoConfirmar} y cerrar esta ventana`}
               >
                 {ocupado ? 'Guardando…' : textoConfirmar}
               </button>

@@ -502,13 +502,18 @@ model solicitud {
 /// Feriados de ley y asuetos municipales. RRHH los carga por anio y los
 /// puede editar; sirven para contar dias habiles y para el calendario.
 model diaNoLaborable {
-  id              String  @id @default(uuid()) @db.Char(36)
-  fecha           DateTime @unique @db.Date
-  nombre          String  @db.VarChar(120)
-  /// true = feriado de ley que se repite cada anio; false = asueto de ese anio.
-  recurrenteAnual Boolean @default(true)
-  activo          Boolean @default(true)
+  id     String @id @default(uuid()) @db.Char(36)
+  nombre String @db.VarChar(120)
+  /// Como se repite (01/10): "fija" = cada anio el mismo dia y mes (mes, dia);
+  /// "unica" = solo esa fecha (fecha); "juevesSanto" / "viernesSanto" = se
+  /// calculan cada anio con la fecha de la Pascua (no llevan ni dia ni fecha).
+  regla  String    @default("fija") @db.VarChar(20)
+  mes    Int?      @db.TinyInt
+  dia    Int?      @db.TinyInt
+  fecha  DateTime? @unique @db.Date
+  activo Boolean   @default(true)
 
+  @@unique([mes, dia], map: "uqDiaNoLaborableMesDia")
   @@index([fecha], map: "idxDiaNoLaborableFecha")
 }
 

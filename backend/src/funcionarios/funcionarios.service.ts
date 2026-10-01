@@ -261,6 +261,13 @@ function nombreCompleto(f: { nombre: string; primerApellido: string; segundoApel
  *     texto legible (nombre del puesto, no su id): de ahi sale el historial
  *     laboral del expediente.
  */
+/** Ve a todo el personal (RRHH, SA, Auditoria). Sin esto, funcionarios.ver alcanza solo al personal a cargo (la jefatura). */
+export const PERMISO_VER_TODOS = 'funcionarios.verTodos';
+export function alcanzaATodos(quienActua: UsuarioAutenticado): boolean {
+  // Quien registra o edita funcionarios (RRHH, SA) tambien ve a todos, aunque a su rol le falte verTodos.
+  return ['funcionarios.verTodos', 'funcionarios.crear', 'funcionarios.editar'].some((p) => quienActua.permisos.includes(p));
+}
+
 @Injectable()
 export class FuncionariosService {
   constructor(
@@ -282,6 +289,8 @@ export class FuncionariosService {
       estado: filtros.estado,
       departamentoId: filtros.departamentoId,
       AND: [
+        // Sin funcionarios.verTodos, solo el personal a cargo (la jefatura ve a su equipo).
+        ...(alcanzaATodos(quienActua) ? [] : [{ jefaturaId: quienActua.funcionarioId ?? '__ninguno__' }]),
         // "Necesitan nueva jefatura" (Inicio y el filtro de la lista).
         ...(filtros.jefatura === 'revisar' ? [JEFATURA_POR_REVISAR] : []),
         ...palabras.map((palabra) => ({
@@ -343,6 +352,12 @@ export class FuncionariosService {
 
   async consultarUno(id: string, quienActua: UsuarioAutenticado): Promise<DetalleDeFuncionario> {
     const fila = await this.cargar(this.prisma, id);
+    if (!alcanzaATodos(quienActua) && id !== quienActua.funcionarioId && fila.jefatura?.id !== quienActua.funcionarioId) {
+      throw new ForbiddenException({
+        codigo: 'FUNCIONARIO_FUERA_DE_ALCANCE',
+        message: 'Solo puede consultar al personal que tiene a cargo.',
+      });
+    }
     const conMasAcceso = await this.conMasAcceso(this.prisma, [id], quienActua);
     const jefaturasValidas = await this.jefaturasValidas([fila.jefatura?.id ?? null]);
     const revisar = fila.estado === 'activo' && fila.jefatura !== null && !jefaturasValidas.has(fila.jefatura.id);

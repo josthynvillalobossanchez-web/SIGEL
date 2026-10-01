@@ -32,7 +32,11 @@ const prisma = new PrismaClient({ adapter: new PrismaMariaDb(configuracionDeCone
 // Catalogo de permisos del Sprint 1
 // ---------------------------------------------------------------------
 const PERMISOS: { clave: string; modulo: string; descripcion: string }[] = [
-  { clave: 'funcionarios.ver', modulo: 'funcionarios', descripcion: 'Consultar funcionarios y su ficha resumida' },
+  // Alcance (decision de Josthyn, 01/10): con solo funcionarios.ver se ve al
+  // personal A CARGO (la jefatura ve a su equipo); con funcionarios.verTodos,
+  // a todo el personal (Recursos Humanos, Auditoria).
+  { clave: 'funcionarios.ver', modulo: 'funcionarios', descripcion: 'Consultar funcionarios y su ficha resumida (sin verTodos, solo el personal a su cargo)' },
+  { clave: 'funcionarios.verTodos', modulo: 'funcionarios', descripcion: 'Consultar a todo el personal, no solo al que tiene a cargo' },
   { clave: 'funcionarios.crear', modulo: 'funcionarios', descripcion: 'Registrar un funcionario nuevo' },
   { clave: 'funcionarios.editar', modulo: 'funcionarios', descripcion: 'Modificar la información de un funcionario' },
   // Expediente (decision de Josthyn, 28/09): cada persona abre el SUYO
@@ -89,7 +93,7 @@ const PERMISOS: { clave: string; modulo: string; descripcion: string }[] = [
   {
     clave: 'solicitudes.administrar',
     modulo: 'solicitudes',
-    descripcion: 'Ver las solicitudes y el calendario de todo el personal y registrar solicitudes en nombre de otra persona',
+    descripcion: 'Ver las solicitudes y el calendario de todo el personal y registrar solicitudes en nombre de cualquier persona',
   },
 ];
 
@@ -119,6 +123,7 @@ const ROLES: { nombre: string; descripcion: string; permisos: string[] | 'todos'
     descripcion: 'Gestión completa de funcionarios, expedientes, usuarios y catálogos. Lo usa Recursos Humanos.',
     permisos: [
       'funcionarios.ver',
+      'funcionarios.verTodos',
       'funcionarios.crear',
       'funcionarios.editar',
       'expediente.ver',
@@ -158,7 +163,7 @@ const ROLES: { nombre: string; descripcion: string; permisos: string[] | 'todos'
   {
     nombre: 'Consulta',
     descripcion: 'Solo lectura de funcionarios y usuarios, sin ningún permiso de escritura (abre solo su propio expediente). Auditoría Interna.',
-    permisos: ['funcionarios.ver', 'expediente.ver', 'documentos.descargar', 'usuarios.ver'],
+    permisos: ['funcionarios.ver', 'funcionarios.verTodos', 'expediente.ver', 'documentos.descargar', 'usuarios.ver'],
   },
 ];
 

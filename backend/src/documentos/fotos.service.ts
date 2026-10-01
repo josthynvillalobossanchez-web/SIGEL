@@ -3,7 +3,7 @@ import type { UsuarioAutenticado } from '../autenticacion/tipos.js';
 import { AlmacenCifradoService } from '../almacenamiento/almacen-cifrado.service.js';
 import { detectarFormato, FORMATOS, TAMANO_MAXIMO_FOTO, validarArchivo, type ArchivoSubido } from '../almacenamiento/validacion-de-archivos.js';
 import { BitacoraService } from '../bitacora/bitacora.service.js';
-import { FuncionariosService } from '../funcionarios/funcionarios.service.js';
+import { alcanzaATodos, FuncionariosService } from '../funcionarios/funcionarios.service.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 
 /**
@@ -30,10 +30,16 @@ export class FotosService {
   /** Devuelve la foto descifrada y su tipo, o 404 si no tiene. */
   async ver(funcionarioId: string, quienActua: UsuarioAutenticado): Promise<{ contenido: Buffer; mime: string }> {
     // La propia, o quien ve funcionarios o cuentas de usuario (Usuarios muestra la foto de la persona de cada cuenta).
-    if (funcionarioId !== quienActua.funcionarioId && !quienActua.permisos.includes('funcionarios.ver') && !quienActua.permisos.includes('usuarios.ver')) {
+    // Con funcionarios.ver sin verTodos (la jefatura), solo la de su personal a cargo.
+    const f = await this.prisma.funcionario.findUnique({ where: { id: funcionarioId }, select: { fotoRuta: true, jefaturaId: true } });
+    const p = quienActua.permisos;
+    const permitido =
+      funcionarioId === quienActua.funcionarioId ||
+      p.includes('usuarios.ver') ||
+      (p.includes('funcionarios.ver') && (alcanzaATodos(quienActua) || (f !== null && f.jefaturaId !== null && f.jefaturaId === quienActua.funcionarioId)));
+    if (!permitido) {
       throw new ForbiddenException({ codigo: 'SIN_PERMISO', message: 'No tiene permiso para ver esta fotografía.' });
     }
-    const f = await this.prisma.funcionario.findUnique({ where: { id: funcionarioId }, select: { fotoRuta: true } });
     if (!f?.fotoRuta) throw new NotFoundException({ codigo: 'SIN_FOTOGRAFIA', message: 'Esta persona no tiene fotografía.' });
     const contenido = await this.almacen.leer(f.fotoRuta);
     const formato = detectarFormato(contenido);

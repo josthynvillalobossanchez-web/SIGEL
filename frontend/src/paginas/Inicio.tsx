@@ -13,10 +13,11 @@
 import { Link } from 'react-router';
 import { consultarFuncionarios } from '../api/funcionarios';
 import { consultarMiCuenta } from '../api/miCuenta';
+import { consultarBandeja, consultarMiSaldo } from '../api/vacaciones';
 import { consultarCuentas } from '../api/usuarios';
 import { Icono } from '../componentes/Icono';
 import { Mensaje } from '../componentes/Mensaje';
-import { MENU, puedeVerOpcion } from '../diseno/menu';
+import { MENU, puedeVerOpcion, textoDeOpcion } from '../diseno/menu';
 import { useSesion } from '../sesion/SesionProveedor';
 import { useConsulta } from '../utilidades/useConsulta';
 
@@ -33,7 +34,9 @@ export function Inicio() {
   if (!usuario) return null;
 
   const f = perfil?.funcionario;
-  const accesos = MENU.flatMap((grupo) => grupo.opciones).filter((o) => o.ruta !== '/' && puedeVerOpcion(o, tienePermisos, tieneFuncionario));
+  const accesos = MENU.flatMap((grupo) => grupo.opciones)
+    .filter((o) => o.ruta !== '/' && puedeVerOpcion(o, tienePermisos, tieneFuncionario))
+    .map((o) => ({ ...o, ...textoDeOpcion(o, tienePermisos) }));
   // Datos personales que conviene tener (el correo personal ya es obligatorio).
   const faltan = f
     ? [
@@ -86,7 +89,7 @@ export function Inicio() {
  * se piden las que la cuenta puede ver (tamano 1: solo interesa el total).
  */
 function Resumen() {
-  const { tienePermisos } = useSesion();
+  const { usuario, tienePermisos } = useSesion();
   const verFuncionarios = tienePermisos('funcionarios.ver');
   const verUsuarios = tienePermisos('usuarios.ver');
   const editarFuncionarios = tienePermisos('funcionarios.editar');
@@ -96,8 +99,17 @@ function Resumen() {
   // Personal cuya jefatura salio o dejo de ser Aprobadora (decision del 30/09).
   const porRevisar = useConsulta(editarFuncionarios ? () => consultarFuncionarios({ jefatura: 'revisar', tamano: 1 }) : null, []).datos;
 
+  // Vacaciones: lo que a cada persona le importa primero.
+  const saldo = useConsulta(usuario?.funcionarioId ? consultarMiSaldo : null, []).datos;
+  const porResolver = useConsulta(tienePermisos('solicitudes.aprobar') ? () => consultarBandeja({ estado: 'pendiente', tamano: 1 }) : null, []).datos;
+
   const cifras = [
-    verFuncionarios && { valor: activos?.total, texto: 'funcionarios activos', a: '/funcionarios?estado=activo', ayuda: 'Ver la lista de funcionarios activos' },
+    saldo?.saldoCargado && { valor: saldo.disponible, texto: saldo.disponible === 1 ? 'día de vacaciones disponible' : 'días de vacaciones disponibles', a: '/mis-vacaciones', ayuda: 'Ver su saldo y pedir vacaciones' },
+    porResolver && { valor: porResolver.total, texto: 'solicitudes por resolver', a: '/bandeja', ayuda: 'Solicitudes de su equipo que esperan su respuesta' },
+    verFuncionarios &&
+      (tienePermisos('funcionarios.verTodos')
+        ? { valor: activos?.total, texto: 'funcionarios activos', a: '/funcionarios?estado=activo', ayuda: 'Ver la lista de funcionarios activos' }
+        : { valor: activos?.total, texto: 'personas a su cargo', a: '/funcionarios?estado=activo', ayuda: 'Ver a su personal a cargo' }),
     verUsuarios && {
       valor: bloqueadas?.total,
       texto: 'cuentas bloqueadas',

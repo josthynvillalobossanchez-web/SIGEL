@@ -171,6 +171,8 @@ export function PasoDatosLaborales({
   minimoIngreso,
   errorIngreso,
   hoy,
+  editando,
+  saldoAlEditar,
 }: {
   datos: Formulario;
   poner: Poner;
@@ -179,6 +181,10 @@ export function PasoDatosLaborales({
   minimoIngreso: string;
   errorIngreso: string | null;
   hoy: string;
+  /** Al editar no se pide el saldo inicial: se corrige desde "Saldo de vacaciones". */
+  editando: boolean;
+  /** Al editar: el bloque discreto "Saldo de vacaciones" (va en el hueco de la rejilla, para no bajar). */
+  saldoAlEditar?: ReactNode;
 }) {
   return (
 
@@ -248,6 +254,19 @@ export function PasoDatosLaborales({
               max={maximoDeIngreso(hoy)}
               error={errorIngreso}
             />
+            {editando && saldoAlEditar && <div className="campo-doble">{saldoAlEditar}</div>}
+            {!editando && (
+              <Texto
+                id="fnSaldo"
+                etiqueta="Saldo inicial de vacaciones (días)"
+                valor={datos.saldoInicialVacaciones}
+                alCambiar={poner('saldoInicialVacaciones')}
+                max={3}
+                tipo="number"
+                placeholder="0"
+                ayuda="Los días que ya tiene acumulados al entrar al sistema. Si no lo sabe aún, déjelo vacío (queda en 0); luego se puede corregir al editar."
+              />
+            )}
           </div>
         </>
   );
@@ -335,6 +354,7 @@ export function RevisarRegistro({
             <DatoRevisar t="Nombramiento" v={textoDe('tipoNombramiento', datos.tipoNombramiento)} />
             <DatoRevisar t="Régimen" v={textoDe('regimenVacacionesId', datos.regimenVacacionesId)} />
             <DatoRevisar t="Ingreso" v={textoDe('fechaIngreso', datos.fechaIngreso)} />
+            <DatoRevisar t="Saldo inicial de vacaciones" v={`${datos.saldoInicialVacaciones.trim() || 0} días`} />
             <DatoRevisar
               t="Cuenta de acceso"
               v={
@@ -441,6 +461,7 @@ const ETIQUETAS: Record<keyof Formulario, string> = {
   tipoNombramiento: 'Tipo de nombramiento',
   regimenVacacionesId: 'Régimen de vacaciones',
   fechaIngreso: 'Fecha de ingreso',
+  saldoInicialVacaciones: 'Saldo inicial de vacaciones',
 };
 
 /* ------------------------------------------------------------------ */

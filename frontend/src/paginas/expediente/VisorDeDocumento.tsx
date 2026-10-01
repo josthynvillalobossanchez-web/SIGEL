@@ -65,16 +65,16 @@ export function VisorDeDocumento({ documento, alCerrar }: { documento: Documento
       alCerrar={alCerrar}
       pie={
         <>
-          <button className="btn btn-secundario" type="button" onClick={alCerrar}>
+          <button className="btn btn-secundario" type="button" onClick={alCerrar} data-ayuda="Cerrar el visor del documento">
             Cerrar
           </button>
           <button
             className="btn btn-primario"
             type="button"
+            data-ayuda="Guardar una copia del documento en su computadora"
             onClick={() => void bajar()}
             disabled={bajando}
             aria-busy={bajando}
-            data-ayuda="Guardar una copia del documento en su computadora"
           >
             <Icono nombre="descargar" /> {bajando ? 'Descargando…' : 'Descargar'}
           </button>

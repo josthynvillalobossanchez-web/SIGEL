@@ -19,6 +19,11 @@
  *     /mi-expediente/documentos/nuevo            Subir documento a mi expediente
  *     /catalogos                                 departamentos, puestos, profesiones (ventanas cortas)
  *     /tipos-documento                           tipos de documento y sus formatos (ventanas cortas)
+ *     /calendario                                calendario inteligente (propio, equipo o todos, segun permisos)
+ *     /mis-vacaciones, /mis-vacaciones/nueva     saldo y solicitudes propias; pedir vacaciones o permiso
+ *     /bandeja                                   solicitudes que le toca resolver a la jefatura
+ *     /solicitudes, /solicitudes/nueva           todas las solicitudes y registrar una a nombre de otra persona (RRHH)
+ *     /feriados                                  feriados y dias no laborables (RRHH)
  *
  * Regla (26/09): consultar = ventana; crear o editar = pagina aparte por
  * pasos, con su subseccion en el menu (diseno/menu.ts). El expediente es la
@@ -51,6 +56,12 @@ import { MiCuenta } from './paginas/cuenta/MiCuenta';
 import { Catalogos } from './paginas/catalogos/Catalogos';
 import { ListaDeFuncionarios } from './paginas/funcionarios/ListaDeFuncionarios';
 import { PaginaEditarFuncionario, PaginaRegistrarFuncionario } from './paginas/funcionarios/PaginaFuncionario';
+import { Calendario } from './paginas/calendario/Calendario';
+import { MisVacaciones } from './paginas/vacaciones/MisVacaciones';
+import { NuevaSolicitud } from './paginas/vacaciones/NuevaSolicitud';
+import { BandejaDeJefatura } from './paginas/vacaciones/BandejaDeJefatura';
+import { TodasLasSolicitudes } from './paginas/vacaciones/TodasLasSolicitudes';
+import { Feriados } from './paginas/vacaciones/Feriados';
 import { PaginaNoEncontrada } from './paginas/SinPermiso';
 import { GestorDeAyudas } from './componentes/Ayudas';
 
@@ -215,6 +226,51 @@ export function App() {
                 element={
                   <ConPermisos permisos={['expediente.ver', 'documentos.crear']}>
                     <PaginaSubirMiDocumento />
+                  </ConPermisos>
+                }
+              />
+              <Route path="/calendario" element={<Calendario />} />
+              <Route path="/mis-vacaciones" element={<MisVacaciones />} />
+              <Route
+                path="/mis-vacaciones/nueva"
+                element={
+                  <ConPermisos permisos={['solicitudes.crear']}>
+                    <NuevaSolicitud />
+                  </ConPermisos>
+                }
+              />
+              <Route
+                path="/bandeja"
+                element={
+                  <ConPermisos permisos={['solicitudes.aprobar']}>
+                    <BandejaDeJefatura />
+                  </ConPermisos>
+                }
+              />
+              <Route
+                path="/solicitudes"
+                element={
+                  <ConPermisos permisos={['solicitudes.administrar']}>
+                    <TodasLasSolicitudes />
+                  </ConPermisos>
+                }
+              />
+              <Route
+                path="/registrar-solicitud"
+                element={
+                  <ConPermisos algunoDe={['solicitudes.administrar', 'solicitudes.aprobar']}>
+                    <NuevaSolicitud paraOtraPersona />
+                  </ConPermisos>
+                }
+              />
+              {/* Direcciones anteriores (01/10): se movieron. */}
+              <Route path="/solicitudes/nueva" element={<Navigate to="/registrar-solicitud" replace />} />
+              <Route path="/feriados" element={<Navigate to="/calendario/feriados" replace />} />
+              <Route
+                path="/calendario/feriados"
+                element={
+                  <ConPermisos permisos={['catalogos.editar']}>
+                    <Feriados />
                   </ConPermisos>
                 }
               />

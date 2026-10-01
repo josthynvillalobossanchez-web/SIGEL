@@ -25,6 +25,10 @@ export interface ResumenDeSaldo {
   saldoCargado: boolean;
   regimen: { nombre: string; diasPorPeriodo: number | null; periodosMaximos: number; topeEnDias: number | null };
   aniosDeServicio: number;
+  /** Lo cargado por RRHH al registrar (dias que ya traia). */
+  inicial: number;
+  /** Lo ganado al cumplir cada anio de servicio (nunca al registrarse). */
+  ganadosPorAniversario: number;
   /** Dias ganados (saldo inicial + acumulaciones). */
   acumulado: number;
   utilizado: number;
@@ -241,6 +245,8 @@ export class VacacionesService {
         topeEnDias: diasActuales === null ? null : periodosMaximos * diasActuales,
       },
       aniosDeServicio: anios,
+      inicial: redondear(inicial),
+      ganadosPorAniversario: redondear(acumulacion),
       acumulado: redondear(inicial + acumulacion),
       utilizado: redondear(-consumo),
       vencido: redondear(-vencimiento),

@@ -218,7 +218,7 @@ contraseña temporal.
 | `POST /api/catalogos/:tipo` | `catalogos.editar` | Crea (nombre único sin importar mayúsculas ni tildes) |
 | `PATCH /api/catalogos/:tipo/:id` | `catalogos.editar` | Nombre y/o descripción |
 | `PATCH /api/catalogos/:tipo/:id/estado` | `catalogos.editar` | Inactiva o reactiva (se puede aunque esté en uso) |
-| `GET /api/funcionarios` | `funcionarios.ver` | Lista paginada; busca por cédula, nombre o correo (varias palabras), filtra por estado y departamento |
+| `GET /api/funcionarios` | `funcionarios.ver` | Lista paginada; busca por cédula, nombre o correo (varias palabras), filtra por estado y departamento. Sin `funcionarios.verTodos`, solo el personal a cargo (01/10) |
 | `GET /api/funcionarios/opciones` | `funcionarios.ver` | Listas activas para los formularios (catálogos, regímenes, jefaturas, nombramientos) |
 | `GET /api/funcionarios/:id` | `funcionarios.ver` | Ficha completa (no se audita; el expediente sí) |
 | `POST /api/funcionarios` | `funcionarios.crear` | Registra; con `cuenta` crea también la cuenta (pide `usuarios.crear`), todo junto |
@@ -727,7 +727,8 @@ Estas ya están validadas. **Trátelas como verdad** salvo que Josthyn diga lo c
   **datos laborales** y acceso. Pestañas centradas. (Quién edita qué: ver decisiones del 28/09.)
 - **Menú**: las subsecciones fijas (Crear usuario, Crear rol…) se ven solo en la sección actual
   o si se despliegan con la flecha; al cambiar de sección se pliegan las otras. Las de contexto
-  (Editar …) siguen apareciendo solo en su página. Las secciones nunca se ocultan.
+  (Editar …) siguen apareciendo solo en su página. ~~Las secciones nunca se ocultan~~: desde el
+  01/10 los grupos del menú se pliegan (abierto solo el de la página actual).
 
 ### Decisiones del 28/09/2026 (Josthyn)
 
@@ -812,6 +813,37 @@ No volver a preguntarlas. El detalle de cómo se despliega está en `GUIA_DESARR
   lo que tenga. Para la trazabilidad (Sprint 3): al arrancar, si el texto del archivo cambió, se
   guarda como versión nueva en la tabla `consentimiento`, y cada candidato queda ligado a la
   versión exacta que aceptó.
+
+### Decisiones del 01/10/2026 (Josthyn, revisando las pantallas de vacaciones)
+
+- **Alcance de Funcionarios**: la jefatura administra a su personal a cargo y RRHH a todos. Nuevo
+  permiso `funcionarios.verTodos` (Administrador, Consulta, SA). Sin él, `funcionarios.ver` alcanza
+  solo al personal a cargo (lista, ficha y foto; `FUNCIONARIO_FUERA_DE_ALCANCE`). Menú: «Mi personal».
+- **A nombre de otra persona**: RRHH de cualquiera; la jefatura de su personal a cargo, y si la registra
+  ella queda **aprobada** al momento. Sección propia del menú («Solicitud para otra persona»), por pasos y
+  empezando por elegir a la persona.
+- **Pedir no resta**: se muestra el saldo **disponible**; lo pendiente aparte. Los días se descuentan
+  solo al aprobarse. Permisos y capacitaciones nunca descuentan (los textos lo dicen así).
+- **Cancelar una aprobada**: solo quien se la aprobó a sí mismo (tope de la jerarquía), antes de que
+  empiece, con doble confirmación. Devuelve los días con un movimiento (no se borra nada).
+- **Bandeja**: marca coincidencias con otras personas del equipo y tiene «Ver en calendario». «Mi equipo»
+  incluye a la propia jefatura.
+- **Formas de ver**: Tarjetas o Lista (bandeja y RRHH) y Mes / Por persona / Lista (calendario), con filtros.
+- **Formularios por pasos sin bajar**, también la nueva solicitud y Mis vacaciones (pestañas). Errores al
+  intentar avanzar o enviar: ventana con la lista y botón «Corregir».
+- **Accesibilidad**: todo botón con `data-ayuda`; los de solo icono con `aria-label`.
+- **Logo de SINERGIA** (pedido de Joseph) en la barra, el acceso y la pestaña; el de la Municipalidad,
+  más pequeño a un lado.
+- **Privacidad del calendario**: los compañeros no ven los días de los demás. La vista de compañeros
+  queda descartada por ahora (Josthyn, 01/10).
+
+- **Feriados como catálogo (01/10, segunda revisión)**: se digitan una vez y se repiten solos (cada año el
+  mismo día; Jueves y Viernes Santo calculados con la Pascua; o solo una vez). «Cargar feriados de ley» agrega
+  los 12 de Costa Rica. Reemplaza a «Proponer el año».
+- **RRHH y SA ven a todos**: `funcionarios.verTodos` (lo agrega la migración `20261004…`) o `funcionarios.crear`/
+  `editar`. Solo la jefatura queda limitada a su personal.
+- **Los días se ganan al cumplir cada año de servicio**, nunca al registrarse (solo cuenta el saldo inicial que
+  cargue RRHH): 15 días por año los primeros 6 años y 20 después (régimen general) o 30 (anterior).
 
 ### Convenciones de la base de datos
 

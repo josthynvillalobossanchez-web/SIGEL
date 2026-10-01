@@ -15,8 +15,13 @@
  *     ven en la seccion en la que se esta, o si la persona las despliega con
  *     la flecha de otra seccion. Al entrar a otra seccion se pliegan las
  *     anteriores. Las de editar siguen apareciendo solo en su pagina.
+ *   - Grupos plegables (01/10): cada titulo es un boton. Abierto por omision
+ *     solo el grupo de la pagina actual; lo que la persona abra o cierre a
+ *     mano se mantiene hasta que cambie de grupo.
  *   - Si la pagina tiene cambios sin guardar, el menu y "Salir" preguntan
  *     antes (componentes/CambiosSinGuardar.tsx).
+ *   - Marca: simbolo y nombre de SINERGIA, y el logo de la Municipalidad mas
+ *     pequeno a un lado (pedido de Joseph).
  */
 import { useEffect, useState } from 'react';
 import { NavLink, Outlet, useLocation } from 'react-router';
@@ -24,9 +29,10 @@ import { ProveedorDeCambiosSinGuardar, useClicSeguro, useSalirSiSePuede } from '
 import { useSesion } from '../sesion/SesionProveedor';
 import { Icono } from '../componentes/Icono';
 import { BotonTema } from '../componentes/BotonTema';
-import { MENU, puedeVerOpcion } from './menu';
+import { MENU, puedeVerOpcion, textoDeOpcion, type OpcionDeMenu } from './menu';
 import { inicialesDesdeCorreo } from '../utilidades/texto';
-import logoParaBarra from '../recursos/logo-oscuro.png';
+import logoMunicipalidad from '../recursos/logo-oscuro.png';
+import simboloSinergia from '../recursos/sinergia-simbolo.png';
 
 const CLAVE_LATERAL = 'sinergia-lateral';
 
@@ -36,6 +42,12 @@ function lateralGuardadoOculto(): boolean {
   } catch {
     return false;
   }
+}
+
+/** La direccion pertenece a esta seccion (su ruta, sus subpaginas o sus "tambienEn"). */
+function esDeLaSeccion(opcion: OpcionDeMenu, ruta: string): boolean {
+  if (opcion.ruta === '/') return false;
+  return [opcion.ruta, ...(opcion.tambienEn ?? [])].some((r) => ruta === r || ruta.startsWith(`${r}/`));
 }
 
 /** El marco completo, dentro del proveedor de "cambios sin guardar". */
@@ -63,10 +75,13 @@ function MarcoInterno() {
    * de otras secciones se mantiene.
    */
   const [desplegadas, setDesplegadas] = useState<Record<string, boolean>>({});
-  const seccionActual = MENU.flatMap((g) => g.opciones).find(
-    (o) => o.ruta !== '/' && (ubicacion.pathname === o.ruta || ubicacion.pathname.startsWith(`${o.ruta}/`)),
-  )?.ruta ?? ubicacion.pathname;
+  const seccionActual = MENU.flatMap((g) => g.opciones).find((o) => esDeLaSeccion(o, ubicacion.pathname))?.ruta ?? ubicacion.pathname;
   useEffect(() => setDesplegadas({}), [seccionActual]);
+
+  /** Grupos abiertos o cerrados a mano. Se reinicia al cambiar de grupo. */
+  const [gruposAMano, setGruposAMano] = useState<Record<string, boolean>>({});
+  const grupoActual = MENU.find((g) => g.opciones.some((o) => esDeLaSeccion(o, ubicacion.pathname)))?.titulo ?? '';
+  useEffect(() => setGruposAMano({}), [grupoActual]);
 
   // Al cambiar de pagina se cierra el menu del celular.
   useEffect(() => setMenuMovilAbierto(false), [ubicacion.pathname]);
@@ -95,8 +110,7 @@ function MarcoInterno() {
   // solo las subsecciones permitidas (las de contexto, si se esta en ellas).
   const ruta = ubicacion.pathname;
   /** La seccion en la que se esta (p. ej. "/usuarios" en /usuarios/nuevo). */
-  const enSeccion = (rutaDeSeccion: string) =>
-    rutaDeSeccion !== '/' && (ruta === rutaDeSeccion || ruta.startsWith(`${rutaDeSeccion}/`));
+  const enSeccion = (opcion: OpcionDeMenu) => esDeLaSeccion(opcion, ruta);
   const gruposVisibles = MENU.map((grupo) => ({
     ...grupo,
     opciones: grupo.opciones
@@ -105,6 +119,7 @@ function MarcoInterno() {
         const permitidas = (o.subopciones ?? []).filter((sub) => tienePermisos(...sub.permisos));
         return {
           ...o,
+          texto: textoDeOpcion(o, tienePermisos).texto,
           // Fijas (Crear usuario...): se pliegan y despliegan.
           fijas: permitidas.filter((sub) => sub.ruta).map((sub) => ({ texto: sub.texto, ruta: sub.ruta! })),
           // De contexto (Editar usuario...): solo mientras se esta en esa pagina.
@@ -137,11 +152,14 @@ function MarcoInterno() {
         </button>
 
         <div className="marca">
-          <img src={logoParaBarra} alt="Municipalidad de Palmares" />
+          <span className="marca-simbolo">
+            <img src={simboloSinergia} alt="" />
+          </span>
           <div className="marca-txt">
             <b>SINERGIA</b>
-            <small>Municipalidad de Palmares</small>
+            <small>Gestión de personal</small>
           </div>
+          <img className="marca-muni" src={logoMunicipalidad} alt="Municipalidad de Palmares" data-ayuda="Municipalidad de Palmares" />
         </div>
 
         <div className="topbar-fin">
@@ -171,62 +189,85 @@ function MarcoInterno() {
 
       <div className="layout" data-lateral={lateralOculto ? 'oculto' : 'visible'}>
         <nav className="lateral" id="lateral" aria-label="Navegación principal" data-abierto={menuMovilAbierto ? 'si' : 'no'}>
-          {gruposVisibles.map((grupo) => (
-            <div className="nav-grupo" key={grupo.titulo}>
-              <p className="nav-titulo">{grupo.titulo}</p>
-              {grupo.opciones.map((opcion) => {
-                const activa = enSeccion(opcion.ruta);
-                // Abierta: la seccion en la que se esta, o la que la persona desplego.
-                const abierta = desplegadas[opcion.ruta] ?? activa;
-                const subs = [...(abierta ? opcion.fijas : []), ...opcion.deContexto];
-                const idSubs = `sub-${opcion.ruta.replace(/\W/g, '')}`;
-                return (
-                  <div key={opcion.ruta} style={{ display: 'contents' }}>
-                    <div className="nav-fila">
-                      {/* NavLink pone aria-current="page" en la opcion activa (el CSS la resalta).
-                          "end": la seccion solo es "la pagina actual" en su propia direccion; en
-                          sus subpaginas queda marcada con data-en-seccion. */}
-                      <NavLink
-                        className="nav-item"
-                        to={opcion.ruta}
-                        end
-                        data-en-seccion={activa && ruta !== opcion.ruta ? 'si' : undefined}
-                        onClick={(e) => clicSeguro(e, opcion.ruta)}
-                      >
-                        <Icono nombre={opcion.icono} clase="ico" />
-                        {opcion.texto}
-                      </NavLink>
-                      {opcion.fijas.length > 0 && (
-                        <button
-                          type="button"
-                          className="nav-desplegar"
-                          aria-expanded={abierta}
-                          aria-controls={idSubs}
-                          aria-label={`${abierta ? 'Ocultar' : 'Mostrar'} las subsecciones de ${opcion.texto}`}
-                          data-ayuda={`${abierta ? 'Ocultar' : 'Mostrar'}: ${opcion.fijas.map((f) => f.texto).join(', ')}`}
-                          onClick={() => setDesplegadas((d) => ({ ...d, [opcion.ruta]: !abierta }))}
-                        >
-                          <Icono nombre="flecha" tamano={15} grosor={2.4} />
-                        </button>
-                      )}
-                    </div>
-                    {subs.length > 0 && (
-                      <div className="nav-sub" id={idSubs} role="group" aria-label={`Subsecciones de ${opcion.texto}`}>
-                        {subs.map((sub) => (
-                          <NavLink className="nav-sub-item" to={sub.ruta} end key={sub.texto} onClick={(e) => clicSeguro(e, sub.ruta)}>
-                            {sub.texto}
-                          </NavLink>
-                        ))}
-                      </div>
-                    )}
+          {gruposVisibles.map((grupo) => {
+            const idGrupo = `grupo-${grupo.titulo.replace(/\W/g, '')}`;
+            const tieneLaActual = grupo.opciones.some((o) => enSeccion(o));
+            const abierto = grupo.sinTitulo || (gruposAMano[grupo.titulo] ?? tieneLaActual);
+            return (
+              <div className="nav-grupo" key={grupo.titulo} data-abierto={abierto ? 'si' : 'no'}>
+                {!grupo.sinTitulo && (
+                  <button
+                    type="button"
+                    className="nav-titulo"
+                    aria-expanded={abierto}
+                    aria-controls={idGrupo}
+                    data-actual={tieneLaActual ? 'si' : undefined}
+                    data-ayuda={`${abierto ? 'Ocultar' : 'Mostrar'}: ${grupo.opciones.map((o) => o.texto).join(', ')}`}
+                    onClick={() => setGruposAMano((g) => ({ ...g, [grupo.titulo]: !abierto }))}
+                  >
+                    <span>{grupo.titulo}</span>
+                    <Icono nombre="flecha" tamano={14} grosor={2.4} />
+                  </button>
+                )}
+                {abierto && (
+                  <div className="nav-opciones" id={idGrupo}>
+                    {grupo.opciones.map((opcion) => {
+                      const activa = enSeccion(opcion);
+                      // Abierta: la seccion en la que se esta, o la que la persona desplego.
+                      const abierta = desplegadas[opcion.ruta] ?? activa;
+                      const subs = [...(abierta ? opcion.fijas : []), ...opcion.deContexto];
+                      const idSubs = `sub-${opcion.ruta.replace(/\W/g, '')}`;
+                      return (
+                        <div key={opcion.ruta} style={{ display: 'contents' }}>
+                          <div className="nav-fila">
+                            {/* NavLink pone aria-current="page" en la opcion activa (el CSS la resalta).
+                                "end": la seccion solo es "la pagina actual" en su propia direccion; en
+                                sus subpaginas queda marcada con data-en-seccion. */}
+                            <NavLink
+                              className="nav-item"
+                              to={opcion.ruta}
+                              end
+                              data-en-seccion={activa && ruta !== opcion.ruta ? 'si' : undefined}
+                              data-ayuda={textoDeOpcion(opcion, tienePermisos).descripcion}
+                              onClick={(e) => clicSeguro(e, opcion.ruta)}
+                            >
+                              <Icono nombre={opcion.icono} clase="ico" />
+                              {opcion.texto}
+                            </NavLink>
+                            {opcion.fijas.length > 0 && (
+                              <button
+                                type="button"
+                                className="nav-desplegar"
+                                aria-expanded={abierta}
+                                aria-controls={idSubs}
+                                aria-label={`${abierta ? 'Ocultar' : 'Mostrar'} las subsecciones de ${opcion.texto}`}
+                                data-ayuda={`${abierta ? 'Ocultar' : 'Mostrar'}: ${opcion.fijas.map((f) => f.texto).join(', ')}`}
+                                onClick={() => setDesplegadas((d) => ({ ...d, [opcion.ruta]: !abierta }))}
+                              >
+                                <Icono nombre="flecha" tamano={15} grosor={2.4} />
+                              </button>
+                            )}
+                          </div>
+                          {subs.length > 0 && (
+                            <div className="nav-sub" id={idSubs} role="group" aria-label={`Subsecciones de ${opcion.texto}`}>
+                              {subs.map((sub) => (
+                                <NavLink className="nav-sub-item" to={sub.ruta} end key={sub.texto} onClick={(e) => clicSeguro(e, sub.ruta)}>
+                                  {sub.texto}
+                                </NavLink>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
                   </div>
-                );
-              })}
-            </div>
-          ))}
+                )}
+              </div>
+            );
+          })}
 
           <p style={{ marginTop: 'auto', padding: 12, fontSize: 11.5, color: 'var(--texto-sec)', lineHeight: 1.5 }}>
-            Vacaciones, incapacidades, horas extra y Talent Pool corresponden a los Sprints 2 y 3.
+            Incapacidades, horas extra y Talent Pool corresponden a los Sprints 2 y 3.
           </p>
         </nav>
 

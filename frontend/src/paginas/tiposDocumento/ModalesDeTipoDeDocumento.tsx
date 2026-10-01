@@ -116,16 +116,16 @@ export function ModalTipoDeDocumento({
       ocupado={ocupado}
       pie={
         <>
-          <button className="btn btn-secundario" type="button" onClick={alCerrar} disabled={ocupado}>
+          <button className="btn btn-secundario" type="button" onClick={alCerrar} disabled={ocupado} data-ayuda={creadoAntes ? 'Cerrar esta ventana' : 'Cerrar sin guardar'}>
             {creadoAntes ? 'Cerrar' : 'Cancelar'}
           </button>
           {!editando && (
             <button
               className="btn btn-secundario"
               type="button"
+              data-ayuda="Guardar y dejar la ventana lista para otro tipo más"
               onClick={() => void guardar(true)}
               disabled={ocupado}
-              data-ayuda="Guardar y dejar la ventana lista para otro tipo más"
             >
               Guardar y crear otro
             </button>

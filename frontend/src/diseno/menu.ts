@@ -11,6 +11,10 @@
  *   3. Agregar la opcion aqui con los MISMOS permisos que la ruta.
  * Los codigos de permiso son los de la tabla `permiso` (prisma/seed.ts).
  *
+ * Grupos plegables (decision de Josthyn, 01/10): cada titulo (Vacaciones y
+ * permisos, Personal, Seguridad...) es un boton que despliega sus opciones.
+ * Abierto por omision solo el grupo de la pagina en la que se esta.
+ *
  * Subsecciones (clase "nav-sub" del prototipo): toda pagina de crear o
  * editar va como subseccion de su seccion, para que la persona vea donde
  * esta (p. ej. Usuarios -> Editar usuario). Hay dos tipos:
@@ -36,6 +40,12 @@ export interface OpcionDeMenu {
   icono: NombreDeIcono;
   /** Permisos necesarios. Lista vacia = cualquiera con sesion. */
   permisos: string[];
+  /** Ademas, al menos UNO de estos (p. ej. la jefatura o RRHH). */
+  algunoDe?: string[];
+  /** Otras direcciones que cuentan como "esta seccion" (subsecciones fuera de su ruta). */
+  tambienEn?: string[];
+  /** Texto distinto si a la cuenta le falta un permiso (p. ej. la jefatura ve "Mi personal"). */
+  textoSinPermiso?: { permiso: string; texto: string; descripcion?: string };
   /** Solo para cuentas ligadas a un funcionario (no la cuenta tecnica). */
   requiereFuncionario?: boolean;
   /** Texto corto de la tarjeta de acceso directo en Inicio. */
@@ -45,13 +55,62 @@ export interface OpcionDeMenu {
 
 export interface GrupoDeMenu {
   titulo: string;
+  /** Sin titulo ni boton para plegar (Inicio). */
+  sinTitulo?: boolean;
   opciones: OpcionDeMenu[];
 }
 
 export const MENU: GrupoDeMenu[] = [
   {
     titulo: 'General',
+    sinTitulo: true,
     opciones: [{ texto: 'Inicio', ruta: '/', icono: 'inicio', permisos: [] }],
+  },
+  {
+    // Lo principal del sistema para toda persona: pedir vacaciones y ver quien esta fuera.
+    titulo: 'Vacaciones y permisos',
+    opciones: [
+      {
+        texto: 'Calendario',
+        ruta: '/calendario',
+        icono: 'calendario',
+        permisos: [],
+        descripcion: 'Quién está de vacaciones o con permiso: el suyo, el de su equipo o el de todo el personal, según su acceso.',
+        subopciones: [{ texto: 'Feriados', ruta: '/calendario/feriados', permisos: ['catalogos.editar'] }],
+      },
+      {
+        texto: 'Mis vacaciones',
+        ruta: '/mis-vacaciones',
+        icono: 'sombrilla',
+        permisos: ['solicitudes.crear'],
+        requiereFuncionario: true,
+        descripcion: 'Su saldo de días, sus solicitudes y el botón para pedir vacaciones o un permiso.',
+        subopciones: [{ texto: 'Nueva solicitud', ruta: '/mis-vacaciones/nueva', permisos: ['solicitudes.crear'] }],
+      },
+      {
+        // Aparte y a la vista (decision 01/10): la jefatura, para su personal; RRHH, para cualquiera.
+        texto: 'Solicitud para otra persona',
+        ruta: '/registrar-solicitud',
+        icono: 'personaMas',
+        permisos: [],
+        algunoDe: ['solicitudes.administrar', 'solicitudes.aprobar'],
+        descripcion: 'Registrar vacaciones o un permiso a nombre de alguien: primero se elige la persona y luego las fechas.',
+      },
+      {
+        texto: 'Bandeja de solicitudes',
+        ruta: '/bandeja',
+        icono: 'bandeja',
+        permisos: ['solicitudes.aprobar'],
+        descripcion: 'Las solicitudes de su equipo que le toca aprobar o rechazar.',
+      },
+      {
+        texto: 'Solicitudes del personal',
+        ruta: '/solicitudes',
+        icono: 'documento',
+        permisos: ['solicitudes.administrar'],
+        descripcion: 'Todas las solicitudes del personal, con filtros por departamento, tipo y estado.',
+      },
+    ],
   },
   {
     // Mismo grupo del prototipo ("Personal").
@@ -63,6 +122,8 @@ export const MENU: GrupoDeMenu[] = [
         icono: 'personas',
         permisos: ['funcionarios.ver'],
         descripcion: 'Buscar funcionarios, registrarlos por pasos, corregir sus datos, abrir su expediente y registrar salidas o reingresos.',
+        // La jefatura (sin verTodos) solo ve a su personal a cargo.
+        textoSinPermiso: { permiso: 'funcionarios.verTodos', texto: 'Mi personal', descripcion: 'Las personas a su cargo: sus datos laborales y de contacto.' },
         subopciones: [
           { texto: 'Registrar funcionario', ruta: '/funcionarios/nuevo', permisos: ['funcionarios.crear'] },
           { texto: 'Editar funcionario', patron: /^\/funcionarios\/[^/]+\/editar$/, permisos: ['funcionarios.editar'] },
@@ -146,5 +207,16 @@ export const MENU: GrupoDeMenu[] = [
  * lateral (Marco) y las tarjetas de Inicio, para que siempre coincidan.
  */
 export function puedeVerOpcion(opcion: OpcionDeMenu, tienePermisos: (...claves: string[]) => boolean, tieneFuncionario: boolean): boolean {
-  return tienePermisos(...opcion.permisos) && (!opcion.requiereFuncionario || tieneFuncionario);
+  return (
+    tienePermisos(...opcion.permisos) &&
+    (!opcion.algunoDe || opcion.algunoDe.some((p) => tienePermisos(p))) &&
+    (!opcion.requiereFuncionario || tieneFuncionario)
+  );
+}
+
+/** Texto (y descripcion) de la opcion para esta cuenta. */
+export function textoDeOpcion(opcion: OpcionDeMenu, tienePermisos: (...claves: string[]) => boolean): { texto: string; descripcion?: string } {
+  const alt = opcion.textoSinPermiso;
+  if (alt && !tienePermisos(alt.permiso)) return { texto: alt.texto, descripcion: alt.descripcion ?? opcion.descripcion };
+  return { texto: opcion.texto, descripcion: opcion.descripcion };
 }

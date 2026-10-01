@@ -1,0 +1,517 @@
+/* =====================================================================
+   Vacaciones, solicitudes y calendario (Sprint 2)
+   ---------------------------------------------------------------------
+   Usa SOLO las variables de sigel.css (--card, --borde, --accion...), asi
+   el tema oscuro funciona solo. El color de cada tipo de solicitud llega
+   en la variable --ev de cada elemento (viene del catalogo tipoSolicitud)
+   y se mezcla con color-mix para fondo, borde y texto.
+   Disenado primero para celular: lo de pantalla ancha va en @media (min-width).
+   ===================================================================== */
+
+/* ---------- Piezas sueltas ---------- */
+.chip-error { background: var(--error-bg); color: var(--error-fg); }
+.btn-grande { padding: 13px 20px; font-size: 16px; }
+.btn-chico { padding: 6px 12px; font-size: 14px; }
+.acc-principal { margin-left: auto; }
+.bloque-lista { margin-top: 12px; display: grid; gap: 14px; }
+.ayuda-detalle { font-size: 13.5px; color: var(--texto-sec); line-height: 1.5; }
+.casilla { display: flex; gap: 10px; align-items: flex-start; font-size: 14px; margin: 4px 0 12px; cursor: pointer; }
+.casilla input { margin-top: 3px; accent-color: var(--accion); }
+.solo-celular { display: none; }
+
+.avatar { display: inline-grid; place-items: center; border-radius: 50%; color: #fff; font-weight: 700; flex-shrink: 0; letter-spacing: .02em; }
+.punto-tipo { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; display: inline-block; }
+.punto-tipo.grande { width: 14px; height: 14px; }
+
+@media (max-width: 719px) {
+  .acc-principal { margin-left: 0; width: 100%; }
+  .acc-principal .btn { width: 100%; }
+}
+@media (max-width: 1023px) {
+  .solo-escritorio { display: none !important; }
+  .solo-celular { display: block; }
+}
+
+/* ---------- Saldo de vacaciones ---------- */
+.saldo-card { padding: 20px; display: grid; gap: 16px; margin-bottom: 4px; }
+.saldo-principal { display: flex; gap: 22px; align-items: center; }
+.anillo { position: relative; width: 132px; height: 132px; flex-shrink: 0; }
+.anillo-fondo { fill: none; stroke: var(--neutro-bg); stroke-width: 10; }
+.anillo-lleno { fill: none; stroke: var(--accion); stroke-width: 10; stroke-linecap: round; transition: stroke-dasharray .6s ease; }
+.anillo-texto { position: absolute; inset: 0; display: grid; place-content: center; text-align: center; line-height: 1.1; }
+.anillo-texto b { font-size: 38px; font-weight: 800; font-variant-numeric: tabular-nums; }
+.anillo-texto span { font-size: 12px; color: var(--texto-sec); font-weight: 600; }
+.saldo-resumen h2 { font-size: 19px; font-weight: 800; margin-bottom: 4px; }
+.saldo-resumen p { font-size: 14.5px; color: var(--texto-sec); line-height: 1.5; }
+.saldo-resumen p b { color: var(--texto); }
+.saldo-proximo { display: block; margin-top: 6px; font-size: 13.5px !important; }
+.saldo-reservado { font-size: 13.5px !important; margin-top: 4px; }
+.saldo-proximo svg { vertical-align: -2px; margin-right: 4px; }
+.saldo-cifras { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 10px; margin: 0; }
+.saldo-cifras div { background: var(--neutro-bg); border-radius: var(--radio-md); padding: 10px 14px; }
+.saldo-cifras dt { font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--texto-sec); }
+.saldo-cifras dd { margin: 2px 0 0; font-size: 22px; font-weight: 800; font-variant-numeric: tabular-nums; }
+@media (max-width: 719px) {
+  .saldo-cifras { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .saldo-cifras div { padding: 8px 10px; }
+  .saldo-cifras dd { font-size: 20px; }
+  .saldo-card { padding: 16px; }
+  .saldo-principal { flex-direction: column; text-align: center; gap: 12px; }
+  .saldo-proximo { justify-content: center; text-align: left; }
+}
+
+.historial-saldo { margin-top: 14px; padding: 0; }
+.historial-saldo summary { cursor: pointer; padding: 14px 16px; font-weight: 700; font-size: 15px; display: flex; gap: 8px; align-items: center; list-style: none; }
+.historial-saldo summary::-webkit-details-marker { display: none; }
+.historial-saldo[open] summary { border-bottom: 1px solid var(--borde); }
+.historial-saldo > p, .historial-saldo > .paginacion, .historial-saldo > .mensaje { margin: 12px 16px; }
+.movimientos { list-style: none; margin: 0; padding: 0; }
+.movimientos li { display: flex; justify-content: space-between; gap: 12px; padding: 11px 16px; border-bottom: 1px solid var(--borde); align-items: flex-start; }
+.movimientos li:last-child { border-bottom: 0; }
+.movimientos div { display: grid; gap: 1px; min-width: 0; }
+.movimientos small { color: var(--texto-sec); font-size: 12.5px; }
+.movimientos .suma, .movimientos .resta { font-weight: 800; font-variant-numeric: tabular-nums; font-size: 16px; }
+.movimientos .suma { color: var(--exito-fg); }
+.movimientos .resta { color: var(--error-fg); }
+
+/* ---------- Tarjetas de solicitud ---------- */
+.lista-solicitudes { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; grid-template-columns: minmax(0, 1fr); }
+@media (min-width: 900px) { .lista-solicitudes { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.tarjeta-solicitud {
+  display: flex; align-items: stretch; gap: 12px; width: 100%; text-align: left; cursor: pointer;
+  background: var(--card); border: 1px solid var(--borde); border-radius: var(--radio-lg);
+  padding: 0 12px 0 0; overflow: hidden; transition: border-color .15s, box-shadow .15s, transform .1s;
+}
+.tarjeta-solicitud:hover { border-color: var(--ev); box-shadow: var(--sombra-sm); }
+.tarjeta-solicitud:active { transform: scale(.995); }
+.tarjeta-solicitud[data-nueva="si"] { border-color: var(--info-fg); background: color-mix(in srgb, var(--info-bg) 55%, var(--card)); }
+.tarjeta-solicitud > svg { align-self: center; color: var(--texto-desh); flex-shrink: 0; }
+.tarjeta-franja { width: 6px; background: var(--ev); flex-shrink: 0; }
+.tarjeta-cuerpo { flex: 1; min-width: 0; display: grid; gap: 7px; padding: 13px 0; }
+.tarjeta-fila { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.tarjeta-tipo { font-size: 16px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tarjeta-persona { display: flex; align-items: center; gap: 8px; font-size: 14.5px; font-weight: 600; min-width: 0; }
+.tarjeta-persona small { font-weight: 400; color: var(--texto-sec); }
+.tarjeta-fechas { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; font-size: 14.5px; font-weight: 600; }
+.tarjeta-fechas svg { color: var(--texto-sec); }
+.tarjeta-dias { background: color-mix(in srgb, var(--ev) 16%, var(--card)); color: color-mix(in srgb, var(--ev) 60%, var(--texto)); padding: 1px 9px; border-radius: var(--radio-full); font-size: 12.5px; }
+.tarjeta-pie { display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: 12.5px; color: var(--texto-sec); font-variant-numeric: tabular-nums; }
+.etiqueta-nueva { background: var(--info-fg); color: var(--card); font-weight: 700; padding: 0 8px; border-radius: var(--radio-full); }
+.etiqueta-tercero { background: var(--neutro-bg); color: var(--neutro-fg); padding: 0 8px; border-radius: var(--radio-full); }
+
+/* ---------- Detalle de una solicitud ---------- */
+.detalle-solicitud { display: grid; gap: 14px; }
+.detalle-fechas {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; padding: 12px 14px; border-radius: var(--radio-lg);
+  background: color-mix(in srgb, var(--ev) 13%, var(--card)); border-left: 5px solid var(--ev);
+}
+.detalle-fechas b { font-size: 18px; }
+.detalle-fechas > span:not(.chip) { color: var(--texto-sec); font-size: 14px; }
+.detalle-fechas .chip { margin-left: auto; }
+.detalle-datos { display: grid; gap: 10px; margin: 0; }
+.detalle-datos dt { font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--texto-sec); }
+.detalle-datos dd { margin: 2px 0 0; font-size: 15px; overflow-wrap: anywhere; }
+.detalle-datos small { color: var(--texto-sec); font-size: 13px; }
+.contexto-jefatura { background: var(--neutro-bg); border-radius: var(--radio-lg); padding: 12px 14px; display: grid; gap: 10px; font-size: 14px; }
+.contexto-jefatura p { line-height: 1.5; }
+.contexto-jefatura p svg { margin: 0 6px -2px 0; color: var(--texto-sec); }
+.coinciden { list-style: none; margin: 8px 0 0; padding: 0; display: grid; gap: 8px; }
+.coinciden li { display: flex; gap: 8px; align-items: flex-start; }
+.coinciden small { color: var(--texto-sec); }
+
+/* ---------- Nueva solicitud ---------- */
+.solicitud-columnas { display: grid; grid-template-columns: minmax(0, 1fr); gap: 20px; align-items: start; }
+@media (min-width: 1024px) {
+  .solicitud-columnas { grid-template-columns: minmax(0, 1fr) 340px; }
+  .solicitud-resumen { position: sticky; top: calc(var(--h-barra) + var(--h-franja) + 16px); }
+}
+.solicitud-resumen { padding: 18px; display: grid; gap: 8px; }
+.solicitud-resumen h2 { font-size: 13px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--texto-sec); }
+.resumen-tipo { display: flex; gap: 8px; align-items: center; font-weight: 700; }
+.resumen-tipo small { font-weight: 400; color: var(--texto-sec); }
+.resumen-solicitud { display: grid; gap: 6px; }
+.resumen-rango { font-size: 15px; font-weight: 600; color: var(--texto-sec); }
+.resumen-dias { font-size: 15px; color: var(--texto-sec); }
+.resumen-dias b { font-size: 40px; font-weight: 800; color: var(--texto); line-height: 1; margin-right: 4px; font-variant-numeric: tabular-nums; }
+.resumen-saldo { font-size: 15px; }
+.resumen-nota, .resumen-ayuda { font-size: 13.5px; color: var(--texto-sec); line-height: 1.5; }
+.resumen-problema { font-size: 14px; color: var(--error-fg); background: var(--error-bg); padding: 10px 12px; border-radius: var(--radio-md); line-height: 1.45; }
+.resumen-celular { padding: 14px 16px; margin-top: 4px; }
+
+.paso-solicitud { border: 0; padding: 0; margin: 0 0 24px; min-width: 0; }
+.paso-solicitud legend { display: flex; align-items: center; gap: 10px; font-size: 17px; font-weight: 800; margin-bottom: 12px; padding: 0; }
+.paso-solicitud legend span:first-child { width: 26px; height: 26px; border-radius: 50%; background: var(--accion); color: var(--accion-txt); display: grid; place-items: center; font-size: 14px; }
+.paso-solicitud legend small { font-weight: 500; color: var(--texto-sec); font-size: 13px; }
+
+.tipos-solicitud { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
+@media (min-width: 720px) { .tipos-solicitud { grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); } }
+.tipo-solicitud {
+  display: grid; grid-template-columns: auto 1fr; gap: 2px 8px; align-items: center; text-align: left; cursor: pointer;
+  background: var(--card); border: 1.5px solid var(--borde); border-radius: var(--radio-lg); padding: 12px 13px; transition: border-color .15s, background .15s;
+}
+.tipo-solicitud b { font-size: 15px; }
+.tipo-solicitud small { grid-column: 1 / -1; font-size: 12.5px; color: var(--texto-sec); line-height: 1.35; }
+.tipo-solicitud:hover:not(:disabled) { border-color: var(--ev); }
+.tipo-solicitud[aria-pressed="true"] { border-color: var(--ev); background: color-mix(in srgb, var(--ev) 12%, var(--card)); box-shadow: 0 0 0 1px var(--ev); }
+.tipo-solicitud:disabled { opacity: .55; cursor: not-allowed; }
+
+.selector-rango { background: var(--card); border: 1px solid var(--borde); border-radius: var(--radio-lg); padding: 12px; max-width: 460px; }
+.selector-cab { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
+.selector-cab b { text-transform: capitalize; font-size: 16px; }
+.selector-dias-semana, .selector-cuadricula { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 3px; }
+.selector-dias-semana span { text-align: center; font-size: 11.5px; font-weight: 700; text-transform: uppercase; color: var(--texto-sec); padding: 4px 0; }
+.selector-dia {
+  position: relative; aspect-ratio: 1 / 1; min-height: 40px; border: 0; background: transparent; border-radius: var(--radio-md);
+  font-size: 15px; font-weight: 600; color: var(--texto); cursor: pointer; font-variant-numeric: tabular-nums;
+}
+.selector-dia:hover:not(:disabled) { background: var(--neutro-bg); }
+.selector-dia:disabled { color: var(--texto-desh); opacity: .4; cursor: not-allowed; }
+.selector-dia[data-otro-mes="si"] { opacity: .35; }
+.selector-dia[data-fin-de-semana="si"] { color: var(--texto-desh); }
+.selector-dia[data-hoy="si"] { box-shadow: inset 0 0 0 1.5px var(--texto-sec); }
+.selector-dia[data-feriado="si"]::after, .selector-dia[data-ocupado="si"]::before { content: ""; position: absolute; bottom: 5px; width: 5px; height: 5px; border-radius: 50%; }
+.selector-dia[data-feriado="si"]::after { background: var(--advert-fg); left: calc(50% - 6px); }
+.selector-dia[data-ocupado="si"]::before { background: var(--info-fg); left: calc(50% + 1px); }
+.selector-dia[data-feriado="si"]:not([data-ocupado="si"])::after { left: calc(50% - 2.5px); }
+.selector-dia[data-ocupado="si"]:not([data-feriado="si"])::before { left: calc(50% - 2.5px); }
+.selector-dia[data-en-rango="si"] { background: var(--accion-tinte); color: var(--accion-sobre-claro); border-radius: 0; }
+.selector-dia[data-extremo="si"], .selector-dia[data-extremo="si"]:hover:not(:disabled) { background: var(--accion); color: var(--accion-txt); border-radius: var(--radio-md); }
+.selector-dia[data-en-rango="si"]:hover:not(:disabled):not([data-extremo="si"]) { background: var(--accion-tinte); }
+.selector-ayuda { display: flex; flex-wrap: wrap; gap: 4px 14px; margin-top: 10px; font-size: 12px; color: var(--texto-sec); }
+.selector-ayuda span { display: inline-flex; align-items: center; gap: 5px; }
+.selector-ayuda i { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+.m-feriado { background: var(--advert-fg); }
+.m-ocupado { background: var(--info-fg); }
+.m-finde { background: var(--texto-desh); }
+.fechas-escritas { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin-top: 14px; max-width: 460px; }
+.fechas-escritas .campo { margin-bottom: 0; }
+
+.solicitud-acciones { display: flex; gap: 10px; justify-content: flex-end; margin-top: 8px; }
+
+.barra-enviar {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 35; display: none; align-items: center; gap: 12px;
+  background: var(--card); border-top: 1px solid var(--borde); box-shadow: 0 -6px 18px rgba(31, 49, 64, .12);
+  padding: 10px 16px calc(10px + env(safe-area-inset-bottom));
+}
+.barra-enviar-texto { flex: 1; min-width: 0; font-size: 15px; line-height: 1.3; }
+.barra-enviar-texto b { font-size: 20px; }
+.barra-enviar-texto .problema { color: var(--error-fg); font-size: 13px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.barra-enviar .btn { padding: 12px 22px; }
+@media (max-width: 1023px) {
+  .barra-enviar.solo-celular { display: flex; }
+  .pagina-solicitud { padding-bottom: 84px; }
+}
+
+
+/* ---------- Feriados ---------- */
+.selector-anio { display: inline-flex; align-items: center; gap: 8px; margin-bottom: 14px; }
+.selector-anio b { font-size: 20px; min-width: 56px; text-align: center; font-variant-numeric: tabular-nums; }
+.lista-feriados { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; max-width: 760px; }
+.lista-feriados li { display: flex; align-items: center; gap: 14px; background: var(--card); border: 1px solid var(--borde); border-radius: var(--radio-lg); padding: 10px 12px; }
+.lista-feriados li[data-activo="no"] { opacity: .6; }
+.feriado-fecha { width: 54px; text-align: center; background: var(--advert-bg); color: var(--advert-fg); border-radius: var(--radio-md); padding: 6px 0; flex-shrink: 0; line-height: 1.1; }
+.feriado-fecha b { display: block; font-size: 22px; font-weight: 800; }
+.feriado-fecha small { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; }
+.feriado-texto { flex: 1; min-width: 0; display: grid; gap: 1px; }
+.feriado-texto small { color: var(--texto-sec); font-size: 13px; }
+.feriado-acciones { display: flex; gap: 2px; flex-shrink: 0; }
+@media (max-width: 560px) { .lista-feriados li { flex-wrap: wrap; } .feriado-acciones { width: 100%; justify-content: flex-end; } }
+
+/* =====================================================================
+   Calendario inteligente
+   ===================================================================== */
+.segmentado { display: inline-flex; background: var(--neutro-bg); border-radius: var(--radio-full); padding: 3px; gap: 2px; max-width: 100%; overflow-x: auto; }
+.segmentado button { border: 0; background: transparent; padding: 7px 15px; border-radius: var(--radio-full); font-size: 14px; font-weight: 600; color: var(--texto-sec); cursor: pointer; white-space: nowrap; transition: background .15s, color .15s; }
+.segmentado button:hover { color: var(--texto); }
+.segmentado button[aria-pressed="true"] { background: var(--card); color: var(--texto); box-shadow: var(--sombra-sm); }
+.segmentado-chico button { padding: 5px 12px; font-size: 13px; }
+
+.cal-controles { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; margin-bottom: 12px; }
+.cal-mes-nav { display: flex; align-items: center; gap: 4px; }
+.cal-mes-nav h2 { font-size: 22px; font-weight: 800; text-transform: capitalize; min-width: 170px; text-align: center; letter-spacing: -.01em; }
+.cal-mes-nav h2 span { font-weight: 500; color: var(--texto-sec); }
+.cal-opciones { display: flex; gap: 10px; align-items: center; margin-left: auto; flex-wrap: wrap; }
+.cal-opciones select { padding: 7px 10px; font-size: 14px; border: 1px solid var(--borde-fuerte); border-radius: var(--radio-md); background: var(--card); color: var(--texto); max-width: 100%; }
+@media (max-width: 719px) {
+  .cal-controles { gap: 8px; }
+  .cal-mes-nav { width: 100%; justify-content: space-between; order: 2; }
+  .cal-mes-nav h2 { flex: 1; min-width: 0; font-size: 20px; }
+  .cal-opciones { margin-left: 0; width: 100%; order: 3; }
+  .cal-opciones select { flex: 1; }
+}
+
+.cal-leyenda { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; align-items: center; }
+.cal-leyenda button { display: inline-flex; align-items: center; gap: 6px; background: var(--card); border: 1px solid var(--borde-fuerte); color: var(--texto); border-radius: var(--radio-full); padding: 4px 11px; font-size: 13px; cursor: pointer; }
+.cal-leyenda button[aria-pressed="false"] { opacity: .5; text-decoration: line-through; }
+.leyenda-pendiente { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; color: var(--texto-sec); margin-left: 4px; }
+.leyenda-pendiente i { width: 22px; height: 12px; border-radius: 3px; background: repeating-linear-gradient(135deg, color-mix(in srgb, var(--texto-sec) 15%, var(--card)) 0 4px, color-mix(in srgb, var(--texto-sec) 35%, var(--card)) 4px 8px); box-shadow: inset 0 0 0 1px var(--texto-desh); }
+@media (max-width: 719px) {
+  .cal-leyenda { flex-wrap: nowrap; overflow-x: auto; padding-bottom: 4px; scrollbar-width: thin; }
+  .cal-leyenda button, .leyenda-pendiente { flex-shrink: 0; white-space: nowrap; }
+}
+
+.cal-cuerpo { transition: opacity .15s; }
+.cal-cuerpo[data-cargando="si"] { opacity: .55; }
+
+/* ---------- Vista de mes ---------- */
+.mes { border: 1px solid var(--borde); border-radius: var(--radio-lg); background: var(--card); overflow: hidden; --alto-semana: 142px; }
+.mes-cab { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); background: var(--neutro-bg); border-bottom: 1px solid var(--borde); }
+.mes-cab span { padding: 8px 10px; font-size: 11.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .07em; color: var(--texto-sec); }
+.mes-cab span.fin-de-semana { color: var(--texto-desh); }
+.mes-semana { position: relative; border-bottom: 1px solid var(--borde); }
+.mes-semana:last-child { border-bottom: 0; }
+.mes-dias { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); }
+.mes-dia { position: relative; min-height: var(--alto-semana); border-right: 1px solid var(--borde); display: flex; flex-direction: column; min-width: 0; }
+.mes-dia:last-child { border-right: 0; }
+.mes-dia[data-fin-de-semana="si"] { background: color-mix(in srgb, var(--neutro-bg) 60%, var(--card)); }
+.mes-dia[data-feriado="si"] { background: color-mix(in srgb, var(--advert-bg) 70%, var(--card)); }
+.mes-dia[data-otro-mes="si"] { opacity: .5; }
+.mes-dia-boton { display: flex; align-items: flex-start; gap: 6px; width: 100%; padding: 6px 7px; background: transparent; border: 0; text-align: left; cursor: pointer; min-width: 0; }
+.mes-dia-boton:hover .mes-num { background: var(--neutro-bg); }
+.mes-num { width: 26px; height: 26px; display: grid; place-items: center; border-radius: 50%; font-size: 13px; font-weight: 700; font-variant-numeric: tabular-nums; flex-shrink: 0; }
+.mes-dia[data-hoy="si"] .mes-num { background: var(--accion); color: var(--accion-txt); }
+.mes-feriado { font-size: 11px; font-weight: 700; color: var(--advert-fg); line-height: 1.3; padding-top: 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+.mes-mas { position: absolute; left: 8px; bottom: 5px; background: transparent; border: 0; padding: 1px 6px; border-radius: var(--radio-full); font-size: 12px; font-weight: 700; color: var(--accion-sobre-claro); cursor: pointer; }
+.mes-mas:hover { background: var(--accion-tinte); }
+
+.mes-barras { position: absolute; left: 0; right: 0; top: 36px; display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); grid-auto-rows: 22px; row-gap: 3px; pointer-events: none; }
+
+.barra {
+  pointer-events: auto; display: flex; align-items: center; gap: 6px; min-width: 0; height: 22px; margin: 0 3px; padding: 0 8px;
+  border: 0; border-left: 3px solid var(--ev); border-radius: 5px; text-align: left; cursor: pointer; overflow: hidden; white-space: nowrap;
+  background: color-mix(in srgb, var(--ev) 28%, var(--card)); color: color-mix(in srgb, var(--ev) 55%, var(--texto));
+  font-size: 12px; font-weight: 700; transition: filter .12s, transform .12s;
+}
+.barra:hover { filter: brightness(.96) saturate(1.2); transform: translateY(-1px); z-index: 2; }
+.barra span { overflow: hidden; text-overflow: ellipsis; }
+.barra small { font-weight: 500; opacity: .75; font-size: 11.5px; flex-shrink: 0; }
+.barra[data-estado="pendiente"] {
+  background: repeating-linear-gradient(135deg, color-mix(in srgb, var(--ev) 13%, var(--card)) 0 6px, color-mix(in srgb, var(--ev) 27%, var(--card)) 6px 12px);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ev) 50%, transparent);
+}
+.barra[data-antes="si"] { margin-left: 0; border-left-width: 0; border-top-left-radius: 0; border-bottom-left-radius: 0; padding-left: 10px; }
+.barra[data-despues="si"] { margin-right: 0; border-top-right-radius: 0; border-bottom-right-radius: 0; }
+
+/* Celular: sin barras; puntos de color y la lista del dia debajo. */
+@media (max-width: 719px) {
+  .mes { --alto-semana: 56px; }
+  .mes-cab span { padding: 7px 0; text-align: center; font-size: 10.5px; letter-spacing: .02em; }
+  .mes-dia { align-items: center; }
+  .mes-dia-boton { flex-direction: column; align-items: center; gap: 0; padding: 5px 0 0; }
+  .mes-num { width: 28px; height: 28px; font-size: 14px; }
+  .mes-dia[data-elegido="si"] { box-shadow: inset 0 0 0 2px var(--accion); border-radius: var(--radio-md); }
+  .mes-feriado { position: absolute; top: 3px; right: 4px; padding: 0; font-size: 10px; }
+  .mes-puntos { display: flex; gap: 3px; align-items: center; justify-content: center; position: absolute; bottom: 5px; left: 0; right: 0; }
+  .mes-puntos i { width: 7px; height: 7px; border-radius: 50%; background: var(--ev); }
+  .mes-puntos i[data-estado="pendiente"] { background: transparent; box-shadow: inset 0 0 0 1.5px var(--ev); }
+  .mes-puntos em { font-style: normal; font-size: 10px; font-weight: 800; color: var(--texto-sec); line-height: 1; }
+}
+
+/* ---------- Lista de un dia ---------- */
+.panel-dia h3 { font-size: 17px; font-weight: 800; margin-bottom: 4px; }
+.panel-dia h3::first-letter { text-transform: uppercase; }
+.panel-feriado { font-size: 13.5px; font-weight: 700; color: var(--advert-fg); margin-bottom: 6px; }
+.panel-vacio, .panel-cuenta { font-size: 14px; color: var(--texto-sec); margin: 4px 0 10px; }
+.panel-lista { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; max-height: min(52vh, 420px); overflow-y: auto; }
+.panel-fila { display: flex; align-items: center; gap: 10px; width: 100%; text-align: left; background: var(--card); border: 1px solid var(--borde); border-left: 4px solid var(--ev); border-radius: var(--radio-md); padding: 8px 10px; cursor: pointer; }
+.panel-fila:hover { background: var(--neutro-bg); }
+.panel-texto { flex: 1; min-width: 0; display: grid; }
+.panel-texto b { font-size: 14.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.panel-texto small { color: var(--texto-sec); font-size: 12.5px; }
+.cal-dia-movil { margin-top: 14px; background: var(--card); border: 1px solid var(--borde); border-radius: var(--radio-lg); padding: 14px; }
+.cal-dia-movil .panel-lista { max-height: none; }
+
+/* ---------- Vista por persona ---------- */
+.por-persona { --ancho-dia: 28px; --ancho-nombre: 190px; overflow-x: auto; border: 1px solid var(--borde); border-radius: var(--radio-lg); background: var(--card); }
+.por-persona-tabla { min-width: calc(var(--ancho-nombre) + var(--dias, 31) * var(--ancho-dia)); }
+.persona-fila { display: grid; grid-template-columns: var(--ancho-nombre) minmax(0, 1fr); border-bottom: 1px solid var(--borde); }
+.persona-fila:last-child { border-bottom: 0; }
+.persona-nombre { position: sticky; left: 0; z-index: 3; display: flex; align-items: center; gap: 8px; padding: 6px 10px; background: var(--card); border-right: 1px solid var(--borde); font-size: 13px; font-weight: 600; min-width: 0; }
+.persona-nombre span:last-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.persona-dias { display: grid; position: relative; min-height: 40px; }
+.persona-celda { grid-row: 1; border-right: 1px solid color-mix(in srgb, var(--borde) 55%, transparent); }
+.persona-celda[data-fin-de-semana="si"], .persona-dia[data-fin-de-semana="si"] { background: color-mix(in srgb, var(--neutro-bg) 70%, var(--card)); }
+.persona-celda[data-feriado="si"], .persona-dia[data-feriado="si"] { background: var(--advert-bg); }
+.persona-celda[data-hoy="si"] { box-shadow: inset 2px 0 0 var(--accion), inset -2px 0 0 var(--accion); }
+.persona-cabecera .persona-nombre, .persona-ocupacion .persona-nombre { background: var(--neutro-bg); font-size: 11.5px; text-transform: uppercase; letter-spacing: .06em; color: var(--texto-sec); }
+.persona-cabecera .persona-dias { background: var(--neutro-bg); min-height: 34px; }
+.persona-dia { border: 0; border-right: 1px solid color-mix(in srgb, var(--borde) 55%, transparent); background: transparent; font-size: 12px; font-weight: 700; color: var(--texto-sec); cursor: pointer; font-variant-numeric: tabular-nums; }
+.persona-dia:hover { background: var(--accion-tinte); color: var(--accion-sobre-claro); }
+.persona-dia[data-hoy="si"] { background: var(--accion); color: var(--accion-txt); }
+.persona-ocupacion .persona-dias { min-height: 30px; }
+.persona-cuenta { display: grid; place-items: center; font-size: 12px; font-weight: 800; color: var(--texto); border-right: 1px solid color-mix(in srgb, var(--borde) 55%, transparent); background: color-mix(in srgb, var(--accion) calc(var(--calor, 0) * 65%), transparent); }
+.persona-barras { align-items: center; }
+.barra-persona { grid-row: 1; z-index: 1; height: 26px; margin: 0 2px; }
+.barra-persona[data-antes="si"] { margin-left: 0; }
+.barra-persona[data-despues="si"] { margin-right: 0; }
+@media (max-width: 719px) {
+  .por-persona { --ancho-dia: 30px; --ancho-nombre: 128px; }
+  .persona-nombre { padding: 6px 8px; font-size: 12.5px; }
+  .persona-nombre .avatar { display: none; }
+}
+
+/* ---------- Saldo dentro de Editar funcionario (plegado a proposito) ---------- */
+.ajuste-saldo { margin-top: 18px; padding: 0; }
+.campo-doble { grid-column: span 2; align-self: start; padding-top: 26px; min-width: 0; }
+.campo-doble .ajuste-saldo { margin-top: 0; }
+@media (max-width: 900px) { .campo-doble { grid-column: 1 / -1; padding-top: 0; } }
+.ajuste-saldo summary { cursor: pointer; padding: 12px 16px; font-weight: 700; font-size: 14.5px; display: flex; gap: 8px; align-items: center; list-style: none; color: var(--texto-sec); }
+.ajuste-saldo summary::-webkit-details-marker { display: none; }
+.ajuste-saldo summary small { font-weight: 400; }
+.ajuste-saldo[open] summary { border-bottom: 1px solid var(--borde); color: var(--texto); }
+.ajuste-saldo-cuerpo { padding: 14px 16px; display: grid; gap: 10px; justify-items: start; }
+
+/* =====================================================================
+   Nueva solicitud por pasos (01/10): cada paso cabe en la pantalla
+   ===================================================================== */
+.pagina-cab-compacta { margin-bottom: 10px; align-items: center; }
+.pagina-cab-compacta h1 { margin-bottom: 2px; }
+.pagina-solicitud .pagina-pasos { margin-bottom: 12px; }
+.pagina-solicitud .pagina-pasos .pasos { margin-bottom: 0; }
+.solicitud-paso { padding: 18px 20px; display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+.solicitud-paso .paso-titulo { font-size: 18px; font-weight: 800; }
+.solicitud-paso-cuerpo { min-width: 0; }
+.solicitud-paso .solicitud-acciones { margin-top: 4px; padding-top: 14px; border-top: 1px solid var(--borde); justify-content: space-between; }
+
+.chip-persona { display: inline-flex; align-items: center; gap: 8px; border: 1px solid var(--borde); background: var(--card); border-radius: var(--radio-full);
+  padding: 4px 12px 4px 4px; font: inherit; font-size: 14px; font-weight: 600; cursor: pointer; max-width: 100%; }
+.chip-persona:hover { border-color: var(--accion); }
+.chip-saldo { display: block; font-size: 14px; color: var(--texto-sec); margin: 0 0 10px; line-height: 1.45; }
+.chip-saldo svg { vertical-align: -2px; margin-right: 4px; }
+.chip-saldo b { color: var(--texto); }
+
+.paso-fechas-calendario { max-width: 460px; }
+.fechas-a-mano { margin-top: 10px; font-size: 14px; }
+.fechas-a-mano summary { cursor: pointer; color: var(--accion-sobre-claro); font-weight: 600; width: max-content; max-width: 100%; }
+.fechas-a-mano .fechas-escritas { margin-top: 10px; }
+.resumen-fechas-celular { margin-top: 10px; font-size: 15px; line-height: 1.35; }
+.resumen-fechas-celular .problema { color: var(--error-fg); font-size: 14px; }
+
+.resumen-pasos { display: grid; gap: 10px; margin: 0; }
+.resumen-pasos > div:not(.resumen-problema) { display: grid; gap: 1px; }
+.resumen-pasos dt { font-size: 12px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: var(--texto-sec); }
+.resumen-pasos dd { margin: 0; font-size: 15px; display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px; }
+.resumen-pasos dd small { color: var(--texto-sec); font-size: 13px; }
+.resumen-pasos .falta { color: var(--texto-desh); font-style: italic; }
+.resumen-numero { font-size: 30px; font-weight: 800; line-height: 1; font-variant-numeric: tabular-nums; }
+.revisar-tarjeta { padding: 14px 16px; margin-bottom: 14px; }
+.paso-revisar .campo textarea { min-height: 84px; }
+.paso-revisar .resumen-nota { display: flex; gap: 6px; align-items: flex-start; }
+.paso-revisar .resumen-nota svg { flex: none; margin-top: 3px; }
+.opcional { font-weight: 400; color: var(--texto-sec); }
+
+.lista-problemas { margin: 0; padding: 0; list-style: none; display: grid; gap: 8px; }
+.lista-problemas li { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; padding: 10px 12px; border-radius: var(--radio-md);
+  background: var(--error-bg); color: var(--error-fg); font-size: 14.5px; line-height: 1.45; }
+.lista-problemas .btn-texto { flex: none; }
+
+.elegir-persona { display: grid; gap: 10px; }
+.elegir-persona .buscador { max-width: none; }
+.personas-para-elegir { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; grid-template-columns: minmax(0, 1fr); }
+@media (min-width: 900px) { .personas-para-elegir { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.personas-para-elegir button { width: 100%; display: flex; align-items: center; gap: 12px; text-align: left; padding: 10px 12px; background: var(--card);
+  border: 1.5px solid var(--borde); border-radius: var(--radio-lg); cursor: pointer; font: inherit; color: var(--texto); transition: border-color .15s, background .15s; }
+.personas-para-elegir button:hover { border-color: var(--accion); }
+.personas-para-elegir button[aria-pressed="true"] { border-color: var(--accion); background: var(--accion-tinte); }
+.personas-para-elegir button > span:not(.avatar) { flex: 1; min-width: 0; display: grid; }
+.personas-para-elegir .avatar { flex: none; }
+.personas-para-elegir b { font-size: 15px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.personas-para-elegir small { font-size: 13px; color: var(--texto-sec); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.personas-para-elegir button > svg { color: var(--texto-desh); flex: none; }
+
+.barra-paso { flex: 1; text-align: center; font-size: 13px; font-weight: 700; color: var(--texto-sec); font-variant-numeric: tabular-nums; }
+@media (max-width: 1023px) {
+  .solicitud-paso { padding: 14px; gap: 10px; }
+  .solicitud-paso .paso-titulo { font-size: 17px; }
+  .pagina-solicitud .barra-enviar .btn { padding: 11px 18px; }
+  .selector-dia { min-height: 36px; }
+}
+@media (max-width: 719px) {
+  .pagina-solicitud .solicitud-paso { border: 0; box-shadow: none; padding: 0; background: transparent; }
+  .pagina-cab-compacta { flex-direction: row; flex-wrap: wrap; gap: 8px; }
+  .pagina-cab-compacta h1 { font-size: 21px; }
+  .selector-rango { padding: 8px; }
+  .selector-ayuda { margin-top: 6px; }
+}
+
+/* =====================================================================
+   01/10: choques, cancelacion con doble confirmacion, lista compacta,
+   filtros del calendario y vista "Lista"
+   ===================================================================== */
+.aviso-choque { background: var(--advert-bg); color: var(--advert-fg); border-radius: var(--radio-md); padding: 10px 12px; }
+.aviso-choque p { display: flex; gap: 6px; align-items: flex-start; }
+.aviso-choque p svg { margin: 2px 0 0 !important; color: currentColor !important; flex: none; }
+.aviso-choque .coinciden { color: var(--texto); }
+.aviso-choque .coinciden small b { color: var(--advert-fg); }
+.etiqueta-choque { display: inline-flex; align-items: center; gap: 4px; background: var(--advert-bg); color: var(--advert-fg); font-weight: 700; padding: 0 8px; border-radius: var(--radio-full); }
+
+.confirmar-cancelacion { border: 1.5px solid var(--error-fg); background: var(--error-bg); border-radius: var(--radio-md); padding: 12px 14px; display: grid; gap: 8px; font-size: 14.5px; line-height: 1.5; }
+.confirmar-cancelacion p:first-child { display: flex; gap: 6px; align-items: flex-start; color: var(--error-fg); }
+.confirmar-cancelacion p:first-child svg { flex: none; margin-top: 2px; }
+.confirmar-cancelacion .casilla { margin: 2px 0 0; font-weight: 600; }
+
+.barra-lista { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 12px; }
+.barra-lista .filtros { margin: 0; }
+.herramientas-fin { margin-left: auto; display: flex; }
+.segmentado-iconos button { display: inline-flex; align-items: center; gap: 6px; }
+.filtro-fecha { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: var(--texto-sec); }
+.filtro-fecha input { padding: 7px 10px; border: 1px solid var(--borde); border-radius: var(--radio-md); background: var(--card); color: var(--texto); font: inherit; font-size: 14px; }
+
+/* Lista compacta de solicitudes: una fila por solicitud */
+.lista-compacta { list-style: none; margin: 0; padding: 0; background: var(--card); border: 1px solid var(--borde); border-radius: var(--radio-lg); overflow: hidden; }
+.lista-compacta li + li { border-top: 1px solid var(--borde); }
+.lista-compacta button { width: 100%; display: grid; grid-template-columns: 10px minmax(0, 1.3fr) minmax(0, 1fr) minmax(0, 1.2fr) auto; align-items: center; gap: 12px;
+  padding: 10px 14px; background: transparent; border: 0; text-align: left; font: inherit; font-size: 14.5px; color: var(--texto); cursor: pointer; }
+.lista-compacta button:not(:has(.compacta-persona)) { grid-template-columns: 10px minmax(0, 1fr) minmax(0, 1.2fr) auto; }
+.lista-compacta button:hover { background: var(--neutro-bg); }
+.lista-compacta button[data-nueva="si"] { background: color-mix(in srgb, var(--info-bg) 45%, var(--card)); }
+.compacta-punto { width: 10px; height: 10px; border-radius: 50%; background: var(--ev); }
+.compacta-persona { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.compacta-tipo { color: var(--texto-sec); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.compacta-fechas { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-variant-numeric: tabular-nums; }
+.compacta-fechas small { color: var(--texto-sec); }
+.compacta-estado { display: flex; gap: 6px; align-items: center; justify-content: flex-end; font-size: 12px; }
+@media (max-width: 719px) {
+  .lista-compacta button, .lista-compacta button:not(:has(.compacta-persona)) { grid-template-columns: 10px minmax(0, 1fr) auto; grid-template-areas: "p a e" "p b e"; row-gap: 2px; column-gap: 10px; }
+  .compacta-punto { grid-area: p; align-self: start; margin-top: 6px; }
+  .compacta-persona { grid-area: a; }
+  .compacta-tipo { display: none; }
+  .lista-compacta button:not(:has(.compacta-persona)) .compacta-tipo { display: block; grid-area: a; color: var(--texto); font-weight: 600; }
+  .compacta-fechas { grid-area: b; font-size: 13px; color: var(--texto-sec); }
+  .compacta-estado { grid-area: e; flex-direction: column; align-items: flex-end; gap: 3px; }
+}
+
+/* Filtros del calendario */
+.cal-filtros { display: flex; flex-wrap: wrap; gap: 8px 10px; align-items: center; margin-bottom: 10px; }
+.buscador-chico { flex: 0 1 240px; }
+.buscador-chico input { padding-top: 7px; padding-bottom: 7px; font-size: 14px; }
+@media (max-width: 719px) {
+  .cal-filtros > * { flex: 1 1 140px; }
+  .cal-filtros .btn-texto { flex: 0 0 auto; }
+}
+
+/* Solicitud resaltada (llegando con "Ver en calendario") */
+[data-resaltada="si"] { outline: 3px solid var(--texto); outline-offset: 1px; z-index: 2; animation: latido 1.4s ease-in-out 3; }
+@keyframes latido { 50% { outline-color: transparent; } }
+@media (prefers-reduced-motion: reduce) { [data-resaltada="si"] { animation: none; } }
+
+/* Vista "Lista" del calendario */
+.cal-lista { display: grid; gap: 16px; }
+.cal-lista-semana h3 { font-size: 14px; font-weight: 800; margin-bottom: 6px; }
+.cal-lista-semana h3 small { font-weight: 500; color: var(--texto-sec); }
+.cal-lista ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.cal-lista button { position: relative; width: 100%; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; text-align: left; padding: 9px 12px 9px 16px;
+  background: var(--card); border: 1px solid var(--borde); border-radius: var(--radio-md); cursor: pointer; font: inherit; font-size: 14.5px; color: var(--texto); overflow: hidden; }
+.cal-lista button:hover { border-color: var(--ev); }
+.cal-lista-franja { position: absolute; left: 0; top: 0; bottom: 0; width: 5px; background: var(--ev); }
+.cal-lista button[data-estado="pendiente"] .cal-lista-franja { background: repeating-linear-gradient(45deg, var(--ev) 0 4px, transparent 4px 8px); }
+.cal-lista-persona { display: inline-flex; align-items: center; gap: 8px; font-weight: 600; min-width: 0; flex: 1 1 200px; }
+.cal-lista-persona > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cal-lista-tipo { color: var(--texto-sec); flex: 0 1 190px; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cal-lista-fechas { flex: 1 1 160px; font-variant-numeric: tabular-nums; }
+.cal-lista-fechas small { color: var(--texto-sec); }
+
+/* El calendario de elegir fechas, mas bajo, para que el paso quepa sin bajar */
+.paso-fechas .selector-dia { aspect-ratio: auto; height: 40px; min-height: 0; }
+@media (max-width: 719px) { .paso-fechas .selector-dia { height: 38px; } }
+.feriado-fecha[data-regla="unica"] { background: var(--info-bg); color: var(--info-fg); }

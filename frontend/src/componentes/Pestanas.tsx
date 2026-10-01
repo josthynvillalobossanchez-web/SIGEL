@@ -69,6 +69,7 @@ export function Pestanas({ opciones, actual, alCambiar, etiqueta, prefijo = 'pst
             aria-selected={elegida}
             aria-controls={`${prefijo}-panel-${opcion.id}`}
             tabIndex={elegida ? 0 : -1}
+            data-ayuda={`Ver la pestaña «${opcion.texto}»`}
             onClick={() => alCambiar(opcion.id)}
             onKeyDown={(e) => alTeclear(e, i)}
           >

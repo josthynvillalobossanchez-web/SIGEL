@@ -97,6 +97,8 @@ export function ListaDeFuncionarios() {
     porRevisar.recargar();
   }
 
+  // La jefatura (sin funcionarios.verTodos) solo ve a su personal a cargo: el backend ya filtra.
+  const soloSuEquipo = !tienePermisos('funcionarios.verTodos');
   const bloqueoRegistrar = tienePermisos('funcionarios.crear') ? null : 'su cuenta no tiene permiso para registrar funcionarios.';
   const hayFiltros = Boolean(busquedaEnUrl || estado || departamentoId || soloRevisar);
   const cuantosPorRevisar = porRevisar.datos?.total ?? 0;
@@ -105,18 +107,22 @@ export function ListaDeFuncionarios() {
     <section className="pagina">
       <div className="pagina-cab">
         <div>
-          <h1>Funcionarios</h1>
-          <p>Busque por cédula, nombre o correo. Los resultados vienen paginados: el sistema nunca carga todos los registros de una vez.</p>
+          <h1>{soloSuEquipo ? 'Mi personal' : 'Funcionarios'}</h1>
+          <p>
+            {soloSuEquipo
+              ? 'Las personas que tiene a su cargo. Busque por cédula, nombre o correo.'
+              : 'Busque por cédula, nombre o correo. Los resultados vienen paginados: el sistema nunca carga todos los registros de una vez.'}
+          </p>
         </div>
         <div className="acc">
-          <BotonConAyuda
+          {!soloSuEquipo && <BotonConAyuda
             clase="btn btn-primario"
             icono="mas"
             texto="Registrar funcionario"
             ayuda="Registrar a una persona nueva (se abre la página de registro por pasos)"
             bloqueadoPor={bloqueoRegistrar}
             alHacerClic={() => navegar('/funcionarios/nuevo')}
-          />
+          />}
         </div>
       </div>
 

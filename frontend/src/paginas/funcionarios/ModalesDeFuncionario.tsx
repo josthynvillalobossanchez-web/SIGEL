@@ -103,7 +103,7 @@ export function ModalFicha({
       ancho
       pie={
         <>
-          <button className="btn btn-secundario" type="button" onClick={alCerrar}>
+          <button className="btn btn-secundario" type="button" onClick={alCerrar} data-ayuda="Cerrar el detalle del funcionario">
             Cerrar
           </button>
           {f && (

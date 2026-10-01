@@ -57,7 +57,9 @@ export function RutaSinSesion() {
   return <Outlet />;
 }
 
-export function ConPermisos({ permisos, children }: { permisos: string[]; children: ReactNode }) {
+/** "permisos": todos; "algunoDe": al menos uno (p. ej. la jefatura o RRHH). */
+export function ConPermisos({ permisos = [], algunoDe, children }: { permisos?: string[]; algunoDe?: string[]; children: ReactNode }) {
   const { tienePermisos } = useSesion();
-  return tienePermisos(...permisos) ? <>{children}</> : <SinPermiso />;
+  const permitido = tienePermisos(...permisos) && (!algunoDe || algunoDe.some((p) => tienePermisos(p)));
+  return permitido ? <>{children}</> : <SinPermiso />;
 }
