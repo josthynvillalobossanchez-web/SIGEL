@@ -26,6 +26,13 @@ const MINUTOS_BLOQUEO = 3;
 const MINUTOS_VIGENCIA_CODIGO = 15;
 
 /**
+ * Codigos equivocados que se toleran contra un mismo codigo de recuperacion.
+ * Un codigo tiene un millon de combinaciones: sin este tope, alguien con
+ * paciencia podria probarlas todas dentro de los 15 minutos de vigencia.
+ */
+const MAXIMO_INTENTOS_CODIGO = 5;
+
+/**
  * Lo que el servicio le entrega al controlador. El token no llega asi al
  * navegador: el controlador lo guarda en la cookie de sesion.
  */
@@ -353,7 +360,7 @@ export class AutenticacionService {
         fechaExpiracion: { gt: new Date() },
       },
       orderBy: { fechaCreacion: 'desc' },
-      select: { id: true, codigoHash: true },
+      select: { id: true, codigoHash: true, intentosFallidos: true },
     });
 
     if (!token) {
@@ -363,6 +370,28 @@ export class AutenticacionService {
     const codigoCorrecto = await argon2.verify(token.codigoHash, datos.codigo.trim());
 
     if (!codigoCorrecto) {
+      const intentos = token.intentosFallidos + 1;
+      const agotado = intentos >= MAXIMO_INTENTOS_CODIGO;
+
+      // Al agotar los intentos el codigo se anula (queda como usado) y el
+      // siguiente intento, aunque sea el correcto, ya no lo encuentra.
+      await this.prisma.tokenRecuperacionContrasena.update({
+        where: { id: token.id },
+        data: agotado
+          ? { intentosFallidos: intentos, fechaUso: new Date() }
+          : { intentosFallidos: intentos },
+      });
+
+      if (agotado) {
+        this.registro.warn(
+          `Se anuló un código de recuperación del usuario ${usuario.id} por demasiados intentos`,
+        );
+        throw new BadRequestException({
+          codigo: 'CODIGO_AGOTADO',
+          message: 'Demasiados intentos. Solicite un código nuevo.',
+        });
+      }
+
       throw this.codigoInvalido();
     }
 

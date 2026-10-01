@@ -49,13 +49,16 @@ Origen: COSAS_POR_CORREGIR #6.
   la CSP. Se corre con `BASE_URL=http://127.0.0.1:3100`; antes `_csp_preparar.mjs`.
 - [ ] Al desplegar con HTTPS: comprobar en el navegador del servidor que no hay avisos de CSP en la consola.
 
-### B. Contador de intentos por código de recuperación — [Dev] — **siguiente**
+### B. Contador de intentos por código de recuperación — [Dev] — **hecha (01/10/2026)**
 Origen: #5d. Hoy el código de 6 dígitos solo está protegido por el límite por IP.
-- [ ] Agregar la columna `intentosFallidos` a `tokenRecuperacionContrasena` (**migración**:
+- [x] Agregar la columna `intentosFallidos` a `tokenRecuperacionContrasena` (**migración**:
   la corre Josthyn con `npx prisma migrate dev`).
-- [ ] Al fallar un código, sumar 1; al llegar a 5, el código se anula y hay que pedir otro.
-- [ ] Mensaje al usuario: «Demasiados intentos. Solicite un código nuevo.»
-- [ ] Pruebas: 5 fallos anulan el código aunque el sexto sea el correcto.
+- [x] Al fallar un código, sumar 1; al llegar a 5, el código se anula y hay que pedir otro.
+- [x] Mensaje al usuario: «Demasiados intentos. Solicite un código nuevo.»
+- [x] Pruebas: 5 fallos anulan el código aunque el sexto sea el correcto
+  (`docs/_trabajo/pruebas/pruebas-recuperacion.mjs`, 11 casos). La migración es
+  `20261002000000_intentos_codigo_recuperacion`; el servicio responde `CODIGO_AGOTADO`
+  al quinto fallo y el código queda marcado como usado.
 
 ### C. Cierre de sesión real (revocar tokens) — [Dev] — antes del despliegue
 Origen: #4. Hoy un token robado sirve hasta que vence, aunque la persona haya cerrado sesión.
@@ -225,7 +228,7 @@ revisar sin escribirlo a disco:
 | Tarea | Responsable | Estado | Fecha |
 |---|---|---|---|
 | A. Cabeceras de seguridad | Dev | Hecha (falta commit y `npm install helmet`) | 30/09/2026 |
-| B. Intentos por código de recuperación | Dev | **Siguiente** | |
+| B. Intentos por código de recuperación | Dev | **Hecha** | Migración pendiente de correr por Josthyn |
 | C. Cierre de sesión real | Dev | Antes del despliegue | |
 | D. Contraseña temporal solo por correo | Josthyn / Dev | Espera a probar el correo en el servidor | |
 | E. Herramienta de recifrado | Dev | Antes del despliegue | |

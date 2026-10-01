@@ -105,6 +105,9 @@ model tokenRecuperacionContrasena {
   fechaCreacion   DateTime  @default(now())
   fechaExpiracion DateTime
   fechaUso        DateTime?
+  /// Codigos equivocados que se han probado contra este codigo. Al llegar
+  /// al maximo el codigo se anula y hay que pedir uno nuevo.
+  intentosFallidos Int      @default(0) @db.SmallInt
 
   usuario usuario @relation(fields: [usuarioId], references: [id])
 
