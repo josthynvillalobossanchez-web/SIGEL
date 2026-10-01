@@ -112,6 +112,9 @@ Abra `backend\.env` y complete:
 
 - **`SEED_ADMIN_CONTRASENA`**: la contraseña temporal del Súper Administrador. Si la
   deja vacía, el sistema genera una al azar y la imprime una sola vez.
+- **`ARCHIVOS_LLAVE`**: la llave que cifra los documentos y fotografías. **Sin ella el backend
+  no arranca.** Se genera una vez con `npm run archivos:generar-llave` (imprime una línea
+  lista para pegar en el `.env`). Léase la sección 10.6 antes de usarla en el servidor.
 
 ### 4.2 Instalar y preparar la base
 
@@ -246,14 +249,17 @@ SIGEL\
 │   └── src\
 │       ├── main.ts         arranque de la API
 │       ├── app.module.ts   módulo raíz
+│       ├── almacenamiento\ cifrado AES-256-GCM, validación y guardado de archivos
 │       ├── autenticacion\  login, sesión, permisos y contraseñas
 │       ├── bitacora\       registro de auditoría
 │       ├── comun\          piezas compartidas: paginación, errores, IP, validación de ids
 │       ├── correo\         salida de correo del sistema
+│       ├── documentos\     documentos del expediente y fotografía de perfil
 │       ├── permisos\       catálogo de permisos
 │       ├── prisma\         conexión a la base
 │       ├── roles\          administración de roles
 │       ├── salud\          endpoint de comprobación
+│       ├── tipos-documento\ tipos de documento y sus formatos
 │       ├── usuarios\       cuentas, su estado, sus roles y permisos individuales
 │       └── generated\      cliente de Prisma (se genera, no se sube)
 ├── frontend\               React + Vite (ver §7d)
@@ -354,9 +360,22 @@ aparece marcado como público, exige sesión.
 | `PATCH /funcionarios/:id` | `funcionarios.editar` | Solo lo que cambia (no `cedula` ni `estado`) |
 | `POST /funcionarios/:id/salida` | `funcionarios.editar` | `{ fechaSalida, motivoSalida }` |
 | `POST /funcionarios/:id/reingreso` | `funcionarios.editar` | `{ fechaIngreso }` |
-| `GET /expedientes/propio` | `expediente.ver` | Expediente propio `{ funcionario, esPropio }`; se anota en la bitácora |
+| `GET /expedientes/propio` | `expediente.ver` | Expediente propio `{ funcionario, esPropio, tieneFoto }`; se anota en la bitácora |
 | `GET /expedientes/:funcionarioId` | `expediente.ver` (+ `expediente.verTodos` si es de otra persona) | Abre un expediente; se anota en la bitácora |
 | `GET /expedientes/:funcionarioId/historial` | igual | `?pagina=&tamano=`; movimientos `{ tipo, titulo, fechaEfectiva, cambios[{campo, antes, despues}], detalle, quien }` |
+| `GET /expedientes/:funcionarioId/documentos` | `expediente.ver` (+ `expediente.verTodos` si es de otra persona) | `?pagina=&tamano=&busqueda=&tipoDocumentoId=&estado=vigentes\|bajas\|todos`. Cada documento trae `acciones` (qué puede hacer quien consulta y por qué no). `bajas`/`todos` solo con `documentos.restaurar`; para los demás se ignoran |
+| `POST /expedientes/:funcionarioId/documentos` | `documentos.crear` | Subir (multipart: campo `archivo` + `tipoDocumentoId`, `titulo`, `descripcion?`, `fechaDocumento?`). Máximo 25 MB; PDF, JPG o PNG según el tipo |
+| `GET /documentos/:id/archivo?modo=ver\|descargar` | `documentos.descargar` | Entrega el archivo ya descifrado (se anota `consultar` o `descargar` en la bitácora) |
+| `PATCH /documentos/:id` | sesión (decide el servicio) | `{ titulo?, tipoDocumentoId?, descripcion?, fechaDocumento? }`; el archivo no se reemplaza. La persona edita lo que ella subió (`documentos.editarPropio`); RRHH cualquier documento manual (`documentos.editar`); los generados por SINERGIA solo se ven |
+| `POST /documentos/:id/baja` | sesión (decide el servicio) | `{ motivo? }`. Baja lógica: `documentos.darDeBajaPropio` (lo que subió ella) o `documentos.darDeBaja` |
+| `POST /documentos/:id/restauracion` | `documentos.restaurar` | Devuelve un documento dado de baja a vigente |
+| `GET /funcionarios/:id/foto` | ella misma, o `funcionarios.ver` | La fotografía (JPG o PNG); 404 `SIN_FOTOGRAFIA` si no tiene |
+| `PUT /funcionarios/:id/foto` | ella misma (`perfilPropio.editar`) o `funcionarios.editar` | Multipart, campo `archivo`; JPG o PNG, máximo 5 MB. No se cambia la de una cuenta con más acceso |
+| `DELETE /funcionarios/:id/foto` | igual | Quita la fotografía (el archivo anterior queda guardado en el servidor) |
+| `GET /tipos-documento` | con sesión | `?soloActivos=&paraSubir=`; cada tipo trae `formatos[]`, `generadoPorSistema` y `cantidadDocumentos` |
+| `POST /tipos-documento` | `tiposDocumento.editar` | `{ nombre, descripcion?, formatos[] }` (pdf, jpg, png; al menos uno) |
+| `PATCH /tipos-documento/:id` | `tiposDocumento.editar` | Nombre, descripción y formatos; los tipos que genera SINERGIA solo cambian de nombre |
+| `PATCH /tipos-documento/:id/estado` | `tiposDocumento.editar` | `{ activo }`; los tipos de SINERGIA no se inactivan |
 | `GET /usuarios/funcionarios-disponibles?busqueda=` | `usuarios.crear` | Funcionarios activos sin cuenta, máximo 20 |
 
 `GET /usuarios/:id` trae además `permisosEfectivos` (lo que la cuenta puede hacer de verdad),
@@ -417,6 +436,16 @@ Códigos de error más frecuentes:
 | `ROL_DUPLICADO` | Ya hay un rol con ese nombre (sin importar mayúsculas ni tildes) |
 | `CUENTA_SIN_ROL_PERMANENTE` | La cuenta quedaría sin ningún rol permanente (sin fecha) |
 | `SIN_CAMBIOS` | Se pidió guardar algo exactamente igual a como está |
+| `ARCHIVO_REQUERIDO` / `ARCHIVO_VACIO` | No vino archivo, o vino vacío |
+| `ARCHIVO_DEMASIADO_GRANDE` (413) | Pasa de 25 MB (documento) o 5 MB (fotografía) |
+| `FORMATO_NO_PERMITIDO` / `FORMATO_NO_PERMITIDO_PARA_TIPO` (415) | Extensión que no es PDF/JPG/PNG, o que ese tipo de documento no acepta |
+| `MIME_NO_COINCIDE` / `CONTENIDO_NO_COINCIDE` | El tipo declarado no corresponde a la extensión, o el contenido real no es lo que dice el nombre |
+| `ARCHIVO_NO_DISPONIBLE` | El archivo no está en el disco o no pasó la verificación de integridad (se entrega nada) |
+| `DOCUMENTO_NO_ENCONTRADO` / `DOCUMENTO_NO_EDITABLE` / `DOCUMENTO_VIGENTE` | No existe (o está en baja y quien consulta no puede verlo) / no puede editarlo / ya está vigente |
+| `BAJA_NO_PERMITIDA` | No puede dar de baja ese documento (lo subió otra persona, lo generó SINERGIA o ya está en baja) |
+| `TIPO_DOCUMENTO_INVALIDO` / `TIPO_DOCUMENTO_INACTIVO` / `TIPO_GENERADO_POR_SISTEMA` / `TIPO_NO_ACEPTA_EL_FORMATO` | Tipo inexistente / inactivo / lo genera SINERGIA y no se elige a mano / no acepta el formato del archivo |
+| `TIPO_DOCUMENTO_NO_ENCONTRADO` / `TIPO_DE_SISTEMA` | No existe ese tipo / se quiso cambiar o inactivar un tipo que genera SINERGIA |
+| `SIN_FOTOGRAFIA` / `CUENTA_CON_MAYOR_ACCESO` | La persona no tiene foto / no se cambia la foto de una cuenta con más acceso |
 | `CUENTA_SIN_FUNCIONARIO` / `CORREO_INSTITUCIONAL_EN_USO` | Mi cuenta: cuenta técnica sin datos personales / correo de otra persona |
 
 ---
@@ -527,7 +556,9 @@ Nada de páginas largas con scroll en PC.
 | `/catalogos` (`?pestana=puestos`, `?estado=activos`) | `catalogos.editar` | Departamentos, puestos y profesiones; ventanas cortas de crear, editar e inactivar |
 | `/funcionarios` (`?ver=<id>`, `?estado=`, `?departamento=`) | `funcionarios.ver` | Lista; ventanas Ficha resumida, Registrar salida, Registrar reingreso |
 | `/funcionarios/nuevo`, `/funcionarios/:id/editar` | `funcionarios.crear` / `funcionarios.editar` | Registrar / Editar funcionario por pasos |
-| `/funcionarios/:id/expediente`, `/mi-expediente` | `expediente.ver` | Expediente laboral (página propia: tiene cinco pestañas) |
+| `/funcionarios/:id/expediente`, `/mi-expediente` | `expediente.ver` | Expediente laboral (página propia: tiene cinco pestañas; la de Documentos lista, ve, descarga, edita, da de baja y restaura) |
+| `/funcionarios/:id/expediente/documentos/nuevo`, `/mi-expediente/documentos/nuevo` | `expediente.ver` + `documentos.crear` | Subir documento por pasos (Tipo y archivo · Datos · Revisar) |
+| `/tipos-documento` (`?estado=`) | `tiposDocumento.editar` | Tipos de documento y sus formatos; ventanas cortas de crear, editar e inactivar |
 | `/mi-cuenta` | con sesión | Perfil; pestañas Mis datos personales (editable), Datos laborales (editable solo con `funcionarios.editar`) y Acceso y seguridad |
 
 `/usuarios/:id` y `/roles/:id` (sin "editar") abren la ventana de consulta.
@@ -634,7 +665,7 @@ interfaz compilada, todo en el mismo dominio (la cookie de sesión funciona sin 
 |---|---|---|---|
 | `backend/registros/` | Registros (logs): un archivo por día, `sigel-AAAA-MM-DD.log`, hora de Costa Rica. Nunca llevan contraseñas, códigos ni la `DATABASE_URL`. | `RUTA_REGISTROS` | No |
 | `backend/contenido/` | Textos que se muestran tal cual, por ahora el consentimiento informado del Talent Pool (`consentimiento-talent-pool.txt`, borrador). Para cambiarlo se reemplaza el contenido del archivo. | — | Sí |
-| `backend/archivos/` | Archivos del expediente. Nunca se sirven como carpeta pública: la descarga pasa por el backend, que revisa el permiso. | `RUTA_ARCHIVOS` | No |
+| `backend/archivos/` | Documentos del expediente y fotografías, **cifrados** (`expedientes/<id>/<uuid>.enc`, `fotos/<id>/<uuid>.enc`). Nunca se sirven como carpeta pública: la descarga pasa por el backend, que revisa el permiso y descifra. Sin la llave (sección 10.6) no se pueden abrir. | `RUTA_ARCHIVOS` | No |
 
 SINERGIA **no borra nada** de estas carpetas. TI decide su respaldo (las dos) y, si quiere, la
 limpieza de registros viejos. Las rutas relativas se cuentan desde `backend/`, así que el
@@ -697,6 +728,7 @@ Se parte de `backend/.env.example`. Además de lo de la sección 4.1, en el serv
 | `BD_TLS` | `true` |
 | `BD_TLS_CA` | Ruta al `certificados-bd/ca.pem` de la sección 10.2 |
 | `RUTA_ARCHIVOS` / `RUTA_REGISTROS` | Se dejan como vienen (`./archivos`, `./registros`) |
+| `ARCHIVOS_LLAVE` | **Obligatoria.** La llave de cifrado de documentos y fotografías (sección 10.6). Una distinta a la de desarrollo, generada en el servidor |
 | `SEED_ADMIN_CONTRASENA` | **Vacía**: la semilla genera una al azar, se anota una sola vez y se cambia al entrar |
 | `JWT_SECRETO` | Uno nuevo, distinto al de desarrollo |
 | `CORREO_*` | Ver sección 10.5 |
@@ -759,3 +791,55 @@ Tener en cuenta:
 - En desarrollo se deja `CORREO_TRANSPORTE=consola`: nada sale, el mensaje se ve en la terminal.
 - Los correos llevan contraseñas temporales y códigos: su contenido **nunca** se escribe en los
   registros, solo "Correo enviado a X: asunto".
+
+### 10.6 Cifrado de documentos y fotografías (la llave)
+
+Todo archivo que sube alguien (documentos del expediente y fotografías de perfil) se guarda
+**cifrado** en `backend/archivos/` con AES-256-GCM. En la base de datos solo quedan la ruta
+relativa, el hash SHA-256 del contenido y los datos del documento (título, tipo, tamaño...).
+Quien copie la carpeta `archivos/` sin la llave solo se lleva datos ilegibles. Al descargar, el
+backend revisa el permiso, descifra, comprueba el hash y entrega el archivo; cada ver y cada
+descarga queda en la bitácora.
+
+**La llave.** Es una línea en el `.env` del backend:
+
+```
+ARCHIVOS_LLAVE=<32 bytes en base64>
+ARCHIVOS_LLAVE_VERSION=1
+```
+
+- Se genera **una sola vez** con `npm run archivos:generar-llave` (desde `backend`), que imprime
+  la línea lista para pegar. Nunca se escribe a mano ni se reutiliza la de desarrollo.
+- **Si el backend arranca sin llave, o con una que no mide exactamente 32 bytes, se detiene** y lo
+  dice. Es a propósito: es mejor que no arranque a que guarde archivos sin cifrar.
+- El `.env` no se sube a Git ni se manda por correo o chat.
+
+**Copia aparte (muy importante).** **Si se pierde la llave, se pierden todos los documentos y
+fotografías**: no hay forma de recuperarlos. Joseph / TI deben guardar una copia de esa línea
+**fuera del servidor y fuera del respaldo de `archivos/`** (por ejemplo, en el gestor de
+contraseñas de TI o en un sobre cerrado). Si la llave y los archivos están juntos en el mismo
+respaldo, el cifrado deja de servir contra quien robe ese respaldo; si están separados, sirve.
+Lo que TI respalda: la base de datos, `backend/archivos/` y, **por otro camino**, la llave.
+
+**Cambiar la llave (rotación).** Se puede, sin perder lo anterior:
+
+1. Generar una llave nueva.
+2. En el `.env`: poner la nueva en `ARCHIVOS_LLAVE`, subir `ARCHIVOS_LLAVE_VERSION` (de 1 a 2) y
+   agregar la vieja en `ARCHIVOS_LLAVES_ANTERIORES=1:<llave vieja en base64>`.
+3. Los archivos nuevos se cifran con la versión 2 y los viejos siguen abriéndose con la 1 (cada
+   archivo guarda con qué versión se cifró). Mientras haya archivos de la versión 1, **no se
+   borra la llave vieja**.
+
+Todavía **no existe** una herramienta que recifre los archivos viejos con la llave nueva (está
+anotada en `docs/_trabajo/COSAS_POR_CORREGIR.md`).
+
+**Qué protege y qué no.**
+
+- Protege los archivos si alguien se lleva el disco, la carpeta `archivos/` o un respaldo de ella.
+- Protege contra cambios en el disco: si alguien altera un archivo, o lo cambia de lugar, no se
+  entrega y el error queda en los registros.
+- **No** protege si alguien entra a la cuenta de una persona con permiso (verá lo que ella puede
+  ver) ni si tiene acceso al servidor **y** al `.env` a la vez. Tampoco revisa virus: solo se
+  aceptan PDF, JPG y PNG, y se comprueba que el contenido real sea de ese formato, pero un
+  antivirus del servidor es decisión de TI.
+- La foto anterior y los documentos dados de baja **no se borran** del disco (baja lógica).

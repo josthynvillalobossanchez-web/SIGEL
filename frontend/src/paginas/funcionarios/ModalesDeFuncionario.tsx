@@ -19,7 +19,9 @@ import {
   registrarSalida,
   type DetalleDeFuncionario,
 } from '../../api/funcionarios';
+import { direccionDeFoto } from '../../api/documentos';
 import { Modal } from '../../componentes/Modal';
+import { FotoOIniciales } from '../../componentes/TarjetaDePerfil';
 import { Mensaje } from '../../componentes/Mensaje';
 import { BotonConAyuda } from '../../componentes/Botones';
 import { useSesion } from '../../sesion/SesionProveedor';
@@ -61,7 +63,13 @@ export function ModalFicha({
   return (
     <Modal
       titulo={f ? nombreCompleto(f) : 'Funcionario'}
-      foto={f ? inicialesDeFuncionario(f) : '…'}
+      foto={
+        f ? (
+          <FotoOIniciales src={f.tieneFoto ? direccionDeFoto(f.id, 0) : undefined} iniciales={inicialesDeFuncionario(f)} />
+        ) : (
+          '…'
+        )
+      }
       descripcion={f ? `Cédula ${f.cedula}` : undefined}
       cabeceraExtra={
         f && (
@@ -71,20 +79,24 @@ export function ModalFicha({
               <span className="chip chip-neutro">{NOMBRES_DE_NOMBRAMIENTO[f.tipoNombramiento]}</span>
               {f.revisarJefatura && <ChipRevisarJefatura />}
             </div>
-            <div style={{ marginTop: 12 }}>
-              <Pestanas
-                prefijo={prefijo}
-                etiqueta="Información del funcionario"
-                actual={pestana}
-                alCambiar={setPestana}
-                opciones={[
-                  { id: 'personales', texto: 'Datos personales' },
-                  { id: 'laborales', texto: 'Datos laborales' },
-                  { id: 'cuenta', texto: 'Cuenta de acceso' },
-                ]}
-              />
-            </div>
           </>
+        )
+      }
+      bajoLaCabecera={
+        f && (
+          <div style={{ marginTop: 14 }}>
+            <Pestanas
+              prefijo={prefijo}
+              etiqueta="Información del funcionario"
+              actual={pestana}
+              alCambiar={setPestana}
+              opciones={[
+                { id: 'personales', texto: 'Datos personales' },
+                { id: 'laborales', texto: 'Datos laborales' },
+                { id: 'cuenta', texto: 'Cuenta de acceso' },
+              ]}
+            />
+          </div>
         )
       }
       alCerrar={alCerrar}

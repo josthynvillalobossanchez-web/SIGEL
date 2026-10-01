@@ -6,11 +6,13 @@ import { AutenticacionModule } from './autenticacion/autenticacion.module.js';
 import { BitacoraModule } from './bitacora/bitacora.module.js';
 import { CatalogosModule } from './catalogos/catalogos.module.js';
 import { CorreoModule } from './correo/correo.module.js';
+import { DocumentosModule } from './documentos/documentos.module.js';
 import { ExpedientesModule } from './expedientes/expedientes.module.js';
 import { FuncionariosModule } from './funcionarios/funcionarios.module.js';
 import { PermisosModule } from './permisos/permisos.module.js';
 import { PrismaModule } from './prisma/prisma.module.js';
 import { RolesModule } from './roles/roles.module.js';
+import { TiposDocumentoModule } from './tipos-documento/tipos-documento.module.js';
 import { MiCuentaModule } from './mi-cuenta/mi-cuenta.module.js';
 import { UsuariosModule } from './usuarios/usuarios.module.js';
 import { SaludController } from './salud/salud.controller.js';
@@ -35,7 +37,9 @@ import { SaludController } from './salud/salud.controller.js';
     CatalogosModule,
     FuncionariosModule,
     ExpedientesModule,
-    // Aqui se agrega DocumentosModule (gestion documental, epica 3).
+    // Gestion documental (epica 3): documentos cifrados, tipos de documento y foto de perfil.
+    TiposDocumentoModule,
+    DocumentosModule,
   ],
   controllers: [SaludController],
   providers: [

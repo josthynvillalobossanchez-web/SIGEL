@@ -20,9 +20,12 @@ import {
 import type { RolResumido } from '../../api/roles';
 import { CampoFecha } from '../../componentes/CampoFecha';
 import { Lista, Texto } from '../../componentes/CamposDeFormulario';
+import { direccionDeFoto } from '../../api/documentos';
+import { BotonConAyuda } from '../../componentes/Botones';
 import { Mensaje } from '../../componentes/Mensaje';
+import { FotoOIniciales } from '../../componentes/TarjetaDePerfil';
 import { formatearFechaSola } from '../../utilidades/fechas';
-import { nombreCompleto, normalizarCedula } from '../../utilidades/texto';
+import { inicialesDeFuncionario, nombreCompleto, normalizarCedula } from '../../utilidades/texto';
 import {
   LARGO_APELLIDO,
   LARGO_NOMBRE,
@@ -458,6 +461,54 @@ function DatoRevisar({ t, v }: { t: string; v: string }) {
     <div className="dato">
       <dt>{t}</dt>
       <dd>{v}</dd>
+    </div>
+  );
+}
+
+/* ================================================================== */
+/* Fotografia (solo al editar)                                         */
+/* ================================================================== */
+
+/**
+ * Paso "Fotografia" del formulario de edicion. A diferencia de los demas
+ * pasos, la foto NO espera a "Guardar cambios": se sube en su propia ventana
+ * (ModalFoto) y queda guardada al momento, igual que en Mi cuenta. Lo dice el
+ * texto del paso para que nadie crea que depende del boton final.
+ */
+export function PasoFotografia({
+  detalle,
+  tieneFoto,
+  version,
+  alCambiar,
+  aviso,
+}: {
+  detalle: DetalleDeFuncionario;
+  tieneFoto: boolean;
+  /** Cambia con cada foto nueva para que se vuelva a pedir. */
+  version: number;
+  alCambiar: () => void;
+  /** "Se cambio la fotografia de ..." despues de guardar o quitar. */
+  aviso: string | null;
+}) {
+  return (
+    <div className="paso-foto">
+      <div className="paso-foto-imagen" aria-hidden="true">
+        <FotoOIniciales src={tieneFoto ? direccionDeFoto(detalle.id, version) : undefined} iniciales={inicialesDeFuncionario(detalle)} />
+      </div>
+      <div className="paso-foto-texto">
+        <h3>{tieneFoto ? 'Fotografía de perfil' : 'Todavía no tiene fotografía'}</h3>
+        <p>
+          Sirve para reconocer a <b>{nombreCompleto(detalle)}</b> en las listas, el expediente y las cuentas de usuario. Formato JPG o PNG, hasta 5 MB.
+        </p>
+        <p className="ayuda">La fotografía se guarda al momento, aparte de los demás cambios de este formulario, y queda en la bitácora.</p>
+        <div aria-live="polite">{aviso && <Mensaje tipo="exito">{aviso}</Mensaje>}</div>
+        <BotonConAyuda
+          icono="camara"
+          texto={tieneFoto ? 'Cambiar fotografía' : 'Poner fotografía'}
+          ayuda="Elegir una fotografía nueva o quitar la actual (útil si la persona no tiene cuenta o no puede hacerlo)"
+          alHacerClic={alCambiar}
+        />
+      </div>
     </div>
   );
 }

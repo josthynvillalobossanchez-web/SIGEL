@@ -6,11 +6,13 @@ import { ExpedientesService } from './expedientes.service.js';
 /**
  * Expediente laboral: la ficha del funcionario con sus pestanas de
  * consulta y el historial laboral. Usa FuncionariosService para la ficha.
- * Los documentos (y su carga) llegan con la gestion documental (epica 3).
+ * Los documentos viven en DocumentosModule, que usa ExpedientesService
+ * (revisarAcceso) para aplicar la misma regla de acceso al expediente.
  */
 @Module({
   imports: [FuncionariosModule],
   controllers: [ExpedientesController],
   providers: [ExpedientesService],
+  exports: [ExpedientesService],
 })
 export class ExpedientesModule {}

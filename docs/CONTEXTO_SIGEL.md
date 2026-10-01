@@ -54,9 +54,9 @@ expediente laboral, vacaciones, incapacidades, horas extra y reclutamiento (Tale
   (login, recuperación, primer ingreso), usuarios (lista, crear, detalle con roles,
   suplencias, permisos individuales, estado y correo), roles y permisos (lista, crear,
   detalle, permisos, estado) y "Mi cuenta". **La épica 1 queda terminada de punta a punta.**
-- **El Sprint 1 vencía el 25/09 según el cronograma y no está terminado**: faltan las épicas de
-  funcionarios y de gestión documental. El
-  reacomodo de fechas queda para conversarlo con Joseph.
+- **El Sprint 1 vencía el 25/09 según el cronograma** y sus tres épicas quedaron terminadas el
+  30/09 (autenticación y usuarios, funcionarios y expediente, gestión documental). El reacomodo de
+  fechas queda para conversarlo con Joseph.
 
 ### Lo que toca ahora, en orden
 
@@ -69,7 +69,10 @@ expediente laboral, vacaciones, incapacidades, horas extra y reclutamiento (Tale
    - ✔ **Enlaces entre módulos, Inicio y limpieza del frontend** (29/09, commit `2929ee4`).
    - ✔ **Preparación del servidor** (30/09): registros en archivo, HTTPS directo, interfaz servida
      por el backend, TLS de la base con CA propia (GUIA, sección 10).
-3. **Épica 3**: tipos de documento, subir y descargar, baja lógica y restauración.
+3. ✔ **Épica 3, gestión documental** (30/09): documentos del expediente (subir por pasos, ver en
+   ventana, descargar, editar título y tipo, baja lógica y restaurar), tipos de documento con sus
+   formatos, fotografía de perfil y documentos generados por el sistema (pieza lista para los
+   Sprints 2 y 3). Todo cifrado (§6, "Decisiones de la gestión documental").
 4. **Informe de Avance Intermedio** (`Proyectos\Informe_Avance_Intermedio_SIGEL.docx`): las
    capturas de Jira/GitHub, las minutas y el criterio de Joseph los aporta Josthyn.
 
@@ -225,9 +228,15 @@ contraseña temporal.
 | `GET /api/expedientes/propio` | `expediente.ver` | Mi expediente (se anota en la bitácora) |
 | `GET /api/expedientes/:funcionarioId` | `expediente.ver` (+ `expediente.verTodos` si no es el propio) | Abre un expediente (se anota en la bitácora) |
 | `GET /api/expedientes/:funcionarioId/historial` | igual que el anterior | Historial laboral paginado, lo más reciente primero |
+| `GET /api/expedientes/:funcionarioId/documentos` | `expediente.ver` (+ `verTodos` si es ajeno) | Documentos del expediente, paginados, con filtros y las `acciones` permitidas |
+| `POST /api/expedientes/:funcionarioId/documentos` | `documentos.crear` | Sube un documento (multipart, máximo 25 MB, cifrado en disco) |
+| `GET /api/documentos/:id/archivo` | `documentos.descargar` | Ver o descargar (descifrado, con bitácora) |
+| `PATCH /api/documentos/:id`, `POST .../baja`, `POST .../restauracion` | por documento (ver §6) | Editar título/tipo, baja lógica, restaurar |
+| `GET/POST/PATCH /api/tipos-documento` (y `/:id/estado`) | lectura con sesión; cambios `tiposDocumento.editar` | Tipos de documento con sus formatos permitidos |
+| `GET/PUT/DELETE /api/funcionarios/:id/foto` | ella misma o RRHH | Fotografía de perfil (JPG o PNG, máximo 5 MB, cifrada) |
 | `GET /api/salud` | público | Comprobación del servicio |
 
-**Falta en backend:** documentos (épica 3).
+**Falta en backend:** los documentos que generará el sistema de verdad (constancia de vacaciones en el Sprint 2, curriculum en el Sprint 3); la pieza que los guarda (`DocumentosService.registrarGenerado`) ya está probada.
 
 ### Estado del frontend (desde el 25/09)
 
@@ -294,7 +303,7 @@ usuario) y migas de pan arriba. Siempre por encima de todo: la comodidad de la p
 con el diseño de `pgTipos` del prototipo (tabla con Nombre, Descripción, Funcionarios, Estado y
 Acciones). Crear, editar e inactivar/reactivar son **ventanas cortas** (uno o dos campos). Crear
 tiene "Guardar y crear otro" para la carga inicial. Menú: grupo **Catálogos** del prototipo (ahí
-irá también "Tipos de documento" en la épica 3).
+está también "Tipos de documento", de la épica 3).
 
 Decisiones de catálogos: no se borran, se **inactivan**, y **sí** se pueden
 inactivar aunque haya funcionarios con ellos (lo conservan, pero no se puede elegir para nadie más:
@@ -332,9 +341,19 @@ Decisiones de funcionarios (27/09; se pueden revertir):
 
 Expediente (28/09): página `/funcionarios/:id/expediente` y `/mi-expediente` como `pgExpediente` (perfil, aviso de información
 sensible, pestañas Información personal · Información laboral · Documentos · Capacitaciones · Historial laboral).
-Documentos y Capacitaciones muestran su explicación hasta la épica 3 y el Sprint 2.
+Capacitaciones muestra su explicación hasta el Sprint 2; Documentos se completó en la épica 3.
 
-Pendiente: la épica 3.
+**Decisiones de la gestión documental (épica 3, 30/09):**
+- **Cifrado**: todo archivo se guarda cifrado con **AES-256-GCM** en `backend/archivos/` (`expedientes/<funcionario>/<uuid>.enc`, `fotos/...`); la base solo tiene la ruta relativa, el hash SHA-256 y los datos. La llave maestra va en el `.env` (`ARCHIVOS_LLAVE`, 32 bytes en base64; el backend no arranca sin ella) y se amarra a la ruta de cada archivo (copiarlo a otra ruta lo vuelve ilegible). Joseph / TI guardan una **copia aparte**: perder la llave es perder todos los documentos (GUIA §10.6). Hay versión de llave para rotarla; falta la herramienta que recifre lo viejo (COSAS #20).
+- **Formatos**: solo PDF, JPG y PNG; **cada tipo de documento elige cuáles acepta** al crearlo o editarlo (p. ej. «Título profesional»: JPG y PNG). Se valida extensión, tipo declarado, la **firma real del archivo** y el tamaño (documentos 25 MB, fotografía 5 MB). Se guarda el hash y se verifica al descargar.
+- **Quién hace qué**: cada persona sube a **su** expediente y edita / da de baja **solo lo que ella subió**; Recursos Humanos sube a cualquiera, edita y da de baja cualquier documento manual y **restaura**. Los documentos generados por SINERGIA solo se ven (RRHH puede darlos de baja). Las bajas solo las ven quienes pueden restaurar. El archivo **nunca se reemplaza**: si se subió el equivocado, se da de baja y se sube el correcto. Cambiar el tipo exige que el tipo nuevo acepte el formato del archivo.
+- **Tipos de documento**: administración en `/tipos-documento` (`tiposDocumento.editar`), no se borran, se inactivan; los dos que genera SINERGIA (constancia de vacaciones y curriculum) solo cambian de nombre y no se inactivan. Los manuales no pueden ser de sistema ni estar inactivos al subir.
+- **Bitácora e historial**: ver y descargar un documento quedan en la bitácora (`consultar` / `descargar`); subir, editar, baja y restauración, también. El **historial laboral** muestra los documentos agregados a todos y las bajas y restauraciones solo a quien puede restaurar.
+- **Fotografía**: JPG o PNG hasta 5 MB; cada persona cambia la suya (`perfilPropio.editar`) y Recursos Humanos la de cualquiera (`funcionarios.editar`, respetando "para arriba no"). La foto anterior queda en el disco. Se sirve por un endpoint propio; la ruta nunca sale del backend.
+- **Documentos generados por el sistema**: solo existen los dos tipos del seed; `DocumentosService.registrarGenerado` los guarda cifrados desde otros procesos (vacaciones, Talent Pool) con quién los disparó en la bitácora. Los PDF reales llegan en los Sprints 2 y 3.
+- **Ver y copiar**: "ver" y "descargar" quedan en la bitácora (también las de la propia persona). El visor oculta la barra del PDF del navegador (`#toolbar=0`) y bloquea arrastrar, clic derecho e imprimir en las imágenes, para que la copia salga por el botón «Descargar» de SINERGIA, que sí se registra. **No es seguridad real**: quien ya vio el documento puede copiarlo (Ctrl+S, captura). Por eso "ver" significa que la persona tuvo el contenido completo a la vista.
+- **Permisos nuevos**: `documentos.editar` (RRHH) y `documentos.editarPropio` (todos con autoservicio); hay que correr `npm run db:seed`.
+- **Pantallas**: la pestaña Documentos usa una lista con buscador, filtro por tipo y (RRHH) Vigentes / Dados de baja / Todos; **ver** es una ventana con visor (PDF o imagen), **subir** es una página por pasos (Tipo y archivo · Datos · Revisar), editar, baja y restaurar son ventanas cortas.
 
 ### Repositorio en GitHub (versionado el 19/09/2026)
 

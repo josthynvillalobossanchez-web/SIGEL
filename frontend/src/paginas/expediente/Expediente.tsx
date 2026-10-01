@@ -13,17 +13,23 @@
  * aviso de informacion sensible. Debajo, pestanas (?pestana=historial):
  *   Informacion personal · Informacion laboral · Documentos ·
  *   Capacitaciones · Historial laboral
- * Documentos llega con la gestion documental (epica 3) y Capacitaciones en
- * el Sprint 2: por ahora muestran su explicacion.
+ * Documentos es la gestion documental (DocumentosDelExpediente); Capacitaciones
+ * llega en el Sprint 2 y por ahora muestra su explicacion.
+ *
+ * La fotografia de la tarjeta la cambia la propia persona (perfilPropio.editar)
+ * o Recursos Humanos (funcionarios.editar).
  */
+import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router';
 import { useConsulta } from '../../utilidades/useConsulta';
 import { abrirExpediente } from '../../api/expedientes';
+import { direccionDeFoto } from '../../api/documentos';
 import { NOMBRES_DE_NOMBRAMIENTO, nombreDeRegimen } from '../../api/funcionarios';
 import { BotonConAyuda } from '../../componentes/Botones';
 import { Icono } from '../../componentes/Icono';
 import { Mensaje } from '../../componentes/Mensaje';
 import { Migas } from '../../componentes/Migas';
+import { ModalFoto } from '../../componentes/ModalFoto';
 import { PanelDePestana, Pestanas } from '../../componentes/Pestanas';
 import { TarjetaDePerfil } from '../../componentes/TarjetaDePerfil';
 import { useSesion } from '../../sesion/SesionProveedor';
@@ -32,6 +38,7 @@ import { inicialesDeFuncionario, nombreCompleto } from '../../utilidades/texto';
 import { ChipDeFuncionario } from '../funcionarios/ChipDeFuncionario';
 import { DatosLaboralesVista, DatosPersonalesVista } from '../funcionarios/DatosDeFuncionario';
 import { motivoParaEditar } from '../funcionarios/motivos';
+import { DocumentosDelExpediente } from './DocumentosDelExpediente';
 import { HistorialLaboral } from './HistorialLaboral';
 
 const PESTANAS = [
@@ -63,6 +70,12 @@ function VistaDeExpediente({ funcionarioId }: { funcionarioId?: string }) {
   // Abrir el expediente queda en la bitacora: se pide una sola vez por persona.
   const { datos: expediente, error } = useConsulta(() => abrirExpediente(funcionarioId), [funcionarioId]);
 
+  // La foto cambiada en esta pantalla pisa a la que llego al abrir el expediente.
+  const [fotoNueva, setFotoNueva] = useState<boolean | null>(null);
+  const [versionFoto, setVersionFoto] = useState(() => Date.now());
+  const [cambiandoFoto, setCambiandoFoto] = useState(false);
+  const [avisoDeFoto, setAvisoDeFoto] = useState<string | null>(null);
+
   const f = expediente?.funcionario;
   const desdeFuncionarios = funcionarioId !== undefined;
   const migas = desdeFuncionarios
@@ -91,7 +104,9 @@ function VistaDeExpediente({ funcionarioId }: { funcionarioId?: string }) {
   }
 
   const propio = expediente.esPropio;
-  const deQuien = propio ? 'su' : 'el';
+  const tieneFoto = fotoNueva ?? expediente.tieneFoto;
+  // Quien puede cambiar la foto: ella misma, o Recursos Humanos la de otra persona.
+  const puedeCambiarFoto = propio ? tienePermisos('perfilPropio.editar') : tienePermisos('funcionarios.editar');
 
   return (
     <section className="pagina pagina-expediente">
@@ -101,6 +116,14 @@ function VistaDeExpediente({ funcionarioId }: { funcionarioId?: string }) {
       <TarjetaDePerfil
         etiqueta="Datos del funcionario"
         iniciales={inicialesDeFuncionario(f)}
+        fotoSrc={tieneFoto ? direccionDeFoto(f.id, versionFoto) : undefined}
+        extraDeFoto={
+          puedeCambiarFoto && (
+            <BotonConAyuda clase="cambiar" texto={propio ? 'Cambiar mi fotografía' : 'Cambiar fotografía'} ayuda="Subir una fotografía nueva (JPG o PNG) o quitar la actual" alHacerClic={() => setCambiandoFoto(true)}>
+              <Icono nombre="camara" tamano={16} />
+            </BotonConAyuda>
+          )
+        }
         titulo={nombreCompleto(f)}
         identificacion={`Cédula ${f.cedula}`}
         chips={
@@ -144,11 +167,15 @@ function VistaDeExpediente({ funcionarioId }: { funcionarioId?: string }) {
               clase="btn btn-primario"
               icono="mas"
               texto="Subir documento"
-              bloqueadoPor="la carga de documentos llega con la gestión documental (épica 3)."
+              ayuda="Subir un documento al expediente (PDF, JPG o PNG) por pasos"
+              bloqueadoPor={tienePermisos('documentos.crear') ? null : 'su rol no permite subir documentos.'}
+              alHacerClic={() => navegar(propio ? '/mi-expediente/documentos/nuevo' : `/funcionarios/${f.id}/expediente/documentos/nuevo`)}
             />
           </>
         }
       />
+
+      <div aria-live="polite">{avisoDeFoto && <Mensaje tipo="exito">{avisoDeFoto}</Mensaje>}</div>
 
       <div className="aviso" style={{ marginTop: 12 }}>
         <Icono nombre="candado" />
@@ -162,7 +189,11 @@ function VistaDeExpediente({ funcionarioId }: { funcionarioId?: string }) {
         prefijo="exp"
         etiqueta="Secciones del expediente"
         actual={pestana}
-        alCambiar={(id) => cambiar({ pestana: id === 'personal' ? '' : id })}
+        alCambiar={(id) => {
+          setAvisoDeFoto(null);
+          // Los filtros de Documentos no se arrastran a otra pestana.
+          cambiar({ pestana: id === 'personal' ? '' : id, busqueda: '', tipo: '', estado: '', pagina: '' });
+        }}
         opciones={PESTANAS}
       />
 
@@ -185,15 +216,12 @@ function VistaDeExpediente({ funcionarioId }: { funcionarioId?: string }) {
       </PanelDePestana>
 
       <PanelDePestana id="documentos" actual={pestana} prefijo="exp">
-        <div className="vacio">
-          <Icono nombre="carpeta" tamano={36} />
-          <h3>Los documentos llegan con la gestión documental</h3>
-          <p>
-            Aquí se verán los documentos de {deQuien} expediente. Cada persona podrá subir documentos a su propio
-            expediente y dar de baja solo los que ella misma subió; Recursos Humanos puede dar de baja cualquiera. Nada
-            se borra: se da de baja y se puede restaurar.
-          </p>
-        </div>
+        <DocumentosDelExpediente funcionarioId={f.id} propio={propio} />
+        <p className="nota-pagina">
+          {propio
+            ? 'Usted sube documentos a su expediente y da de baja solo los que usted subió. Nada se borra: Recursos Humanos puede restaurarlos.'
+            : 'Recursos Humanos puede dar de baja cualquier documento. Nada se borra: se da de baja y se puede restaurar.'}
+        </p>
       </PanelDePestana>
 
       <PanelDePestana id="capacitaciones" actual={pestana} prefijo="exp">
@@ -207,6 +235,22 @@ function VistaDeExpediente({ funcionarioId }: { funcionarioId?: string }) {
       <PanelDePestana id="historial" actual={pestana} prefijo="exp">
         {pestana === 'historial' && <HistorialLaboral funcionarioId={f.id} />}
       </PanelDePestana>
+
+      {cambiandoFoto && (
+        <ModalFoto
+          funcionarioId={f.id}
+          nombre={nombreCompleto(f)}
+          tieneFoto={tieneFoto}
+          esPropia={propio}
+          alCerrar={() => setCambiandoFoto(false)}
+          alGuardar={(hay, texto) => {
+            setCambiandoFoto(false);
+            setFotoNueva(hay);
+            setVersionFoto(Date.now());
+            setAvisoDeFoto(texto);
+          }}
+        />
+      )}
     </section>
   );
 }

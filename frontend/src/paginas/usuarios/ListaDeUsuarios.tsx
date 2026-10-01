@@ -25,7 +25,9 @@ import { useConsulta } from '../../utilidades/useConsulta';
 import { useNavigate } from 'react-router';
 import { useParametrosEnUrl } from '../../utilidades/parametrosEnUrl';
 import { consultarCuentas, type CuentaEnLista, type EstadoDeCuenta } from '../../api/usuarios';
+import { direccionDeFoto } from '../../api/documentos';
 import { Icono } from '../../componentes/Icono';
+import { FotoOIniciales } from '../../componentes/TarjetaDePerfil';
 import { Mensaje } from '../../componentes/Mensaje';
 import { BotonConAyuda, BotonIcono } from '../../componentes/Botones';
 import { useSesion } from '../../sesion/SesionProveedor';
@@ -236,7 +238,10 @@ function FilaDeCuenta({
       <td data-etiqueta="Usuario">
         <div className="celda-usuario">
           <div className="avatar-sm" aria-hidden="true">
-            {inicialesDeFuncionario(cuenta.funcionario)}
+            <FotoOIniciales
+              src={cuenta.funcionario?.tieneFoto ? direccionDeFoto(cuenta.funcionario.id, 0) : undefined}
+              iniciales={inicialesDeFuncionario(cuenta.funcionario)}
+            />
           </div>
           <div>
             <span className="nom">{nombre}</span>

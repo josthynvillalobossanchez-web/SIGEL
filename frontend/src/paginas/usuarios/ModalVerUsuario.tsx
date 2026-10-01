@@ -19,12 +19,14 @@ import { consultarCuenta } from '../../api/usuarios';
 import { consultarFuncionario, type DetalleDeFuncionario } from '../../api/funcionarios';
 import { DatosLaboralesVista, DatosPersonalesVista } from '../funcionarios/DatosDeFuncionario';
 import { useSesion } from '../../sesion/SesionProveedor';
+import { direccionDeFoto } from '../../api/documentos';
 import { Modal } from '../../componentes/Modal';
+import { FotoOIniciales } from '../../componentes/TarjetaDePerfil';
 import { Mensaje } from '../../componentes/Mensaje';
 import { BotonConAyuda } from '../../componentes/Botones';
 import { PanelDePestana, Pestanas, usePrefijoDePestanas } from '../../componentes/Pestanas';
 import { formatearFecha, formatearFechaHora } from '../../utilidades/fechas';
-import { nombreCompleto, nombreDeModulo } from '../../utilidades/texto';
+import { inicialesDeFuncionario, nombreCompleto, nombreDeModulo } from '../../utilidades/texto';
 import { ChipDeEstadoDeCuenta } from './ChipDeEstadoDeCuenta';
 import { motivoDeBloqueo } from './motivos';
 import { motivoParaExpediente } from '../funcionarios/motivos';
@@ -69,10 +71,18 @@ export function ModalVerUsuario({
     <Modal
       titulo={cuenta ? nombreCompleto(cuenta.funcionario) : 'Cuenta de usuario'}
       icono="usuarios"
+      foto={
+        cuenta?.funcionario ? (
+          <FotoOIniciales
+            src={cuenta.funcionario.tieneFoto ? direccionDeFoto(cuenta.funcionario.id, 0) : undefined}
+            iniciales={inicialesDeFuncionario(cuenta.funcionario)}
+          />
+        ) : undefined
+      }
       descripcion="Cuenta de acceso al sistema. Para modificarla use el botón de editar."
       alCerrar={alCerrar}
       ancho
-      cabeceraExtra={
+      bajoLaCabecera={
         cuenta && (
           <div style={{ marginTop: 14 }}>
             <Pestanas

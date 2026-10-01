@@ -15,7 +15,10 @@
  *     /usuarios/:id/excepciones/:permisoId/editar  Editar excepcion
  *     /roles                                     roles y catalogo (ventanas: ver, estado)
  *     /roles/nuevo, /roles/:id/editar            Crear rol / Editar rol
+ *     /funcionarios/:id/expediente/documentos/nuevo  Subir documento al expediente de otra persona (RRHH)
+ *     /mi-expediente/documentos/nuevo            Subir documento a mi expediente
  *     /catalogos                                 departamentos, puestos, profesiones (ventanas cortas)
+ *     /tipos-documento                           tipos de documento y sus formatos (ventanas cortas)
  *
  * Regla (26/09): consultar = ventana; crear o editar = pagina aparte por
  * pasos, con su subseccion en el menu (diseno/menu.ts). El expediente es la
@@ -42,6 +45,8 @@ import { PaginaExcepcion } from './paginas/usuarios/PaginaExcepcion';
 import { RolesYPermisos } from './paginas/roles/RolesYPermisos';
 import { PaginaRol } from './paginas/roles/PaginaRol';
 import { PaginaExpediente, PaginaMiExpediente } from './paginas/expediente/Expediente';
+import { PaginaSubirDocumentoAjeno, PaginaSubirMiDocumento } from './paginas/expediente/PaginaSubirDocumento';
+import { TiposDeDocumento } from './paginas/tiposDocumento/TiposDeDocumento';
 import { MiCuenta } from './paginas/cuenta/MiCuenta';
 import { Catalogos } from './paginas/catalogos/Catalogos';
 import { ListaDeFuncionarios } from './paginas/funcionarios/ListaDeFuncionarios';
@@ -102,6 +107,14 @@ export function App() {
                 element={
                   <ConPermisos permisos={['expediente.ver']}>
                     <PaginaExpediente />
+                  </ConPermisos>
+                }
+              />
+              <Route
+                path="/funcionarios/:id/expediente/documentos/nuevo"
+                element={
+                  <ConPermisos permisos={['expediente.ver', 'documentos.crear']}>
+                    <PaginaSubirDocumentoAjeno />
                   </ConPermisos>
                 }
               />
@@ -180,12 +193,28 @@ export function App() {
                   </ConPermisos>
                 }
               />
+              <Route
+                path="/tipos-documento"
+                element={
+                  <ConPermisos permisos={['tiposDocumento.editar']}>
+                    <TiposDeDocumento />
+                  </ConPermisos>
+                }
+              />
               <Route path="/mi-cuenta" element={<MiCuenta />} />
               <Route
                 path="/mi-expediente"
                 element={
                   <ConPermisos permisos={['expediente.ver']}>
                     <PaginaMiExpediente />
+                  </ConPermisos>
+                }
+              />
+              <Route
+                path="/mi-expediente/documentos/nuevo"
+                element={
+                  <ConPermisos permisos={['expediente.ver', 'documentos.crear']}>
+                    <PaginaSubirMiDocumento />
                   </ConPermisos>
                 }
               />

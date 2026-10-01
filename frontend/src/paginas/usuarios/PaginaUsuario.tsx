@@ -46,7 +46,9 @@ import { useCambiosSinGuardar, useIrSeguro } from '../../componentes/CambiosSinG
 import { Migas } from '../../componentes/Migas';
 import { Mensaje } from '../../componentes/Mensaje';
 import { ModalExito } from '../../componentes/ModalExito';
+import { direccionDeFoto } from '../../api/documentos';
 import { Icono } from '../../componentes/Icono';
+import { FotoOIniciales } from '../../componentes/TarjetaDePerfil';
 import { aFechaDeCampo, formatearFecha } from '../../utilidades/fechas';
 import { inicialesDeFuncionario, nombreCompleto } from '../../utilidades/texto';
 import { ContrasenaTemporal } from './ContrasenaTemporal';
@@ -285,7 +287,10 @@ function FormularioDeUsuario({ cuenta }: { cuenta?: DetalleDeCuenta }) {
                 <div className="elegido" aria-labelledby="etqFuncionario">
                   <div className="celda-usuario">
                     <div className="avatar-sm" aria-hidden="true">
-                      {inicialesDeFuncionario(persona)}
+                      <FotoOIniciales
+                        src={persona.tieneFoto ? direccionDeFoto(persona.id, 0) : undefined}
+                        iniciales={inicialesDeFuncionario(persona)}
+                      />
                     </div>
                     <div>
                       <span className="nom">{nombre}</span>

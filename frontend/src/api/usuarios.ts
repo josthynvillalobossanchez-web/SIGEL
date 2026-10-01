@@ -23,6 +23,8 @@ export interface FuncionarioResumido {
   nombre: string;
   primerApellido: string;
   segundoApellido: string | null;
+  /** Tiene fotografia de perfil (la imagen: direccionDeFoto en api/documentos.ts). No viene en la lista de funcionarios disponibles. */
+  tieneFoto?: boolean;
 }
 
 /** Una fila de la lista de cuentas. */

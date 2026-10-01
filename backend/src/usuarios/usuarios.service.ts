@@ -28,6 +28,11 @@ import type { EditarUsuarioDto } from './dto/editar-usuario.dto.js';
 /* Ayudantes de fechas (solo de este archivo)                          */
 /* ------------------------------------------------------------------ */
 
+/** La ruta del archivo de la foto nunca sale del backend: se devuelve solo si hay foto o no. */
+function conTieneFoto<T extends { fotoRuta: string | null }>({ fotoRuta, ...resto }: T): Omit<T, 'fotoRuta'> & { tieneFoto: boolean } {
+  return { ...resto, tieneFoto: fotoRuta !== null };
+}
+
 /** Una asignacion cuenta si no tiene vencimiento o si todavia no llega. */
 function estaVigente(vence: Date | null): boolean {
   return vence === null || vence > new Date();
@@ -162,6 +167,8 @@ export class UsuariosService {
               nombre: true,
               primerApellido: true,
               segundoApellido: true,
+              // Solo para saber si tiene foto: la ruta no sale del backend.
+              fotoRuta: true,
             },
           },
           roles: {
@@ -190,8 +197,9 @@ export class UsuariosService {
     // no una lista de asignaciones. Ademas, para cada cuenta se dice si quien
     // consulta la puede modificar, asi la pantalla muestra los botones de
     // accion habilitados o bloqueados con su explicacion.
-    const datos = usuarios.map(({ permisos, roles, ...usuario }) => ({
+    const datos = usuarios.map(({ permisos, roles, funcionario, ...usuario }) => ({
       ...usuario,
+      funcionario: funcionario ? conTieneFoto(funcionario) : null,
       roles: roles.map((asignacion) => ({ id: asignacion.rol.id, nombre: asignacion.rol.nombre })),
       motivoNoModificable: this.motivoNoModificable(usuario.id, resolverAcceso(roles, permisos).permisos, quienActua),
     }));
@@ -232,6 +240,7 @@ export class UsuariosService {
             primerApellido: true,
             segundoApellido: true,
             correoInstitucional: true,
+            fotoRuta: true,
             // Personal a cargo: la pantalla avisa si se le quita el rol
             // Aprobador o se inactiva la cuenta (su personal queda por revisar).
             _count: { select: { personalACargo: { where: { estado: 'activo' } } } },
@@ -271,9 +280,10 @@ export class UsuariosService {
 
     const motivoNoModificable = this.motivoNoModificable(usuarioId, permisosEfectivos, quienActua);
 
-    // El conteo sale como cantidadACargo (_count queda fuera de la respuesta).
+    // El conteo sale como cantidadACargo (_count queda fuera de la respuesta)
+    // y la ruta de la foto se cambia por tieneFoto.
     const funcionario = usuario.funcionario
-      ? { ...usuario.funcionario, _count: undefined, cantidadACargo: usuario.funcionario._count.personalACargo }
+      ? (({ _count, ...resto }) => ({ ...conTieneFoto(resto), cantidadACargo: _count.personalACargo }))(usuario.funcionario)
       : null;
     return {
       ...usuario,

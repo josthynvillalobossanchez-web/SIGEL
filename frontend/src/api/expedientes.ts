@@ -13,13 +13,15 @@ export interface Expediente {
   funcionario: DetalleDeFuncionario;
   /** Es el expediente de quien lo abre (solo lectura). */
   esPropio: boolean;
+  /** Tiene fotografia de perfil. */
+  tieneFoto: boolean;
 }
 
 export interface MovimientoDelHistorial {
   id: string;
   /** Cuando se registro en SINERGIA (ISO). */
   fechaHora: string;
-  tipo: 'ingreso' | 'cambio' | 'salida' | 'reingreso';
+  tipo: 'ingreso' | 'cambio' | 'salida' | 'reingreso' | 'documentoAgregado' | 'documentoBaja' | 'documentoRestaurado';
   titulo: string;
   /** Fecha en que ocurrio (ingreso, salida, reingreso), "AAAA-MM-DD". */
   fechaEfectiva: string | null;

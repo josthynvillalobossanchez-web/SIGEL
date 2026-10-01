@@ -66,7 +66,8 @@ export const MENU: GrupoDeMenu[] = [
         subopciones: [
           { texto: 'Registrar funcionario', ruta: '/funcionarios/nuevo', permisos: ['funcionarios.crear'] },
           { texto: 'Editar funcionario', patron: /^\/funcionarios\/[^/]+\/editar$/, permisos: ['funcionarios.editar'] },
-          { texto: 'Expediente laboral', patron: /^\/funcionarios\/[^/]+\/expediente$/, permisos: ['expediente.verTodos'] },
+          { texto: 'Expediente laboral', patron: /^\/funcionarios\/[^/]+\/expediente(\/documentos\/nuevo)?$/, permisos: ['expediente.verTodos'] },
+          { texto: 'Subir documento', patron: /^\/funcionarios\/[^/]+\/expediente\/documentos\/nuevo$/, permisos: ['documentos.crear'] },
         ],
       },
     ],
@@ -101,7 +102,7 @@ export const MENU: GrupoDeMenu[] = [
     ],
   },
   {
-    // Mismo grupo del prototipo. En la epica 3 se agrega "Tipos de documento".
+    // Mismo grupo del prototipo (departamentos, puestos, profesiones y tipos de documento).
     titulo: 'Catálogos',
     opciones: [
       {
@@ -110,6 +111,13 @@ export const MENU: GrupoDeMenu[] = [
         icono: 'carpeta',
         permisos: ['catalogos.editar'],
         descripcion: 'Departamentos, puestos y profesiones que se eligen al registrar a un funcionario.',
+      },
+      {
+        texto: 'Tipos de documento',
+        ruta: '/tipos-documento',
+        icono: 'documento',
+        permisos: ['tiposDocumento.editar'],
+        descripcion: 'Los tipos de documento del expediente y los formatos de archivo que acepta cada uno.',
       },
     ],
   },
@@ -124,7 +132,8 @@ export const MENU: GrupoDeMenu[] = [
         icono: 'carpeta',
         permisos: ['expediente.ver'],
         requiereFuncionario: true,
-        descripcion: 'Su expediente laboral: información personal y laboral, e historial de movimientos.',
+        descripcion: 'Su expediente laboral: información personal y laboral, documentos e historial de movimientos.',
+        subopciones: [{ texto: 'Subir documento', patron: /^\/mi-expediente\/documentos\/nuevo$/, permisos: ['documentos.crear'] }],
       },
       { texto: 'Mi cuenta', ruta: '/mi-cuenta', icono: 'cuenta', permisos: [], descripcion: 'Sus datos personales, sus datos laborales, sus roles y su contraseña.' },
     ],

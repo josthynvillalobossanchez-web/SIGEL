@@ -13,6 +13,8 @@ export interface Expediente {
   funcionario: DetalleDeFuncionario;
   /** Es el expediente de quien lo abre (solo lectura: sus datos se cambian en Mi cuenta). */
   esPropio: boolean;
+  /** Tiene fotografia de perfil (se pide aparte en GET /funcionarios/:id/foto). */
+  tieneFoto: boolean;
 }
 
 /** Una entrada del historial laboral (linea de tiempo). */
@@ -20,7 +22,7 @@ export interface MovimientoDelHistorial {
   id: string;
   /** Cuando se registro en el sistema (ISO). */
   fechaHora: string;
-  tipo: 'ingreso' | 'cambio' | 'salida' | 'reingreso';
+  tipo: 'ingreso' | 'cambio' | 'salida' | 'reingreso' | 'documentoAgregado' | 'documentoBaja' | 'documentoRestaurado';
   titulo: string;
   /** Fecha en que ocurrio de verdad (ingreso, salida, reingreso), "AAAA-MM-DD". */
   fechaEfectiva: string | null;
@@ -44,6 +46,7 @@ const TOPE_DE_MOVIMIENTOS = 2000;
 
 type Fila = {
   id: string;
+  entidad: string;
   accion: string;
   fechaHora: Date;
   datosAnteriores: unknown;
@@ -97,7 +100,7 @@ export class ExpedientesService {
       descripcion: esPropio ? 'Abrió su propio expediente.' : `Abrió el expediente de ${nombre}.`,
     });
 
-    return { funcionario, esPropio };
+    return { funcionario, esPropio, tieneFoto: funcionario.tieneFoto };
   }
 
   async historial(
@@ -109,11 +112,12 @@ export class ExpedientesService {
     const { pagina, tamano } = paginacion;
 
     const filas = await this.prisma.bitacoraCambio.findMany({
-      where: { funcionarioAfectadoId: funcionarioId, entidad: 'funcionario', accion: { in: ['crear', 'modificar'] } },
+      where: { funcionarioAfectadoId: funcionarioId, entidad: { in: ['funcionario', 'documento'] }, accion: { in: ['crear', 'modificar'] } },
       orderBy: { fechaHora: 'desc' },
       take: TOPE_DE_MOVIMIENTOS,
       select: {
         id: true,
+        entidad: true,
         accion: true,
         fechaHora: true,
         datosAnteriores: true,
@@ -124,14 +128,15 @@ export class ExpedientesService {
 
     // Se filtra aqui (no en SQL) porque hay que mirar DENTRO del JSON si el
     // cambio toco algun dato laboral. Por funcionario son pocos movimientos.
-    const movimientos = filas.map((fila) => this.aMovimiento(fila)).filter((m): m is MovimientoDelHistorial => m !== null);
+    const verBajas = quienActua.permisos.includes('documentos.restaurar');
+    const movimientos = filas.map((fila) => this.aMovimiento(fila, verBajas)).filter((m): m is MovimientoDelHistorial => m !== null);
     return armarPagina(movimientos.slice((pagina - 1) * tamano, pagina * tamano), movimientos.length, pagina, tamano);
   }
 
   /* ---------------------------------------------------------------- */
 
-  /** El propio siempre; el de otra persona, solo con expediente.verTodos. */
-  private revisarAcceso(funcionarioId: string, quienActua: UsuarioAutenticado): void {
+  /** El propio siempre; el de otra persona, solo con expediente.verTodos. Tambien lo usa la gestion documental. */
+  revisarAcceso(funcionarioId: string, quienActua: UsuarioAutenticado): void {
     if (funcionarioId === quienActua.funcionarioId) return;
     if (quienActua.permisos.includes(PERMISO_EXPEDIENTES_AJENOS)) return;
     throw new ForbiddenException({
@@ -141,7 +146,7 @@ export class ExpedientesService {
   }
 
   /** Convierte una fila de la bitacora en una entrada del historial (o null si no es laboral). */
-  private aMovimiento(fila: Fila): MovimientoDelHistorial | null {
+  private aMovimiento(fila: Fila, verBajas: boolean): MovimientoDelHistorial | null {
     const antes = (fila.datosAnteriores ?? {}) as Record<string, unknown>;
     const despues = (fila.datosNuevos ?? {}) as Record<string, unknown>;
     const quien = fila.usuario
@@ -150,6 +155,8 @@ export class ExpedientesService {
         : fila.usuario.correo
       : 'Sistema';
     const base = { id: fila.id, fechaHora: fila.fechaHora.toISOString(), quien, detalle: null, fechaEfectiva: null, cambios: [] };
+
+    if (fila.entidad === 'documento') return this.aMovimientoDeDocumento(fila, base, antes, despues, verBajas);
 
     if (fila.accion === 'crear') {
       return {
@@ -183,6 +190,48 @@ export class ExpedientesService {
       titulo: campos.length === 1 ? `Cambio de ${etiqueta(campos[0]).toLowerCase()}` : 'Cambio de datos laborales',
       cambios: campos.map((campo) => ({ campo: etiqueta(campo), antes: valor(campo, antes[campo]), despues: valor(campo, despues[campo]) })),
     };
+  }
+
+  /**
+   * Movimientos de documentos en el historial (decision del 23/09): se
+   * muestran los documentos agregados y los dados de baja o restaurados.
+   * Editar el titulo o el tipo no es un movimiento del historial. Las bajas y
+   * restauraciones solo las ve quien puede ver bajas (Recursos Humanos): para
+   * la propia persona, lo que ella dio de baja desaparece por completo.
+   */
+  private aMovimientoDeDocumento(
+    fila: Fila,
+    base: Pick<MovimientoDelHistorial, 'id' | 'fechaHora' | 'quien'> & { detalle: null; fechaEfectiva: null; cambios: never[] },
+    antes: Record<string, unknown>,
+    despues: Record<string, unknown>,
+    verBajas: boolean,
+  ): MovimientoDelHistorial | null {
+    const titulo = texto(despues.titulo);
+    if (fila.accion === 'crear') {
+      return {
+        ...base,
+        tipo: 'documentoAgregado',
+        titulo: titulo ? `Documento agregado: «${titulo}»` : 'Documento agregado',
+        detalle: despues.generadoPorSistema ? 'Lo generó SINERGIA.' : texto(despues.tipo),
+      };
+    }
+    if (!verBajas) return null;
+    if (despues.vigente === false) {
+      return {
+        ...base,
+        tipo: 'documentoBaja',
+        titulo: titulo ? `Documento dado de baja: «${titulo}»` : 'Documento dado de baja',
+        detalle: texto(despues.motivoBaja),
+      };
+    }
+    if (despues.vigente === true && antes.vigente === false) {
+      return {
+        ...base,
+        tipo: 'documentoRestaurado',
+        titulo: titulo ? `Documento restaurado: «${titulo}»` : 'Documento restaurado',
+      };
+    }
+    return null;
   }
 }
 

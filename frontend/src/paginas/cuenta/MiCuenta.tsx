@@ -18,10 +18,12 @@
  * persona conectada: el backend toma su id de la sesion.
  */
 import { useState, type ReactNode } from 'react';
+import { direccionDeFoto } from '../../api/documentos';
 import { consultarMiCuenta } from '../../api/miCuenta';
 import { BotonConAyuda } from '../../componentes/Botones';
 import { Icono } from '../../componentes/Icono';
 import { Mensaje } from '../../componentes/Mensaje';
+import { ModalFoto } from '../../componentes/ModalFoto';
 import { PanelDePestana, Pestanas } from '../../componentes/Pestanas';
 import { TarjetaDePerfil } from '../../componentes/TarjetaDePerfil';
 import { formatearFechaHora, formatearFechaSola } from '../../utilidades/fechas';
@@ -37,6 +39,9 @@ export function MiCuenta() {
   const { datos: perfil, error, cambiarDatos: setPerfil } = useConsulta(consultarMiCuenta, []);
   const [pestana, setPestana] = useState('datos');
   const [aviso, setAviso] = useState<string | null>(null);
+  const [cambiandoFoto, setCambiandoFoto] = useState(false);
+  /** Sube al cambiar la foto: el navegador la vuelve a pedir (no usa la anterior). */
+  const [versionFoto, setVersionFoto] = useState(() => Date.now());
 
   if (error && !perfil) return <Mensaje tipo="error">{error}</Mensaje>;
   if (!perfil) return <p style={{ color: 'var(--texto-sec)' }}>Cargando su cuenta…</p>;
@@ -48,13 +53,24 @@ export function MiCuenta() {
       <TarjetaDePerfil
         etiqueta="Mi perfil"
         iniciales={f ? inicialesDeFuncionario(f) : inicialesDesdeCorreo(perfil.cuenta.correo)}
+        fotoSrc={f?.tieneFoto ? direccionDeFoto(f.id, versionFoto) : undefined}
         extraDeFoto={
           <>
-            <span className="solo-lector">{f ? 'Sin fotografía: se muestran sus iniciales.' : 'Cuenta técnica sin fotografía.'}</span>
+            <span className="solo-lector">
+              {!f ? 'Cuenta técnica sin fotografía.' : f.tieneFoto ? 'Su fotografía de perfil.' : 'Sin fotografía: se muestran sus iniciales.'}
+            </span>
             <BotonConAyuda
               clase="cambiar"
               texto="Cambiar mi fotografía"
-              bloqueadoPor="la carga de la fotografía se habilita con la gestión documental (épica 3)."
+              ayuda="Subir una fotografía nueva (JPG o PNG) o quitar la actual"
+              bloqueadoPor={
+                !f
+                  ? 'la cuenta técnica no está ligada a un funcionario.'
+                  : perfil.puedeEditarDatos
+                    ? null
+                    : 'su rol no permite cambiar sus datos personales.'
+              }
+              alHacerClic={() => setCambiandoFoto(true)}
             >
               <Icono nombre="camara" tamano={16} />
             </BotonConAyuda>
@@ -142,6 +158,22 @@ export function MiCuenta() {
           <AccesoYSeguridad cuenta={perfil.cuenta} alCambiarContrasena={() => setAviso('Contraseña actualizada. La próxima vez ingrese con la nueva.')} />
         </PanelDePestana>
       </div>
+
+      {cambiandoFoto && f && (
+        <ModalFoto
+          funcionarioId={f.id}
+          nombre={nombreCompleto(f)}
+          tieneFoto={f.tieneFoto}
+          esPropia
+          alCerrar={() => setCambiandoFoto(false)}
+          alGuardar={(tieneFoto, texto) => {
+            setCambiandoFoto(false);
+            setPerfil({ ...perfil, funcionario: { ...f, tieneFoto } });
+            setVersionFoto(Date.now());
+            setAviso(texto);
+          }}
+        />
+      )}
     </section>
   );
 }

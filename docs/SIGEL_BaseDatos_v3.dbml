@@ -355,6 +355,7 @@ Table tipoDocumento {
   descripcion varchar(255)
   generadoPorSistema boolean [not null, default: false, note: 'Ficha 18: los tipos generados por SINERGIA solo se pueden renombrar. Crearlos o eliminarlos exige desarrollo, porque cada uno depende de una plantilla programada.']
   activo boolean [not null, default: true]
+  formatosPermitidos varchar(20) [not null, default: 'pdf,jpg,png', note: 'Formatos de archivo que acepta el tipo, separados por coma: pdf, jpg, png (al menos uno). Epica 3.']
   Note: 'Catalogo administrable: agregar un tipo documental manual NO requiere tocar codigo. HU 23, Ficha 18, Diagrama 3b-2.'
 }
 
@@ -366,9 +367,10 @@ Table documento {
   descripcion varchar(500)
 
   nombreArchivo varchar(255) [not null, note: 'Nombre original, solo informativo']
-  rutaArchivo varchar(500) [not null, unique, note: 'Ruta al servidor de archivos de la Municipalidad. El binario NO va en MySQL.']
+  rutaArchivo varchar(500) [not null, unique, note: 'Ruta RELATIVA dentro de RUTA_ARCHIVOS (expedientes/funcionario/uuid.enc). El archivo va CIFRADO (AES-256-GCM); el binario NO va en MySQL.']
   tipoMime varchar(100) [not null, note: 'Validado en backend: application/pdf, image/jpeg, image/png']
   tamanoBytes bigint [not null, note: 'Maximo 26214400 = 25 MB']
+  hashContenido char(64) [note: 'SHA-256 (hex) del contenido ORIGINAL, antes de cifrar. Se comprueba al descargar. Nulo solo en filas anteriores al cifrado.']
 
   generadoPorSistema boolean [not null, default: false, note: 'true = PDF producido por SINERGIA al cerrar un proceso, o CV copiado desde el Talent Pool al contratar (Ficha 41)']
   fechaDocumento date

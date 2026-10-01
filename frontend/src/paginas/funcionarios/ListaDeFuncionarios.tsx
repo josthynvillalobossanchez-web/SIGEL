@@ -25,6 +25,8 @@ import { Link, useNavigate } from 'react-router';
 import { useParametrosEnUrl } from '../../utilidades/parametrosEnUrl';
 import { consultarFuncionarios, type EstadoDeFuncionario, type FuncionarioEnLista } from '../../api/funcionarios';
 import { consultarCatalogos } from '../../api/catalogos';
+import { direccionDeFoto } from '../../api/documentos';
+import { FotoOIniciales } from '../../componentes/TarjetaDePerfil';
 import { Icono } from '../../componentes/Icono';
 import { Mensaje } from '../../componentes/Mensaje';
 import { BotonConAyuda, BotonIcono } from '../../componentes/Botones';
@@ -229,7 +231,7 @@ export function ListaDeFuncionarios() {
                       <td data-etiqueta="Funcionario">
                         <div className="celda-usuario">
                           <div className="avatar-sm" aria-hidden="true">
-                            {inicialesDeFuncionario(f)}
+                            <FotoOIniciales src={f.tieneFoto ? direccionDeFoto(f.id, 0) : undefined} iniciales={inicialesDeFuncionario(f)} />
                           </div>
                           <div>
                             <span className="nom">{nombre}</span>

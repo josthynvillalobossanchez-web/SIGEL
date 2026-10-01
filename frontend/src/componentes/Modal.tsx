@@ -43,6 +43,8 @@ interface PropiedadesDeModal {
    * izquierda y el titulo al lado. Si viene, reemplaza al icono.
    */
   foto?: ReactNode;
+  /** Algo a todo el ancho bajo la cabecera de ficha (p. ej. las pestanas), no al lado de la foto. */
+  bajoLaCabecera?: ReactNode;
   children?: ReactNode;
 }
 
@@ -64,6 +66,7 @@ export function Modal({
   cabeceraExtra,
   pie,
   foto,
+  bajoLaCabecera,
   children,
 }: PropiedadesDeModal) {
   const idTitulo = useId();
@@ -116,11 +119,12 @@ export function Modal({
     <>
       <div className="modal-cab">
         {foto ? (
+          <>
           <div className="resumen-cab" style={{ marginBottom: 0 }}>
             <div className="foto" aria-hidden="true">
               {foto}
             </div>
-            <div>
+            <div style={{ flex: 1, minWidth: 0 }}>
               <h2 id={idTitulo}>{titulo}</h2>
               {descripcion && (
                 <p className="ced" id={idDescripcion}>
@@ -130,6 +134,8 @@ export function Modal({
               {cabeceraExtra}
             </div>
           </div>
+          {bajoLaCabecera}
+          </>
         ) : (
           <>
             <h2 id={idTitulo}>
@@ -142,6 +148,7 @@ export function Modal({
             </h2>
             {descripcion && <p id={idDescripcion}>{descripcion}</p>}
             {cabeceraExtra}
+            {bajoLaCabecera}
           </>
         )}
       </div>

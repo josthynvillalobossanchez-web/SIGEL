@@ -48,7 +48,11 @@ export class ErrorDeApi extends Error {
 
 /** Opciones de una llamada. */
 interface OpcionesDePedido {
-  /** Cuerpo a enviar como JSON (solo POST/PUT/PATCH). */
+  /**
+   * Cuerpo a enviar (solo POST/PUT/PATCH). Un objeto se manda como JSON; un
+   * FormData (subir archivos) se manda tal cual, y el navegador pone el
+   * Content-Type con su separador.
+   */
   cuerpo?: unknown;
   /** Parametros de la URL (?pagina=1&busqueda=...). Se omiten los vacios. */
   parametros?: Record<string, string | number | boolean | undefined | null>;
@@ -94,6 +98,7 @@ export async function pedirAlServidor<T>(
 ): Promise<T> {
   const url = PREFIJO_API + ruta + armarParametros(opciones.parametros);
   const tieneCuerpo = opciones.cuerpo !== undefined;
+  const esFormulario = opciones.cuerpo instanceof FormData;
 
   let respuesta: Response;
   try {
@@ -103,9 +108,9 @@ export async function pedirAlServidor<T>(
       credentials: 'include',
       headers: {
         Accept: 'application/json',
-        ...(tieneCuerpo ? { 'Content-Type': 'application/json' } : {}),
+        ...(tieneCuerpo && !esFormulario ? { 'Content-Type': 'application/json' } : {}),
       },
-      body: tieneCuerpo ? JSON.stringify(opciones.cuerpo) : undefined,
+      body: !tieneCuerpo ? undefined : esFormulario ? (opciones.cuerpo as FormData) : JSON.stringify(opciones.cuerpo),
     });
   } catch {
     // fetch solo falla asi cuando no hay red o el backend esta apagado.
@@ -126,6 +131,30 @@ export async function pedirAlServidor<T>(
   const error = convertirEnError(respuesta.status, cuerpo);
   if (error.estado === 401 && !opciones.el401EsNormal) oyenteDeSesionPerdida?.();
   throw error;
+}
+
+/**
+ * Pide un ARCHIVO al backend (documento o fotografia) y lo devuelve como
+ * Blob, para mostrarlo con una direccion temporal (URL.createObjectURL) o
+ * guardarlo. Los errores llegan igual que en pedirAlServidor (ErrorDeApi).
+ */
+export async function pedirArchivo(
+  ruta: string,
+  parametros?: OpcionesDePedido['parametros'],
+): Promise<{ blob: Blob; tipo: string }> {
+  let respuesta: Response;
+  try {
+    respuesta = await fetch(PREFIJO_API + ruta + armarParametros(parametros), { method: 'GET', credentials: 'include' });
+  } catch {
+    throw new ErrorDeApi(0, 'SIN_CONEXION', 'No se pudo conectar con el servidor. Revise su conexión e intente de nuevo.');
+  }
+  if (!respuesta.ok) {
+    const error = convertirEnError(respuesta.status, await leerJsonSinFallar(respuesta));
+    if (error.estado === 401) oyenteDeSesionPerdida?.();
+    throw error;
+  }
+  const blob = await respuesta.blob();
+  return { blob, tipo: respuesta.headers.get('Content-Type') ?? blob.type };
 }
 
 /* ------------------------------------------------------------------ */

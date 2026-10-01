@@ -42,6 +42,13 @@ const PERMISOS: { clave: string; modulo: string; descripcion: string }[] = [
   { clave: 'expediente.verTodos', modulo: 'expediente', descripcion: 'Abrir el expediente laboral de cualquier funcionario (Recursos Humanos)' },
   { clave: 'documentos.crear', modulo: 'documentos', descripcion: 'Subir documentos al expediente' },
   { clave: 'documentos.descargar', modulo: 'documentos', descripcion: 'Ver y descargar documentos' },
+  // Editar un documento = cambiar su titulo, tipo, descripcion o fecha (el archivo nunca se reemplaza).
+  { clave: 'documentos.editar', modulo: 'documentos', descripcion: 'Editar el título, tipo y datos de cualquier documento manual' },
+  {
+    clave: 'documentos.editarPropio',
+    modulo: 'documentos',
+    descripcion: 'Editar únicamente los documentos que subió la propia persona a su expediente',
+  },
   { clave: 'documentos.darDeBaja', modulo: 'documentos', descripcion: 'Dar de baja cualquier documento, sin eliminarlo' },
   {
     clave: 'documentos.darDeBajaPropio',
@@ -89,6 +96,7 @@ const AUTOSERVICIO = [
   'expediente.ver',
   'documentos.crear',
   'documentos.descargar',
+  'documentos.editarPropio',
   'documentos.darDeBajaPropio',
 ];
 
@@ -109,6 +117,8 @@ const ROLES: { nombre: string; descripcion: string; permisos: string[] | 'todos'
       'expediente.verTodos',
       'documentos.crear',
       'documentos.descargar',
+      'documentos.editar',
+      'documentos.editarPropio',
       'documentos.darDeBaja',
       'documentos.darDeBajaPropio',
       'documentos.restaurar',
@@ -158,16 +168,19 @@ const REGIMENES = [
   },
 ];
 
+// formatosPermitidos: pdf, jpg y/o png. Se aplican solo al CREAR el tipo: si RRHH
+// los cambia despues desde la pantalla de tipos, el seed no los pisa.
 const TIPOS_DOCUMENTO = [
-  { nombre: 'Cédula de identidad', descripcion: 'Copia del documento de identidad', generadoPorSistema: false },
-  { nombre: 'Título universitario', descripcion: 'Grado académico del funcionario', generadoPorSistema: false },
-  { nombre: 'Accion de personal', descripcion: 'Nombramientos y cambios de puesto', generadoPorSistema: false },
-  { nombre: 'Hoja de delincuencia', descripcion: 'Documento emitido por el Registro Judicial', generadoPorSistema: false },
-  { nombre: 'Curriculum', descripcion: 'Se copia desde el Talent Pool al contratar', generadoPorSistema: true },
+  { nombre: 'Cédula de identidad', descripcion: 'Copia del documento de identidad', generadoPorSistema: false, formatosPermitidos: 'pdf,jpg,png' },
+  { nombre: 'Título universitario', descripcion: 'Grado académico del funcionario', generadoPorSistema: false, formatosPermitidos: 'pdf,jpg,png' },
+  { nombre: 'Accion de personal', descripcion: 'Nombramientos y cambios de puesto', generadoPorSistema: false, formatosPermitidos: 'pdf' },
+  { nombre: 'Hoja de delincuencia', descripcion: 'Documento emitido por el Registro Judicial', generadoPorSistema: false, formatosPermitidos: 'pdf' },
+  { nombre: 'Curriculum', descripcion: 'Se copia desde el Talent Pool al contratar', generadoPorSistema: true, formatosPermitidos: 'pdf' },
   {
     nombre: 'Constancia de vacaciones',
     descripcion: 'La genera SINERGIA al aprobarse una solicitud de vacaciones',
     generadoPorSistema: true,
+    formatosPermitidos: 'pdf',
   },
 ];
 

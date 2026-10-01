@@ -29,6 +29,8 @@ export interface FuncionarioEnLista {
   departamento: Referencia | null;
   estado: EstadoDeFuncionario;
   tieneCuenta: boolean;
+  /** Tiene fotografia de perfil (la imagen se pide aparte: direccionDeFoto en api/documentos.ts). */
+  tieneFoto: boolean;
   /** Es el funcionario de quien mira: no se edita a si mismo aqui. */
   esPropio: boolean;
   /** Su cuenta tiene permisos que quien mira no tiene: no se le edita, ni salida ni reingreso. */

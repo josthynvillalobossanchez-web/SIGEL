@@ -147,6 +147,8 @@ export interface FuncionarioEnLista {
   departamento: Referencia | null;
   estado: 'activo' | 'inactivo';
   tieneCuenta: boolean;
+  /** Tiene fotografia de perfil (la imagen se pide aparte en GET /funcionarios/:id/foto; la ruta no sale del backend). */
+  tieneFoto: boolean;
   /** Es el funcionario de quien consulta (no puede editarse a si mismo aqui). */
   esPropio: boolean;
   /**
@@ -205,6 +207,7 @@ const SELECCION_DETALLE = {
   fechaSalida: true,
   motivoSalida: true,
   fechaRegistro: true,
+  fotoRuta: true,
   profesion: { select: { id: true, nombre: true } },
   puesto: { select: { id: true, nombre: true } },
   departamento: { select: { id: true, nombre: true } },
@@ -308,6 +311,7 @@ export class FuncionariosService {
           correoInstitucional: true,
           correoPersonal: true,
           estado: true,
+          fotoRuta: true,
           puesto: { select: { id: true, nombre: true } },
           departamento: { select: { id: true, nombre: true } },
           usuario: { select: { id: true } },
@@ -320,9 +324,10 @@ export class FuncionariosService {
     const conMasAcceso = await this.conMasAcceso(this.prisma, filas.map((f) => f.id), quienActua);
     const jefaturasValidas = await this.jefaturasValidas(filas.map((f) => f.jefaturaId));
     return armarPagina(
-      filas.map(({ usuario, jefaturaId, _count, ...f }) => ({
+      filas.map(({ usuario, jefaturaId, _count, fotoRuta, ...f }) => ({
         ...f,
         tieneCuenta: usuario !== null,
+        tieneFoto: fotoRuta !== null,
         esPropio: f.id === quienActua.funcionarioId,
         tieneMasAcceso: conMasAcceso.has(f.id),
         cantidadACargo: _count.personalACargo,
@@ -792,6 +797,7 @@ export class FuncionariosService {
       cantidadACargo: f._count.personalACargo,
       cuenta: f.usuario,
       tieneCuenta: f.usuario !== null,
+      tieneFoto: f.fotoRuta !== null,
       esPropio: f.id === quienActua.funcionarioId,
       tieneMasAcceso,
       fechaRegistro: f.fechaRegistro.toISOString(),
@@ -929,6 +935,14 @@ export class FuncionariosService {
       }
     }
     return { id: jefatura.id, nombre: nombreCompleto(jefatura) };
+  }
+
+  /**
+   * true si la cuenta de ese funcionario tiene mas acceso que quien actua
+   * (regla "para arriba no"). Para otros modulos, por ejemplo la foto de perfil.
+   */
+  async cuentaTieneMasAcceso(funcionarioId: string, quienActua: UsuarioAutenticado): Promise<boolean> {
+    return (await this.conMasAcceso(this.prisma, [funcionarioId], quienActua)).has(funcionarioId);
   }
 
   /**

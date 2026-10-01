@@ -145,6 +145,28 @@ const TRAZOS = {
       <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
     </>
   ),
+  // Gestion documental: nube para elegir un archivo, bajar un archivo y hoja de documento.
+  subirNube: (
+    <>
+      <path d="M20 16.6A4.5 4.5 0 0 0 18 8h-1.3A7 7 0 1 0 4 14.9" />
+      <path d="M12 12v9" />
+      <path d="m8 16 4-4 4 4" />
+    </>
+  ),
+  descargar: (
+    <>
+      <path d="M12 3v12" />
+      <path d="m7 10 5 5 5-5" />
+      <path d="M5 21h14" />
+    </>
+  ),
+  documento: (
+    <>
+      <path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z" />
+      <path d="M14 3v5h5" />
+      <path d="M9 13h6M9 17h4" />
+    </>
+  ),
   // Del prototipo (pgTipos): catalogo, desactivar y reactivar.
   carpeta: <path d="M4 4h7l2 2h7v13a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1z" />,
   desactivar: <path d="M18 6 6 18M6 6l12 12" />,

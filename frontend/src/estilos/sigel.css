@@ -422,7 +422,9 @@ tbody tr[data-vigente="no"] .doc-nombre{text-decoration:line-through;
    ============================================================ */
 .celda-usuario{display:flex;gap:11px;align-items:center;min-width:0}
 .avatar-sm{width:34px;height:34px;border-radius:50%;background:var(--avatar-bg);color:#fff;
-  display:grid;place-items:center;font-weight:700;font-size:13px;flex-shrink:0}
+  display:grid;place-items:center;font-weight:700;font-size:13px;flex-shrink:0;overflow:hidden}
+.avatar-sm img,.resumen-cab .foto img{width:100%;height:100%;object-fit:cover;display:block}
+.resumen-cab .foto{overflow:hidden}
 .celda-usuario .nom{font-weight:600;display:block;overflow-wrap:anywhere}
 .celda-usuario .sec{font-size:13px;color:var(--texto-sec);overflow-wrap:anywhere}
 .pills{display:flex;flex-wrap:wrap;gap:5px}

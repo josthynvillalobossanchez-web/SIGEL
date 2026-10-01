@@ -51,6 +51,9 @@ const MENSAJE_POR_ESTADO: Record<number, string> = {
   [HttpStatus.TOO_MANY_REQUESTS]:
     'Demasiados intentos seguidos. Espere unos minutos y vuelva a intentarlo.',
   [HttpStatus.NOT_FOUND]: 'No se encontró lo que está buscando.',
+  // Los lanza la carga de archivos cuando el propio servidor corta la subida.
+  [HttpStatus.PAYLOAD_TOO_LARGE]: 'El archivo supera el tamaño máximo permitido.',
+  [HttpStatus.UNSUPPORTED_MEDIA_TYPE]: 'Ese formato de archivo no está permitido.',
   [HttpStatus.INTERNAL_SERVER_ERROR]:
     'Ocurrió un error inesperado. Si vuelve a pasar, avise al Departamento de TI.',
 };

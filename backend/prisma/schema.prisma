@@ -303,6 +303,9 @@ model tipoDocumento {
   descripcion        String? @db.VarChar(255)
   generadoPorSistema Boolean @default(false)
   activo             Boolean @default(true)
+  /// Formatos de archivo que acepta este tipo, separados por coma, en
+  /// minusculas: pdf, jpg, png (al menos uno). Ejemplo: "jpg,png".
+  formatosPermitidos String  @default("pdf,jpg,png") @db.VarChar(20)
 
   documentos documento[]
 }
@@ -326,6 +329,9 @@ model documento {
   /// alcanza de sobra para 25 MB y evita tener que convertir BigInt al
   /// serializar la respuesta JSON.
   tamanoBytes   Int
+  /// SHA-256 (hexadecimal) del contenido ORIGINAL, antes de cifrar. Sirve para
+  /// comprobar la integridad al descargar. Nulo solo en filas anteriores al cifrado.
+  hashContenido String? @db.Char(64)
 
   generadoPorSistema Boolean   @default(false)
   fechaDocumento     DateTime? @db.Date

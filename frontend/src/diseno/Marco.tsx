@@ -226,8 +226,7 @@ function MarcoInterno() {
           ))}
 
           <p style={{ marginTop: 'auto', padding: 12, fontSize: 11.5, color: 'var(--texto-sec)', lineHeight: 1.5 }}>
-            Vacaciones, incapacidades, horas extra y Talent Pool corresponden a los Sprints 2 y 3. Los documentos del
-            expediente llegan con la gestión documental.
+            Vacaciones, incapacidades, horas extra y Talent Pool corresponden a los Sprints 2 y 3.
           </p>
         </nav>
 

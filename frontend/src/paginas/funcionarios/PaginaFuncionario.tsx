@@ -47,6 +47,7 @@ import { useCambiosSinGuardar, useIrSeguro } from '../../componentes/CambiosSinG
 import { Migas } from '../../componentes/Migas';
 import { Mensaje } from '../../componentes/Mensaje';
 import { ModalExito } from '../../componentes/ModalExito';
+import { ModalFoto } from '../../componentes/ModalFoto';
 import { Icono } from '../../componentes/Icono';
 import { formatearFecha, hoyEnCostaRica } from '../../utilidades/fechas';
 import { nombreCompleto } from '../../utilidades/texto';
@@ -59,6 +60,7 @@ import {
   PasoCuenta,
   PasoDatosLaborales,
   PasoDatosPersonales,
+  PasoFotografia,
   RevisarCambios,
   RevisarRegistro,
   type Formulario,
@@ -171,6 +173,11 @@ function FormularioDeFuncionario({ opciones, detalle }: { opciones: OpcionesDeFo
   const [error, setError] = useState<string | null>(null);
   const [registrado, setRegistrado] = useState<{ nombre: string; cuenta: CuentaCreada | null } | null>(null);
   const [editado, setEditado] = useState<string | null>(null);
+  // Fotografia (solo al editar): se guarda al momento, no con "Guardar cambios".
+  const [tieneFoto, setTieneFoto] = useState(detalle?.tieneFoto ?? false);
+  const [versionFoto, setVersionFoto] = useState(0);
+  const [cambiandoFoto, setCambiandoFoto] = useState(false);
+  const [avisoDeFoto, setAvisoDeFoto] = useState<string | null>(null);
 
   // Un error del servidor deja de aplicar en cuanto se corrige algo.
   useEffect(() => setError(null), [datos, marcados, crearCuenta]);
@@ -290,7 +297,13 @@ function FormularioDeFuncionario({ opciones, detalle }: { opciones: OpcionesDeFo
     },
     { titulo: 'Datos laborales', sub: 'Puesto y jefatura', descripcion: 'Definen su relación con la Municipalidad y quién aprueba sus trámites.' },
     ...(editando
-      ? []
+      ? [
+          {
+            titulo: 'Fotografía',
+            sub: 'Foto de perfil',
+            descripcion: 'Ponga o cambie la fotografía de perfil. Se guarda al momento, sin esperar al último paso.',
+          },
+        ]
       : [
           {
             titulo: 'Cuenta de acceso',
@@ -354,6 +367,9 @@ function FormularioDeFuncionario({ opciones, detalle }: { opciones: OpcionesDeFo
             hoy={hoy}
           />
         )}
+        {editando && detalle && paso === 3 && (
+          <PasoFotografia detalle={detalle} tieneFoto={tieneFoto} version={versionFoto} alCambiar={() => setCambiandoFoto(true)} aviso={avisoDeFoto} />
+        )}
         {!editando && paso === 3 && (
           <PasoCuenta
             datos={datos}
@@ -369,6 +385,21 @@ function FormularioDeFuncionario({ opciones, detalle }: { opciones: OpcionesDeFo
         {paso === ultimo && editando && <RevisarCambios cambios={cambios} inicial={inicial} datos={datos} listas={listas} />}
       </FormularioPorPasos>
 
+      {cambiandoFoto && detalle && (
+        <ModalFoto
+          funcionarioId={detalle.id}
+          nombre={nombreCompleto(detalle)}
+          tieneFoto={tieneFoto}
+          esPropia={false}
+          alCerrar={() => setCambiandoFoto(false)}
+          alGuardar={(hay, texto) => {
+            setCambiandoFoto(false);
+            setTieneFoto(hay);
+            setVersionFoto(Date.now());
+            setAvisoDeFoto(texto);
+          }}
+        />
+      )}
       {registrado && (
         <ModalExito titulo="Funcionario registrado con éxito" alAceptar={() => navegar(LISTA)}>
           <p>

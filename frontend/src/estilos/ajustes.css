@@ -211,6 +211,14 @@ tr[data-vigente="no"] .chip-rol { opacity: .7; }
   .tabla-alta { max-height: none; }
 }
 
+/* Fotografia de perfil mas grande (pedido de Josthyn, 30/09). El recorte redondo va en la imagen para que el boton de cambiarla quede sobre el borde. */
+.perfil-foto { overflow: visible; width: 104px; height: 104px; font-size: 34px; }
+.perfil-foto img { border-radius: 50%; }
+.perfil-texto { display: contents; }
+@media (max-width: 719px) { .perfil-foto { width: 92px; height: 92px; font-size: 30px; } }
+/* Ventana de ficha (funcionarios): foto de 96 px con borde y sombra, como la tarjeta de perfil. */
+.resumen-cab .foto { width: 96px; height: 96px; font-size: 30px; border-radius: 16px; border: 3px solid var(--card); box-shadow: var(--sombra-md); }
+.resumen-cab { gap: 20px; }
 /* Mi cuenta: boton de la foto bloqueado. */
 .perfil-foto .cambiar[aria-disabled="true"] { opacity: .7; cursor: not-allowed; }
 
@@ -418,15 +426,30 @@ input.solo-lectura { background: var(--neutro-bg); color: var(--texto-sec); curs
    prototipo) y campos mas juntos, para que cada pestana quepa sin scroll a
    1366x768 ahora que ahi se editan todos los datos. */
 @media (min-width: 1100px) {
-  .perfil.perfil-compacto { padding-top: 14px; padding-bottom: 14px; }
-  .perfil.perfil-compacto .perfil-foto { width: 72px; height: 72px; font-size: 24px; }
-  .perfil.perfil-compacto .perfil-rapido { margin-bottom: -14px; margin-top: 14px; }
+  /* Foto grande a la izquierda y los textos a su lado: la foto se aprecia mejor y la tarjeta mide menos que apilada. */
+  .perfil.perfil-compacto { padding: 18px 28px; grid-template-columns: auto minmax(0, 1fr); column-gap: 26px; justify-items: start; text-align: left; }
+  .perfil.perfil-compacto .perfil-foto { width: 128px; height: 128px; font-size: 40px; margin-bottom: 0; border-width: 4px; }
+  .perfil.perfil-compacto .perfil-texto { display: grid; gap: 3px; justify-items: start; align-self: center; min-width: 0; }
+  .perfil.perfil-compacto .chips, .perfil.perfil-compacto .acc { justify-content: flex-start; }
+  .perfil.perfil-compacto .perfil-rapido { grid-column: 1 / -1; margin-bottom: -18px; margin-top: 16px; margin-left: -28px; margin-right: -28px; width: calc(100% + 56px); }
   .perfil.perfil-compacto .perfil-rapido div { padding-top: 8px; padding-bottom: 8px; }
   .mc-centro .mc-campos .campo { margin-bottom: 10px; }
 }
 @media (min-width: 1100px) {
-  .perfil.perfil-compacto .perfil-foto .cambiar { width: 28px; height: 28px; right: -4px; bottom: -4px; }
+  .perfil.perfil-compacto .perfil-foto .cambiar { width: 34px; height: 34px; right: 4px; bottom: 4px; }
 }
+/* Expediente: las pestanas al centro, como en Mi cuenta. */
+.pagina-expediente > .tabs { justify-content: center; }
+@media (max-width: 700px) { .pagina-expediente > .tabs { justify-content: flex-start; } }
+/* Editar funcionario, paso Fotografia: foto grande a la izquierda y su explicacion a la derecha. */
+.paso-foto { display: flex; gap: 28px; align-items: center; padding: 8px 4px; }
+.paso-foto-imagen { width: 160px; height: 160px; flex-shrink: 0; border-radius: 50%; overflow: hidden; background: var(--neutro-bg); color: var(--texto-sec);
+  display: grid; place-items: center; font-size: 52px; font-weight: 800; border: 4px solid var(--card); box-shadow: var(--sombra-md); }
+.paso-foto-imagen img { width: 100%; height: 100%; object-fit: cover; }
+.paso-foto-texto { min-width: 0; display: grid; gap: 8px; justify-items: start; }
+.paso-foto-texto h3 { font-size: 18px; font-weight: 800; }
+.paso-foto-texto p { margin: 0; font-size: 14.5px; line-height: 1.5; }
+@media (max-width: 600px) { .paso-foto { flex-direction: column; text-align: center; } .paso-foto-texto { justify-items: center; } }
 /* En celular las pestanas de Mi cuenta no caben: se alinean al inicio para
    que se puedan deslizar sin que la primera quede cortada. */
 @media (max-width: 700px) {
@@ -487,3 +510,47 @@ input.solo-lectura { background: var(--neutro-bg); color: var(--texto-sec); curs
 
 /* Botones de enlace dentro de una ventana (p. ej. "Ver su cuenta en Usuarios"). */
 .acciones-en-linea { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 14px; }
+
+/* ============================================================
+   Gestion documental (epica 3)
+   ============================================================ */
+/* Visor de documentos (ventana): ocupa casi todo el alto sin pasar de 1366x768. */
+.modal:has(.visor-doc) { max-width: min(980px, 96vw); width: 100%; }
+.visor-doc { display: grid; place-items: center; background: var(--neutro-bg); border: 1px solid var(--borde); border-radius: var(--radio-md); overflow: auto; height: min(62vh, 560px); }
+.visor-doc iframe { width: 100%; height: 100%; border: 0; background: #fff; }
+.visor-doc img { max-width: 100%; max-height: 100%; object-fit: contain; user-select: none; -webkit-user-drag: none; }
+/* El visor no se imprime con la pagina (la copia sale por "Descargar", que queda en la bitacora). */
+@media print { .visor-doc { display: none; } }
+/* Documento dado de baja: se ve atenuado en la lista. */
+tr.fila-baja td:not(.acciones) { opacity: .75; }
+/* Ventana de la fotografia: vista previa redonda y selector de archivo. */
+.foto-elegir { display: flex; gap: 16px; align-items: center; }
+.foto-vista { width: 136px; height: 136px; flex-shrink: 0; border-radius: 50%; overflow: hidden; background: var(--neutro-bg); color: var(--texto-sec);
+  display: grid; place-items: center; font-size: 32px; font-weight: 800; border: 3px solid var(--card); box-shadow: var(--sombra-md); }
+.foto-vista img { width: 100%; height: 100%; object-fit: cover; }
+@media (max-width: 480px) { .foto-elegir { flex-direction: column; align-items: stretch; } .foto-vista { align-self: center; } }
+/* Zona para elegir un archivo (componente ZonaDeArchivo): el input real queda transparente encima. */
+.zona-archivo { position: relative; display: flex; flex-direction: column; align-items: center; gap: 4px; text-align: center;
+  padding: 10px 14px; border: 2px dashed var(--borde-fuerte); border-radius: var(--radio-lg); background: var(--superficie);
+  transition: border-color .15s, background .15s; }
+.zona-archivo:hover, .zona-archivo.arrastrando { border-color: var(--accion); background: var(--accion-tinte); }
+.zona-archivo:focus-within { outline: 3px solid var(--foco); outline-offset: 2px; border-color: var(--foco-borde); }
+.zona-archivo.invalida { border-color: var(--error-fg); }
+.zona-archivo input[type="file"] { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; font-size: 0; }
+.zona-icono { width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center; background: var(--accion-tinte); color: var(--accion-sobre-claro); }
+.zona-icono svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.zona-titulo { font-size: 14px; color: var(--texto); overflow-wrap: anywhere; }
+.zona-enlace { color: var(--accion-sobre-claro); font-weight: 700; text-decoration: underline; }
+.zona-pie { display: flex; gap: 4px 10px; flex-wrap: wrap; justify-content: center; align-items: center; }
+.zona-formatos { display: flex; gap: 6px; flex-wrap: wrap; justify-content: center; }
+.formato-etiqueta { font-size: 11px; font-weight: 800; letter-spacing: .03em; padding: 2px 8px; border-radius: var(--radio-full); }
+.formato-pdf { background: var(--error-bg); color: var(--error-fg); }
+.formato-jpg { background: var(--info-bg); color: var(--info-fg); }
+.formato-png { background: var(--exito-bg); color: var(--exito-fg); }
+.zona-ayuda { font-size: 12px; color: var(--texto-sec); }
+/* Formatos que acepta un tipo de documento (casillas). */
+.grupo-formatos { border: 0; padding: 0; margin: 0 0 14px; }
+.grupo-formatos legend { font-size: 14px; font-weight: 600; margin-bottom: 6px; padding: 0; }
+.grupo-formatos .check { padding: 6px 8px; border-radius: var(--radio-md); }
+.grupo-formatos .check .txt span { display: block; font-size: 13px; color: var(--texto-sec); font-weight: 400; }
+.grupo-formatos:disabled .check { cursor: not-allowed; opacity: .7; }

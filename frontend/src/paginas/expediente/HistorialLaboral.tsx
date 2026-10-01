@@ -3,7 +3,9 @@
  * solo lectura, lo mas reciente arriba. Sale de la bitacora (backend:
  * ExpedientesService.historial): ingreso, cambios laborales (de que valor a
  * cual), salida y reingreso, con quien lo hizo. Los cambios de datos
- * personales no son historial laboral y no aparecen.
+ * personales no son historial laboral y no aparecen. Tambien muestra los
+ * documentos agregados al expediente; las bajas y restauraciones de
+ * documentos solo las ve quien puede restaurar (Recursos Humanos).
  *
  * Se piden 20 por vez; "Ver movimientos anteriores" trae los siguientes.
  */
@@ -20,6 +22,9 @@ const ICONOS: Record<MovimientoDelHistorial['tipo'], NombreDeIcono> = {
   cambio: 'editar',
   salida: 'salir',
   reingreso: 'reactivar',
+  documentoAgregado: 'documento',
+  documentoBaja: 'desactivar',
+  documentoRestaurado: 'reactivar',
 };
 
 export function HistorialLaboral({ funcionarioId }: { funcionarioId: string }) {
