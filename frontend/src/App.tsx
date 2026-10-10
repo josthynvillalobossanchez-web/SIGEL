@@ -61,6 +61,8 @@ import { MisVacaciones } from './paginas/vacaciones/MisVacaciones';
 import { NuevaSolicitud } from './paginas/vacaciones/NuevaSolicitud';
 import { BandejaDeJefatura } from './paginas/vacaciones/BandejaDeJefatura';
 import { TodasLasSolicitudes } from './paginas/vacaciones/TodasLasSolicitudes';
+import { IncapacidadesDelPersonal } from './paginas/ausencias/IncapacidadesDelPersonal';
+import { HorasExtra } from './paginas/ausencias/HorasExtra';
 import { Feriados } from './paginas/vacaciones/Feriados';
 import { PaginaNoEncontrada } from './paginas/SinPermiso';
 import { GestorDeAyudas } from './componentes/Ayudas';
@@ -252,6 +254,22 @@ export function App() {
                 element={
                   <ConPermisos permisos={['solicitudes.administrar']}>
                     <TodasLasSolicitudes />
+                  </ConPermisos>
+                }
+              />
+              <Route
+                path="/incapacidades"
+                element={
+                  <ConPermisos permisos={['solicitudes.administrar']}>
+                    <IncapacidadesDelPersonal />
+                  </ConPermisos>
+                }
+              />
+              <Route
+                path="/horas-extra"
+                element={
+                  <ConPermisos permisos={['horasExtra.registrar']}>
+                    <HorasExtra />
                   </ConPermisos>
                 }
               />

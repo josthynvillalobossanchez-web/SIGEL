@@ -30,6 +30,7 @@ import { useParametrosEnUrl } from '../../utilidades/parametrosEnUrl';
 import { useConsulta } from '../../utilidades/useConsulta';
 import { useEsMovil } from '../../utilidades/useEsMovil';
 import { DetalleDeSolicitud, PuntoDeTipo } from '../vacaciones/comunes';
+import { COLOR_INCAPACIDAD, DetalleDeIncapacidad } from '../ausencias/DetalleDeIncapacidad';
 import { PanelDelDia } from './PanelDelDia';
 import { solicitudesDelDia } from './reparto';
 import { VistaDeMes } from './VistaDeMes';
@@ -273,6 +274,15 @@ export function Calendario() {
             <PuntoDeTipo color={t.colorCalendario} /> {t.nombre}
           </button>
         ))}
+        {/* Las incapacidades no son un tipo de solicitud, pero se ven en el calendario. */}
+        <button
+          type="button"
+          aria-pressed={!ocultos.includes('incapacidad')}
+          onClick={() => setOcultos((o) => (o.includes('incapacidad') ? o.filter((x) => x !== 'incapacidad') : [...o, 'incapacidad']))}
+          data-ayuda={ocultos.includes('incapacidad') ? 'Volver a mostrar: Incapacidad' : 'Ocultar: Incapacidad'}
+        >
+          <PuntoDeTipo color={COLOR_INCAPACIDAD} /> Incapacidad
+        </button>
         <span className="leyenda-pendiente">
           <i aria-hidden="true" /> Rayado = pendiente de aprobar
         </span>
@@ -311,7 +321,19 @@ export function Calendario() {
         </Modal>
       )}
 
-      {abierta && (
+      {abierta?.origen === 'incapacidad' && (
+        <DetalleDeIncapacidad
+          id={abierta.id}
+          puedeAnular={tienePermisos('solicitudes.administrar')}
+          alCerrar={() => setAbierta(null)}
+          alCambiar={(mensaje) => {
+            setAbierta(null);
+            setAviso(mensaje);
+            datos.recargar();
+          }}
+        />
+      )}
+      {abierta && abierta.origen !== 'incapacidad' && (
         <DetalleDeSolicitud
           solicitud={abierta}
           modo={modoPara(abierta)}

@@ -3,8 +3,10 @@ import {
   ConflictException,
   ForbiddenException,
   Injectable,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
+import { ModuleRef } from '@nestjs/core';
 import type { UsuarioAutenticado } from '../autenticacion/tipos.js';
 import { BitacoraService } from '../bitacora/bitacora.service.js';
 import { armarPagina, type PaginaDeResultados } from '../comun/dto/paginacion.dto.js';
@@ -60,6 +62,7 @@ const SELECCION_DE_LISTA = {
   fechaResolucion: true,
   estadoDocumentoGenerado: true,
   documentoGeneradoId: true,
+  justificanteDocumentoId: true,
   tipoSolicitud: { select: { id: true, clave: true, nombre: true, colorCalendario: true, descuentaVacaciones: true } },
   funcionario: FUNCIONARIO_RESUMIDO,
   usuarioSolicitante: { select: { id: true, funcionario: { select: { nombre: true, primerApellido: true } } } },
@@ -81,7 +84,13 @@ export interface SolicitudDeLista {
   motivoRechazo: string | null;
   fechaResolucion: string | null;
   tieneConstancia: boolean;
+  /** Documento de la constancia en el expediente (si ya se genero). */
+  constanciaId: string | null;
+  /** Documento del justificante adjunto (licencias). */
+  justificanteId: string | null;
   estadoDocumentoGenerado: string;
+  /** "solicitud" o, en el calendario, "incapacidad" (no es una solicitud: no tiene aprobacion). */
+  origen: 'solicitud' | 'incapacidad';
   tipo: { id: string; clave: string; nombre: string; color: string | null; descuentaVacaciones: boolean };
   funcionario: { id: string; nombre: string; departamento: string | null };
   solicitadaPor: { id: string; nombre: string | null };
@@ -139,7 +148,26 @@ export class SolicitudesService {
     private readonly bitacora: BitacoraService,
     private readonly vacaciones: VacacionesService,
     private readonly feriados: DiasNoLaborablesService,
+    private readonly modulos: ModuleRef,
   ) {}
+
+  private readonly registro = new Logger('Solicitudes');
+
+  /**
+   * Constancia en PDF al aprobarse (HU 26). La genera ConstanciasService, que
+   * vive en el modulo de ausencias (necesita la gestion documental, que a su
+   * vez depende de este modulo): por eso se busca en tiempo de ejecucion y no
+   * se inyecta. Nunca hace fallar la aprobacion: si algo sale mal, la
+   * solicitud queda con la constancia "fallida" para que RRHH la reintente.
+   */
+  private async generarConstanciaSiAplica(solicitudId: string, usuarioOrigenId: string): Promise<void> {
+    try {
+      const generador = this.modulos.get<{ generar(id: string, usuario: string): Promise<boolean> }>('GENERADOR_DE_CONSTANCIAS', { strict: false });
+      await generador.generar(solicitudId, usuarioOrigenId);
+    } catch (error) {
+      this.registro.error(`No se pudo pedir la constancia de ${solicitudId}: ${(error as Error).message}`);
+    }
+  }
 
   /* ================================================================== */
   /* Catalogo                                                            */
@@ -169,10 +197,13 @@ export class SolicitudesService {
    * Calcula lo que pasaria si se hiciera la solicitud, sin guardar nada: los
    * dias habiles, el desglose dia por dia y el saldo. Si algo la impediria,
    * lo dice en "problema" (con el mismo codigo que daria al crearla).
+   * El justificante NO se exige aqui: la pantalla lo pide en el paso
+   * siguiente; si falta, la respuesta lo dice con faltaJustificante (al
+   * crear si se exige).
    */
   async calcular(datos: CrearSolicitudDto, quienActua: UsuarioAutenticado): Promise<unknown> {
     try {
-      const p = await this.preparar(datos, quienActua);
+      const p = await this.preparar(datos, quienActua, this.prisma, { sinExigirJustificante: true });
       const saldo = p.tipo.descuentaVacaciones ? await this.vacaciones.resumen(p.funcionario.id) : null;
       return {
         valida: true,
@@ -182,6 +213,7 @@ export class SolicitudesService {
         saldo: saldo ? { libre: saldo.libre, quedaria: redondear(saldo.libre - p.dias) } : null,
         autoaprobada: seApruebaAlCrear(p),
         laApruebaSuJefatura: p.funcionario.laRegistraSuJefatura,
+        faltaJustificante: p.tipo.requiereJustificante && !datos.justificanteDocumentoId,
       };
     } catch (error) {
       if (error instanceof BadRequestException || error instanceof ConflictException) {
@@ -272,6 +304,7 @@ export class SolicitudesService {
           }
           return fila.id;
         });
+        await this.generarConstanciaSiAplica(creada, quienActua.id);
         return this.detalleSinPermisos(creada);
       } catch (error) {
         // El consecutivo es unico: si dos solicitudes nacen a la vez, la segunda reintenta.
@@ -335,6 +368,7 @@ export class SolicitudesService {
       );
     });
 
+    await this.generarConstanciaSiAplica(id, quienActua.id);
     return this.detalleSinPermisos(id);
   }
 
@@ -421,6 +455,11 @@ export class SolicitudesService {
           data: { estado: 'cancelada', fechaResolucion: new Date(), usuarioResolucionId: quienActua.id },
         });
         if (resultado.count === 0) throw this.yaResuelta('cancelada');
+        // La constancia ya no vale: se da de baja (no se borra).
+        await tx.documento.updateMany({
+          where: { comoGenerado: { some: { id } }, vigente: true },
+          data: { vigente: false, fechaBaja: new Date(), usuarioBajaId: quienActua.id, motivoBaja: `Se canceló la solicitud ${s.consecutivo}.` },
+        });
         if (s.tipoSolicitud.descuentaVacaciones) {
           // Devolucion: un consumo positivo con la misma fecha, asi el saldo de cualquier dia queda como si nunca se hubiera pedido.
           const consumido = await tx.movimientoVacaciones.aggregate({ where: { solicitudId: id, tipo: 'consumo' }, _sum: { cantidadDias: true } });
@@ -599,7 +638,16 @@ export class SolicitudesService {
       if (filtros.departamentoId) donde.funcionario = { departamentoId: filtros.departamentoId };
     }
 
-    const [filas, feriados] = await Promise.all([
+    // Las incapacidades vigentes tambien se pintan (mismo alcance que las solicitudes).
+    const dondeIncapacidad: Prisma.incapacidadWhereInput = {
+      vigente: true,
+      fechaInicio: { lte: hasta },
+      fechaFin: { gte: desde },
+      ...(donde.funcionarioId ? { funcionarioId: donde.funcionarioId as string } : {}),
+      ...(donde.funcionario ? { funcionario: donde.funcionario as Prisma.funcionarioWhereInput } : {}),
+    };
+
+    const [filas, feriados, incapacidades] = await Promise.all([
       this.prisma.solicitud.findMany({
         where: donde,
         orderBy: [{ fechaInicio: 'asc' }, { consecutivo: 'asc' }],
@@ -607,10 +655,27 @@ export class SolicitudesService {
         select: SELECCION_DE_LISTA,
       }),
       this.feriadosEntre(desde, hasta),
+      this.prisma.incapacidad.findMany({
+        where: dondeIncapacidad,
+        orderBy: { fechaInicio: 'asc' },
+        take: MAXIMO_DE_EVENTOS,
+        select: {
+          id: true,
+          consecutivo: true,
+          fechaInicio: true,
+          fechaFin: true,
+          cantidadDias: true,
+          fechaRegistro: true,
+          funcionario: FUNCIONARIO_RESUMIDO,
+          usuarioRegistro: { select: { id: true, funcionario: { select: { nombre: true, primerApellido: true } } } },
+        },
+      }),
     ]);
 
     return {
-      eventos: filas.map((f) => this.aLista(f)),
+      eventos: [...filas.map((f) => this.aLista(f)), ...incapacidades.map((i) => incapacidadComoEvento(i))].sort((a, b) =>
+        a.fechaInicio.localeCompare(b.fechaInicio),
+      ),
       feriados: [...feriados].map(([fecha, nombre]) => ({ fecha, nombre })),
       truncado: filas.length >= MAXIMO_DE_EVENTOS,
     };
@@ -629,6 +694,7 @@ export class SolicitudesService {
     datos: CrearSolicitudDto,
     quienActua: UsuarioAutenticado,
     cliente: Prisma.TransactionClient | PrismaService = this.prisma,
+    opciones: { sinExigirJustificante?: boolean } = {},
   ): Promise<SolicitudPreparada> {
     const tipo = await cliente.tipoSolicitud.findUnique({
       where: { id: datos.tipoSolicitudId },
@@ -736,6 +802,20 @@ export class SolicitudesService {
       }
     }
 
+    // ---- Traslape con una incapacidad vigente ----
+    if (tipo.afectaDisponibilidad) {
+      const incapacidad = await cliente.incapacidad.findFirst({
+        where: { funcionarioId, vigente: true, fechaInicio: { lte: fin }, fechaFin: { gte: inicio } },
+        select: { consecutivo: true, fechaInicio: true, fechaFin: true },
+      });
+      if (incapacidad) {
+        throw new ConflictException({
+          codigo: 'INCAPACIDAD_TRASLAPADA',
+          message: `Tiene una incapacidad registrada (${incapacidad.consecutivo}, del ${aFechaSola(incapacidad.fechaInicio)} al ${aFechaSola(incapacidad.fechaFin)}) que coincide con esas fechas.`,
+        });
+      }
+    }
+
     // ---- Saldo (solo las que descuentan vacaciones) ----
     if (tipo.descuentaVacaciones) {
       const ancla = await cliente.movimientoVacaciones.findFirst({ where: { funcionarioId, tipo: 'saldoInicial' }, select: { id: true } });
@@ -768,7 +848,7 @@ export class SolicitudesService {
       if (!documento) {
         throw new BadRequestException({ codigo: 'JUSTIFICANTE_INVALIDO', message: 'El justificante no existe en el expediente de la persona.' });
       }
-    } else if (tipo.requiereJustificante) {
+    } else if (tipo.requiereJustificante && !opciones.sinExigirJustificante) {
       throw new BadRequestException({ codigo: 'JUSTIFICANTE_REQUERIDO', message: `${tipo.nombre} necesita adjuntar un justificante.` });
     }
 
@@ -916,7 +996,10 @@ export class SolicitudesService {
       motivoRechazo: f.motivoRechazo,
       fechaResolucion: f.fechaResolucion ? f.fechaResolucion.toISOString() : null,
       tieneConstancia: Boolean(f.documentoGeneradoId),
+      constanciaId: f.documentoGeneradoId,
+      justificanteId: f.justificanteDocumentoId,
       estadoDocumentoGenerado: f.estadoDocumentoGenerado,
+      origen: 'solicitud',
       tipo: {
         id: f.tipoSolicitud.id,
         clave: f.tipoSolicitud.clave,
@@ -955,6 +1038,54 @@ export class SolicitudesService {
       message: 'Su cuenta no está asociada a un funcionario, así que no tiene solicitudes propias.',
     });
   }
+}
+
+/** Color con que se pinta una incapacidad en el calendario. */
+export const COLOR_INCAPACIDAD = '#c0392b';
+
+/**
+ * Una incapacidad con la forma de un evento del calendario. Para no exponer
+ * datos medicos, el calendario solo dice "Incapacidad" (sin el tipo ni la
+ * boleta); el detalle lo ve la persona y RRHH en su propia pantalla.
+ */
+function incapacidadComoEvento(i: {
+  id: string;
+  consecutivo: string;
+  fechaInicio: Date;
+  fechaFin: Date;
+  cantidadDias: Prisma.Decimal;
+  fechaRegistro: Date;
+  funcionario: { id: string; nombre: string; primerApellido: string; segundoApellido: string | null; departamento: { nombre: string } | null; usuario: { id: string } | null };
+  usuarioRegistro: { id: string; funcionario: { nombre: string; primerApellido: string } | null };
+}): SolicitudDeLista {
+  return {
+    id: i.id,
+    consecutivo: i.consecutivo,
+    estado: 'aprobada',
+    leidaPorAprobador: true,
+    fechaSolicitud: i.fechaRegistro.toISOString(),
+    fechaInicio: aFechaSola(i.fechaInicio)!,
+    fechaFin: aFechaSola(i.fechaFin)!,
+    cantidadDias: Number(i.cantidadDias),
+    motivo: null,
+    motivoRechazo: null,
+    fechaResolucion: null,
+    tieneConstancia: false,
+    constanciaId: null,
+    justificanteId: null,
+    estadoDocumentoGenerado: 'noAplica',
+    origen: 'incapacidad',
+    tipo: { id: 'incapacidad', clave: 'incapacidad', nombre: 'Incapacidad', color: COLOR_INCAPACIDAD, descuentaVacaciones: false },
+    funcionario: {
+      id: i.funcionario.id,
+      nombre: [i.funcionario.nombre, i.funcionario.primerApellido, i.funcionario.segundoApellido].filter(Boolean).join(' '),
+      departamento: i.funcionario.departamento?.nombre ?? null,
+    },
+    solicitadaPor: { id: i.usuarioRegistro.id, nombre: i.usuarioRegistro.funcionario ? `${i.usuarioRegistro.funcionario.nombre} ${i.usuarioRegistro.funcionario.primerApellido}` : null },
+    aprobador: null,
+    enNombreDeTercero: i.usuarioRegistro.id !== i.funcionario.usuario?.id,
+    autoaprobada: false,
+  };
 }
 
 /** Queda aprobada al crearla: no tiene jefatura (tope) o la registra su propia jefatura. */

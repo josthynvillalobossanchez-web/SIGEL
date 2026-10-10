@@ -110,6 +110,20 @@ export const MENU: GrupoDeMenu[] = [
         permisos: ['solicitudes.administrar'],
         descripcion: 'Todas las solicitudes del personal, con filtros por departamento, tipo y estado.',
       },
+      {
+        texto: 'Incapacidades del personal',
+        ruta: '/incapacidades',
+        icono: 'alerta',
+        permisos: ['solicitudes.administrar'],
+        descripcion: 'Las incapacidades registradas, con su boleta. Se pueden registrar a nombre de alguien o anular.',
+      },
+      {
+        texto: 'Horas extra',
+        ruta: '/horas-extra',
+        icono: 'reloj',
+        permisos: ['horasExtra.registrar'],
+        descripcion: 'Registrar las horas extra del personal y ver el total de cada persona por mes.',
+      },
     ],
   },
   {

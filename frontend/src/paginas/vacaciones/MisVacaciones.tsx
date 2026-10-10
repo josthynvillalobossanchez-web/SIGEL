@@ -1,7 +1,8 @@
 /*
  * Mis vacaciones (/mis-vacaciones): lo principal del modulo para cualquier
  * persona. Arriba el boton para pedir y, en pestanas (sin tener que bajar,
- * decision 01/10): el saldo, sus solicitudes y el historial del saldo.
+ * decision 01/10): el saldo, sus solicitudes, sus incapacidades y el
+ * historial del saldo.
  * Pensada primero para celular: una sola columna, boton grande, tarjetas.
  */
 import { useState } from 'react';
@@ -14,6 +15,9 @@ import { PanelDePestana, Pestanas } from '../../componentes/Pestanas';
 import { useParametrosEnUrl } from '../../utilidades/parametrosEnUrl';
 import { hoyEnCostaRica } from '../../utilidades/calendario';
 import { useConsulta } from '../../utilidades/useConsulta';
+import { consultarMisIncapacidades, type Incapacidad } from '../../api/ausencias';
+import { DetalleDeIncapacidad } from '../ausencias/DetalleDeIncapacidad';
+import { ListaDeIncapacidades } from '../ausencias/ListaDeIncapacidades';
 import { useSesion } from '../../sesion/SesionProveedor';
 import { DetalleDeSolicitud } from './comunes';
 import { ListaDeSolicitudes } from './ListaDeSolicitudes';
@@ -32,12 +36,14 @@ export function MisVacaciones() {
   const [parametros, cambiar] = useParametrosEnUrl({ reiniciaPagina: true });
   const estado = (parametros.get('estado') ?? '') as '' | EstadoDeSolicitud;
   const pagina = Math.max(1, Number(parametros.get('pagina')) || 1);
-  const pestana = ['saldo', 'solicitudes', 'historial'].includes(parametros.get('pestana') ?? '') ? parametros.get('pestana')! : 'saldo';
+  const pestana = ['saldo', 'solicitudes', 'incapacidades', 'historial'].includes(parametros.get('pestana') ?? '') ? parametros.get('pestana')! : 'saldo';
 
   const saldo = useConsulta(consultarMiSaldo, []);
   const pendientes = useConsulta(() => consultarMisSolicitudes({ estado: 'pendiente', tamano: 1 }), []).datos?.total ?? 0;
   const lista = useConsulta(() => consultarMisSolicitudes({ estado: estado || undefined, pagina, tamano: 8 }), [estado, pagina]);
   const [abierta, setAbierta] = useState<SolicitudDeLista | null>(null);
+  const incapacidades = useConsulta(pestana === 'incapacidades' ? () => consultarMisIncapacidades({ estado: 'todas', pagina, tamano: 8 }) : null, [pestana, pagina]);
+  const [incapacidadAbierta, setIncapacidadAbierta] = useState<Incapacidad | null>(null);
   const [aviso, setAviso] = useState<string | null>(null);
 
   function alCambiar(mensaje: string) {
@@ -72,6 +78,7 @@ export function MisVacaciones() {
         opciones={[
           { id: 'saldo', texto: 'Mi saldo' },
           { id: 'solicitudes', texto: 'Mis solicitudes', cuenta: pendientes || undefined },
+          { id: 'incapacidades', texto: 'Incapacidades' },
           { id: 'historial', texto: 'Historial del saldo' },
         ]}
       />
@@ -115,10 +122,37 @@ export function MisVacaciones() {
         </div>
       </PanelDePestana>
 
+      <PanelDePestana id="incapacidades" actual={pestana}>
+        <div className="fila-acciones">
+          <p className="ayuda-detalle">Las incapacidades no se aprueban ni descuentan vacaciones. Su jefatura solo ve las fechas.</p>
+          <Link className="btn btn-secundario" to="/mis-vacaciones/nueva?tipo=incapacidad" data-ayuda="Registrar una incapacidad con su boleta">
+            <Icono nombre="mas" /> Registrar incapacidad
+          </Link>
+        </div>
+        <div className="bloque-lista">
+          {incapacidades.error && <Mensaje tipo="error">{incapacidades.error}</Mensaje>}
+          {incapacidades.cargando && !incapacidades.datos && <p className="ayuda-detalle">Cargando…</p>}
+          {incapacidades.datos && incapacidades.datos.datos.length === 0 && (
+            <div className="vacio">
+              <Icono nombre="calendario" tamano={30} />
+              <h3>No tiene incapacidades registradas</h3>
+              <p>Cuando registre una, con su boleta, aparecerá aquí.</p>
+            </div>
+          )}
+          {incapacidades.datos && incapacidades.datos.datos.length > 0 && (
+            <>
+              <ListaDeIncapacidades incapacidades={incapacidades.datos.datos} alAbrir={setIncapacidadAbierta} />
+              <Paginacion resultado={incapacidades.datos} nombre={['incapacidad', 'incapacidades']} alCambiar={(p) => cambiar({ pagina: String(p) })} />
+            </>
+          )}
+        </div>
+      </PanelDePestana>
+
       <PanelDePestana id="historial" actual={pestana}>
         {usuario?.funcionarioId && <HistorialDelSaldo funcionarioId={usuario.funcionarioId} siempreAbierto />}
       </PanelDePestana>
 
+      {incapacidadAbierta && <DetalleDeIncapacidad id={incapacidadAbierta.id} alCerrar={() => setIncapacidadAbierta(null)} />}
       {abierta && <DetalleDeSolicitud solicitud={abierta} modo="propia" alCerrar={() => setAbierta(null)} alCambiar={alCambiar} />}
     </section>
   );

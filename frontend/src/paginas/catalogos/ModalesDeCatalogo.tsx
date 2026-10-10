@@ -163,8 +163,7 @@ export function ModalElemento({
       </div>
       {editando && elemento!.cantidadFuncionarios > 0 && (
         <Mensaje tipo="info">
-          {elemento!.cantidadFuncionarios} funcionario{elemento!.cantidadFuncionarios === 1 ? ' activo lo tiene' : 's activos lo tienen'}: el
-          nombre nuevo se verá en su expediente.
+          {TEXTOS[tipo].uso(elemento!.cantidadFuncionarios)}: {TEXTOS[tipo].alRenombrar}
         </Mensaje>
       )}
     </Modal>
@@ -226,12 +225,11 @@ export function ModalEstadoDeElemento({
       {error && <Mensaje tipo="error">{error}</Mensaje>}
       {!activar && enUso > 0 ? (
         <Mensaje tipo="advert" icono="info">
-          {enUso} funcionario{enUso === 1 ? ' activo lo tiene' : 's activos lo tienen'} hoy. Lo conservan, pero no se podrá
-          elegir para nadie más hasta que lo reactive.
+          {t.uso(enUso)} hoy. {t.alInactivar}
         </Mensaje>
       ) : (
         <p className="modal-doc" style={{ margin: 0 }}>
-          {elemento.nombre} · {enUso} funcionario{enUso === 1 ? '' : 's'} activo{enUso === 1 ? '' : 's'}
+          {elemento.nombre} · {t.uso(enUso)}
         </p>
       )}
     </Modal>

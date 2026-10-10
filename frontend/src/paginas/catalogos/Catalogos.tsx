@@ -83,8 +83,8 @@ export function Catalogos() {
         <div>
           <h1>Catálogos de personal</h1>
           <p>
-            Departamentos, puestos y profesiones que se eligen al registrar a un funcionario. No se borran: se inactivan,
-            para no romper el expediente ni el historial.
+            Departamentos, puestos y profesiones que se eligen al registrar a un funcionario, y los tipos de incapacidad. No se
+            borran: se inactivan, para no romper el expediente ni el historial.
           </p>
         </div>
         <div className="acc">
@@ -175,7 +175,7 @@ export function Catalogos() {
                   <th scope="col">Nombre</th>
                   <th scope="col">Descripción</th>
                   <th scope="col" className="num">
-                    Funcionarios
+                    {t.columnaDeUso}
                   </th>
                   <th scope="col">Estado</th>
                   <th scope="col" className="acciones">
@@ -190,8 +190,8 @@ export function Catalogos() {
                       <b>{e.nombre}</b>
                     </td>
                     <td data-etiqueta="Descripción">{e.descripcion ?? <span className="sec-dato">Sin descripción</span>}</td>
-                    <td data-etiqueta="Funcionarios" className="num">
-                      <span aria-label={`${e.cantidadFuncionarios} funcionarios activos`}>{e.cantidadFuncionarios}</span>
+                    <td data-etiqueta={t.columnaDeUso} className="num">
+                      <span aria-label={t.uso(e.cantidadFuncionarios)}>{e.cantidadFuncionarios}</span>
                     </td>
                     <td data-etiqueta="Estado">
                       {e.activo ? <span className="chip chip-exito">Activ{t.o}</span> : <span className="chip chip-advert">Inactiv{t.o}</span>}

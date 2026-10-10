@@ -45,6 +45,7 @@ export function ModalTipoDeDocumento({
 }) {
   const editando = Boolean(tipo);
   const deSistema = tipo?.generadoPorSistema ?? false;
+  const deTramite = tipo?.deTramite ?? false;
   const [nombre, setNombre] = useState(tipo?.nombre ?? '');
   const [descripcion, setDescripcion] = useState(tipo?.descripcion ?? '');
   const [formatos, setFormatos] = useState<Formato[]>(tipo?.formatos ?? ['pdf']);
@@ -148,6 +149,12 @@ export function ModalTipoDeDocumento({
           Este documento lo genera SINERGIA en PDF: aquí solo se puede cambiar su nombre. No se puede inactivar.
         </Mensaje>
       )}
+      {deTramite && (
+        <Mensaje tipo="info">
+          Este tipo se adjunta dentro de un trámite (solicitud, incapacidad o capacitación): sus formatos y descripción se pueden ajustar, pero no se
+          puede renombrar ni inactivar.
+        </Mensaje>
+      )}
       <div className="campo">
         <label htmlFor="tdNombre">
           Nombre <span className="obligatorio">*</span>
@@ -161,6 +168,7 @@ export function ModalTipoDeDocumento({
             setError(null);
           }}
           maxLength={120}
+          disabled={deTramite}
           placeholder="Ej.: Título profesional"
           aria-required="true"
           aria-describedby="tdNombre-ayuda"

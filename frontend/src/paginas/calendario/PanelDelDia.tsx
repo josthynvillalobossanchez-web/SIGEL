@@ -37,7 +37,7 @@ export function PanelDelDia({ fecha, solicitudes, feriado, mostrarPersona, alAbr
           <ul className="panel-lista">
             {solicitudes.map((s) => (
               <li key={s.id}>
-                <button type="button" className="panel-fila" style={{ ['--ev' as string]: colorDelTipo(s.tipo.color) }} onClick={() => alAbrir(s)} data-ayuda="Abrir el detalle de la solicitud">
+                <button type="button" className="panel-fila" style={{ ['--ev' as string]: colorDelTipo(s.tipo.color) }} onClick={() => alAbrir(s)} data-ayuda={s.origen === 'incapacidad' ? 'Abrir el detalle de la incapacidad' : 'Abrir el detalle de la solicitud'}>
                   {mostrarPersona ? <Avatar nombre={s.funcionario.nombre} tamano={34} /> : <span className="punto-tipo grande" aria-hidden="true" style={{ background: colorDelTipo(s.tipo.color) }} />}
                   <span className="panel-texto">
                     <b>{mostrarPersona ? s.funcionario.nombre : s.tipo.nombre}</b>

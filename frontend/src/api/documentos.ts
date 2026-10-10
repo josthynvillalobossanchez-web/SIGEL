@@ -118,6 +118,8 @@ export interface TipoDeDocumento {
   activo: boolean;
   /** Los crea SINERGIA (constancia, curriculum): solo se les cambia el nombre. */
   generadoPorSistema: boolean;
+  /** Se adjunta dentro de un tramite (justificante, boleta, certificado): no se renombra ni inactiva. */
+  deTramite: boolean;
   formatos: Formato[];
   cantidadDocumentos: number;
 }

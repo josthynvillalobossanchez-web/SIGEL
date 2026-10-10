@@ -16,6 +16,10 @@ import {
   type SolicitudDeLista,
 } from '../../api/vacaciones';
 import { textoDelError } from '../../api/cliente';
+import { abrirJustificante, generarConstanciaDeNuevo } from '../../api/ausencias';
+import { abrirArchivoDeDocumento } from '../../api/documentos';
+import { VisorDeArchivo } from '../../componentes/VisorDeArchivo';
+import { useSesion } from '../../sesion/SesionProveedor';
 import { Icono } from '../../componentes/Icono';
 import { Mensaje } from '../../componentes/Mensaje';
 import { Modal } from '../../componentes/Modal';
@@ -103,8 +107,25 @@ interface PropiedadesDeDetalle {
 
 export function DetalleDeSolicitud({ solicitud: inicial, modo, alCerrar, alCambiar }: PropiedadesDeDetalle) {
   // Al abrirla la jefatura queda "leida" en el servidor, por eso se vuelve a pedir.
-  const { datos } = useConsulta(() => consultarSolicitud(inicial.id), [inicial.id]);
+  const { datos, recargar } = useConsulta(() => consultarSolicitud(inicial.id), [inicial.id]);
   const s = datos ?? inicial;
+  const { tienePermisos } = useSesion();
+  const [viendo, setViendo] = useState<'constancia' | 'justificante' | null>(null);
+  const [generando, setGenerando] = useState(false);
+  const [avisoDeDocumento, setAvisoDeDocumento] = useState<string | null>(null);
+  async function generarDeNuevo() {
+    setGenerando(true);
+    setError(null);
+    try {
+      const r = await generarConstanciaDeNuevo(s.id);
+      setAvisoDeDocumento(r.generada ? 'La constancia se generó y quedó en el expediente.' : 'No se pudo generar todavía. Intente de nuevo en unos minutos.');
+      recargar();
+    } catch (e) {
+      setError(textoDelError(e));
+    } finally {
+      setGenerando(false);
+    }
+  }
   const navegar = useNavigate();
   const pendiente = s.estado === 'pendiente';
   const esDeJefatura = modo === 'jefatura' && pendiente;
@@ -204,6 +225,34 @@ export function DetalleDeSolicitud({ solicitud: inicial, modo, alCerrar, alCambi
     </>
   );
 
+  if (viendo === 'constancia' && s.constanciaId) {
+    const id = s.constanciaId;
+    return (
+      <VisorDeArchivo
+        titulo={`Constancia de ${s.consecutivo}`}
+        descripcion={s.funcionario.nombre}
+        traer={() => abrirArchivoDeDocumento(id, 'ver')}
+        descargar={() => abrirArchivoDeDocumento(id, 'descargar')}
+        nombreAlDescargar={`constancia-${s.consecutivo}`}
+        alCerrar={() => setViendo(null)}
+      />
+    );
+  }
+  if (viendo === 'justificante') {
+    return (
+      <VisorDeArchivo
+        titulo={`Justificante de ${s.consecutivo}`}
+        descripcion={s.funcionario.nombre}
+        traer={() => abrirJustificante(s.id)}
+        nombreAlDescargar={`justificante-${s.consecutivo}`}
+        alCerrar={() => setViendo(null)}
+      />
+    );
+  }
+
+  const constanciaFallida = s.estado === 'aprobada' && s.estadoDocumentoGenerado === 'fallido';
+  const hayDocumentos = Boolean(s.constanciaId || s.justificanteId || constanciaFallida);
+
   return (
     <Modal
       titulo={s.tipo.nombre}
@@ -260,6 +309,34 @@ export function DetalleDeSolicitud({ solicitud: inicial, modo, alCerrar, alCambi
             </div>
           )}
         </dl>
+
+        {hayDocumentos && !cancelando && !rechazando && (
+          <div className="detalle-documentos" role="group" aria-label="Documentos de la solicitud">
+            {s.constanciaId && (
+              <button type="button" className="btn btn-secundario btn-chico" onClick={() => setViendo('constancia')} data-ayuda="Ver la constancia en PDF que generó SINERGIA al aprobarse">
+                <Icono nombre="documento" /> Constancia (PDF)
+              </button>
+            )}
+            {s.justificanteId && (
+              <button type="button" className="btn btn-secundario btn-chico" onClick={() => setViendo('justificante')} data-ayuda="Ver el justificante que se adjuntó a la solicitud">
+                <Icono nombre="documento" /> Justificante
+              </button>
+            )}
+            {constanciaFallida && (
+              <span className="constancia-fallida">
+                No se pudo generar la constancia.
+                {tienePermisos('solicitudes.administrar') || modo === 'jefatura' ? (
+                  <button type="button" className="btn-texto" disabled={generando} onClick={() => void generarDeNuevo()} data-ayuda="Intentar generar la constancia otra vez">
+                    {generando ? 'Generando…' : 'Generar de nuevo'}
+                  </button>
+                ) : (
+                  ' Recursos Humanos la puede generar de nuevo.'
+                )}
+              </span>
+            )}
+          </div>
+        )}
+        {avisoDeDocumento && <Mensaje tipo="exito">{avisoDeDocumento}</Mensaje>}
 
         {pendiente && modo === 'propia' && !cancelando && (
           <Mensaje tipo="info">

@@ -95,6 +95,8 @@ const PERMISOS: { clave: string; modulo: string; descripcion: string }[] = [
     modulo: 'solicitudes',
     descripcion: 'Ver las solicitudes y el calendario de todo el personal y registrar solicitudes en nombre de cualquier persona',
   },
+  // Horas extra (09/10): solo un registro que lleva RRHH, sin aprobacion.
+  { clave: 'horasExtra.registrar', modulo: 'horasExtra', descripcion: 'Registrar, consultar y anular las horas extra del personal' },
 ];
 
 // ---------------------------------------------------------------------
@@ -146,6 +148,7 @@ const ROLES: { nombre: string; descripcion: string; permisos: string[] | 'todos'
       'solicitudes.crear',
       'solicitudes.aprobar',
       'solicitudes.administrar',
+      'horasExtra.registrar',
     ],
   },
   {
@@ -257,6 +260,18 @@ const TIPOS_DOCUMENTO = [
     generadoPorSistema: true,
     formatosPermitidos: 'pdf',
   },
+  // Adjuntos de los tramites del Sprint 2 (se suben junto con el tramite).
+  { nombre: 'Justificante de solicitud', descripcion: 'Respaldo de una licencia o permiso (se adjunta al pedirlo)', generadoPorSistema: false, formatosPermitidos: 'pdf,jpg,png' },
+  { nombre: 'Boleta de incapacidad', descripcion: 'Boleta o dictamen médico de una incapacidad', generadoPorSistema: false, formatosPermitidos: 'pdf,jpg,png' },
+  { nombre: 'Certificado de capacitación', descripcion: 'Certificado o constancia de un curso o capacitación', generadoPorSistema: false, formatosPermitidos: 'pdf,jpg,png' },
+];
+
+// Tipos de incapacidad iniciales: RRHH agrega o desactiva desde Catalogos.
+const TIPOS_INCAPACIDAD = [
+  { nombre: 'Enfermedad', descripcion: 'Incapacidad por enfermedad común (CCSS o médico privado)' },
+  { nombre: 'Maternidad', descripcion: 'Licencia por maternidad (CCSS)' },
+  { nombre: 'Riesgo del trabajo', descripcion: 'Accidente o enfermedad laboral (INS)' },
+  { nombre: 'Cuido de familiar', descripcion: 'Licencia para cuidar a un familiar enfermo (CCSS)' },
 ];
 
 async function main(): Promise<void> {
@@ -344,6 +359,12 @@ async function main(): Promise<void> {
     });
   }
   console.log(`  Tipos de solicitud: ${TIPOS_SOLICITUD.length}`);
+
+  // --- Tipos de incapacidad (solo se crean; RRHH los administra) ---
+  for (const tipo of TIPOS_INCAPACIDAD) {
+    await prisma.tipoIncapacidad.upsert({ where: { nombre: tipo.nombre }, update: {}, create: tipo });
+  }
+  console.log(`  Tipos de incapacidad: ${TIPOS_INCAPACIDAD.length}`);
 
   // --- Cuenta del Super Administrador ---
   const correo = process.env.SEED_ADMIN_CORREO ?? 'informatica@munipalmares.go.cr';

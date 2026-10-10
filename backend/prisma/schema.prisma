@@ -70,6 +70,13 @@ enum estadoDocumentoGenerado {
 /// El saldo de vacaciones es la SUMA de estos movimientos; nunca se
 /// sobreescribe un campo. Los dias perdidos por exceder el tope quedan como
 /// un movimiento negativo de tipo vencimiento, no como un borrado.
+/// Modalidad de una capacitacion (Sprint 2).
+enum modalidadCapacitacion {
+  presencial
+  virtual
+  mixta
+}
+
 enum tipoMovimientoVacaciones {
   saldoInicial
   acumulacion
@@ -129,6 +136,9 @@ model usuario {
   movimientosVacacionesRegistrados movimientoVacaciones[]
   documentosRegistrados documento[]                 @relation("documentosRegistradosPorUsuario")
   documentosDadosDeBaja documento[]                 @relation("documentosDadosDeBajaPorUsuario")
+  incapacidadesRegistradas incapacidad[]            @relation("incapacidadesRegistradasPorUsuario")
+  capacitacionesRegistradas capacitacion[]          @relation("capacitacionesRegistradasPorUsuario")
+  horasExtraRegistradas horaExtra[]                 @relation("horasExtraRegistradasPorUsuario")
   movimientosBitacora  bitacoraCambio[]
 
   @@index([estado])
@@ -339,6 +349,9 @@ model funcionario {
   solicitudes       solicitud[]
   movimientosVacaciones movimientoVacaciones[]
   movimientosBitacora bitacoraCambio[]
+  incapacidades     incapacidad[]
+  capacitaciones    capacitacion[]
+  horasExtra        horaExtra[]
 
   @@index([cedula], map: "idxFuncionarioCedula")
   @@index([primerApellido, nombre], map: "idxFuncionarioNombre")
@@ -414,6 +427,8 @@ model documento {
   usuarioBaja     usuario?     @relation("documentosDadosDeBajaPorUsuario", fields: [usuarioBajaId], references: [id])
   comoJustificante solicitud[]  @relation("justificanteDeSolicitud")
   comoGenerado     solicitud[]  @relation("documentoGeneradoDeSolicitud")
+  comoBoleta       incapacidad[]
+  comoCertificado  capacitacion[]
 
   @@index([funcionarioId, tipoDocumentoId], map: "idxDocumentoFuncionarioTipo")
   @@index([funcionarioId, vigente], map: "idxDocumentoVigente")
@@ -497,6 +512,7 @@ model solicitud {
   @@index([aprobadorId, estado], map: "idxSolicitudBandeja")
   @@index([fechaInicio, fechaFin], map: "idxSolicitudCalendario")
   @@index([estadoDocumentoGenerado], map: "idxSolicitudDocumentoPendiente")
+  capacitacion capacitacion?
 }
 
 /// Feriados de ley y asuetos municipales. RRHH los carga por anio y los
@@ -592,4 +608,106 @@ model bitacoraCambio {
   @@index([fechaHora], map: "idxBitacoraFecha")
   @@index([usuarioId, fechaHora], map: "idxBitacoraUsuario")
   @@index([entidad, registroAfectadoId], map: "idxBitacoraRegistro")
+}
+
+// =====================================================================
+// 5. INCAPACIDADES, CAPACITACIONES Y HORAS EXTRA (Sprint 2, 09/10/2026)
+// =====================================================================
+
+/// Catalogo administrable desde "Catalogos de personal". Ningun tipo afecta
+/// las vacaciones: las incapacidades no interrumpen ni descuentan la acumulacion.
+model tipoIncapacidad {
+  id          String  @id @default(uuid()) @db.Char(36)
+  nombre      String  @unique @db.VarChar(120)
+  descripcion String? @db.VarChar(255)
+  activo      Boolean @default(true)
+
+  incapacidades incapacidad[]
+}
+
+/// Tabla propia y no una solicitud: no tiene aprobacion. La registra la
+/// persona o RRHH, con la boleta (documento del expediente) OBLIGATORIA.
+/// Se anula con motivo (nunca se borra).
+model incapacidad {
+  id                String   @id @default(uuid()) @db.Char(36)
+  consecutivo       String   @unique @db.VarChar(30)
+  funcionarioId     String   @db.Char(36)
+  usuarioRegistroId String   @db.Char(36)
+  tipoIncapacidadId String   @db.Char(36)
+  /// CCSS, INS, medico privado. Texto libre: solo se muestra.
+  entidadEmisora    String?  @db.VarChar(120)
+  numeroBoleta      String?  @db.VarChar(50)
+  fechaInicio       DateTime @db.Date
+  fechaFin          DateTime @db.Date
+  /// Dias naturales (la boleta cuenta todos los dias, tambien fines de semana).
+  cantidadDias      Decimal  @db.Decimal(5, 2)
+  observacion       String?  @db.VarChar(500)
+  documentoId       String   @db.Char(36)
+  fechaRegistro     DateTime @default(now())
+  vigente           Boolean  @default(true)
+  motivoAnulacion   String?  @db.VarChar(255)
+  usuarioAnulacionId String? @db.Char(36)
+  fechaAnulacion    DateTime?
+
+  funcionario     funcionario     @relation(fields: [funcionarioId], references: [id])
+  usuarioRegistro usuario         @relation("incapacidadesRegistradasPorUsuario", fields: [usuarioRegistroId], references: [id])
+  tipoIncapacidad tipoIncapacidad @relation(fields: [tipoIncapacidadId], references: [id])
+  documento       documento       @relation(fields: [documentoId], references: [id])
+
+  @@index([funcionarioId, fechaInicio], map: "idxIncapacidadFuncionario")
+  @@index([fechaInicio, fechaFin], map: "idxIncapacidadCalendario")
+}
+
+/// Registro documental de una capacitacion. Si choca con el horario
+/// (afectaJornada) lleva la solicitud que aprueba la jefatura.
+model capacitacion {
+  id                String                 @id @default(uuid()) @db.Char(36)
+  funcionarioId     String                 @db.Char(36)
+  nombre            String                 @db.VarChar(200)
+  institucion       String?                @db.VarChar(180)
+  modalidad         modalidadCapacitacion?
+  fechaInicio       DateTime?              @db.Date
+  fechaFin          DateTime?              @db.Date
+  cantidadHoras     Decimal?               @db.Decimal(6, 2)
+  afectaJornada     Boolean                @default(false)
+  solicitudId       String?                @unique @db.Char(36)
+  /// Certificado o constancia (opcional).
+  documentoId       String?                @db.Char(36)
+  usuarioRegistroId String?                @db.Char(36)
+  observacion       String?                @db.VarChar(500)
+  fechaRegistro     DateTime               @default(now())
+  vigente           Boolean                @default(true)
+
+  funcionario     funcionario @relation(fields: [funcionarioId], references: [id])
+  solicitud       solicitud?  @relation(fields: [solicitudId], references: [id])
+  documento       documento?  @relation(fields: [documentoId], references: [id])
+  usuarioRegistro usuario?    @relation("capacitacionesRegistradasPorUsuario", fields: [usuarioRegistroId], references: [id])
+
+  @@index([funcionarioId], map: "idxCapacitacionFuncionario")
+}
+
+/// Horas extra: solo un REGISTRO que lleva RRHH (decision del 30/09), sin
+/// aprobacion. Si la hora de fin es menor que la de inicio, termina al dia
+/// siguiente (jornada nocturna). Se anula con motivo (nunca se borra).
+model horaExtra {
+  id                String   @id @default(uuid()) @db.Char(36)
+  funcionarioId     String   @db.Char(36)
+  fecha             DateTime @db.Date
+  /// "HH:MM" (24 horas).
+  horaInicio        String   @db.VarChar(5)
+  horaFin           String   @db.VarChar(5)
+  cantidadHoras     Decimal  @db.Decimal(5, 2)
+  motivo            String?  @db.VarChar(500)
+  usuarioRegistroId String   @db.Char(36)
+  fechaRegistro     DateTime @default(now())
+  vigente           Boolean  @default(true)
+  motivoAnulacion   String?  @db.VarChar(255)
+  usuarioAnulacionId String? @db.Char(36)
+  fechaAnulacion    DateTime?
+
+  funcionario     funcionario @relation(fields: [funcionarioId], references: [id])
+  usuarioRegistro usuario     @relation("horasExtraRegistradasPorUsuario", fields: [usuarioRegistroId], references: [id])
+
+  @@index([funcionarioId, fecha], map: "idxHoraExtraFuncionario")
+  @@index([fecha], map: "idxHoraExtraFecha")
 }

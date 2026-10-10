@@ -20,9 +20,19 @@
  *
  * Los dias de vacaciones se descuentan SOLO al aprobarse; los permisos y las
  * capacitaciones no descuentan nunca. Los textos lo dicen segun el tipo.
+ *
+ * Sprint 2 (09/10): cuando el tipo lo necesita aparece un paso "Detalles"
+ * antes de revisar:
+ *   - Licencia (requiere justificante): el archivo, obligatorio.
+ *   - Incapacidad: NO es una solicitud (no se aprueba ni descuenta): tipo,
+ *     entidad, numero y la boleta, obligatoria. Cuenta dias naturales.
+ *   - Capacitacion que choca con el horario: datos del curso y el certificado
+ *     (opcional). Queda en el expediente y la solicitud va a la jefatura.
+ * La incapacidad y la capacitacion "con registro" solo las hace la propia
+ * persona o RRHH (una jefatura registra una capacitacion como solicitud simple).
  */
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import { Link, useNavigate } from 'react-router';
+import { Link, useNavigate, useSearchParams } from 'react-router';
 import { consultarFuncionarios, type FuncionarioEnLista } from '../../api/funcionarios';
 import {
   calcularSolicitud,
@@ -37,6 +47,17 @@ import {
   type VistaPrevia,
 } from '../../api/vacaciones';
 import { textoDelError } from '../../api/cliente';
+import {
+  consultarTiposDeIncapacidad,
+  crearSolicitudConJustificante,
+  registrarCapacitacion,
+  registrarIncapacidad,
+  type Capacitacion,
+  type Incapacidad,
+  type Modalidad,
+} from '../../api/ausencias';
+import { ZonaDeArchivo } from '../../componentes/ZonaDeArchivo';
+import { problemaDeArchivo, TAMANO_MAXIMO_DOCUMENTO, TODOS_LOS_FORMATOS } from '../../utilidades/archivos';
 import { Icono } from '../../componentes/Icono';
 import { Mensaje } from '../../componentes/Mensaje';
 import { Modal } from '../../componentes/Modal';
@@ -52,13 +73,23 @@ import { SelectorDeRango } from './SelectorDeRango';
 
 const ESPERA_DE_VISTA_PREVIA_MS = 350;
 
-type ClaveDePaso = 'persona' | 'tipo' | 'fechas' | 'revisar';
-const PASOS: Record<ClaveDePaso, { titulo: string; sub: string }> = {
+type ClaveDePaso = 'persona' | 'tipo' | 'fechas' | 'detalles' | 'revisar';
+const PASOS_BASE: Record<ClaveDePaso, { titulo: string; sub: string }> = {
   persona: { titulo: '¿Para quién?', sub: 'La persona' },
-  tipo: { titulo: '¿Qué necesita?', sub: 'Vacaciones o permiso' },
+  tipo: { titulo: '¿Qué necesita?', sub: 'Vacaciones, permiso…' },
   fechas: { titulo: '¿Cuándo?', sub: 'Primer y último día' },
+  detalles: { titulo: 'Detalles', sub: 'Datos y archivo' },
   revisar: { titulo: 'Revisar y enviar', sub: 'Resumen y motivo' },
 };
+
+/** Opcion "Incapacidad" del primer paso (no es un tipo de solicitud). */
+const ID_INCAPACIDAD = '__incapacidad';
+const COLOR_INCAPACIDAD = '#c0392b';
+
+type Resultado =
+  | { clase: 'solicitud'; solicitud: SolicitudDeLista }
+  | { clase: 'incapacidad'; incapacidad: Incapacidad; avisos: string[] }
+  | { clase: 'capacitacion'; capacitacion: Capacitacion };
 
 interface Problema {
   texto: string;
@@ -69,7 +100,8 @@ const dias = (n: number) => `${n} ${n === 1 ? 'día' : 'días'}`;
 
 /** Que pasa con el saldo segun el tipo (para no decir "se descuenta" de un permiso o una capacitacion). */
 function textoDelTipo(t: TipoDeSolicitud): string {
-  if (t.requiereJustificante) return 'Requiere adjuntar un justificante: muy pronto se podrá desde aquí.';
+  if (t.requiereJustificante) return 'Se adjunta el justificante (PDF, JPG o PNG). No descuenta vacaciones.';
+  if (t.clave === 'capacitacion') return 'Un curso en horario de trabajo: lo aprueba la jefatura y queda en su expediente. No descuenta vacaciones.';
   if (t.descuentaVacaciones) return 'Se descuenta de las vacaciones cuando se aprueba.';
   return `${t.descripcion ? `${t.descripcion}. ` : ''}No descuenta vacaciones.`;
 }
@@ -81,7 +113,50 @@ export function NuevaSolicitud({ paraOtraPersona = false }: { paraOtraPersona?: 
   const hoy = hoyEnCostaRica();
   const esRrhh = tienePermisos('solicitudes.administrar');
 
-  const claves: ClaveDePaso[] = paraOtraPersona ? ['persona', 'tipo', 'fechas', 'revisar'] : ['tipo', 'fechas', 'revisar'];
+  const tipos = useConsulta(consultarTiposDeSolicitud, []);
+  const [persona, setPersona] = useState<FuncionarioEnLista | null>(null);
+  // "?tipo=incapacidad" (desde Mis vacaciones o Incapacidades del personal) ya la deja elegida.
+  const [parametrosDeEntrada] = useSearchParams();
+  const [tipoId, setTipoId] = useState(parametrosDeEntrada.get('tipo') === 'incapacidad' ? ID_INCAPACIDAD : '');
+  const [inicio, setInicio] = useState('');
+  const [fin, setFin] = useState('');
+  const [motivo, setMotivo] = useState('');
+
+  const tipo = tipos.datos?.find((t) => t.id === tipoId);
+  // Incapacidad y capacitacion "con registro": la propia persona o RRHH.
+  const puedeRegistrarAusencias = !paraOtraPersona || esRrhh;
+  const esIncapacidad = tipoId === ID_INCAPACIDAD;
+  const esCapacitacion = tipo?.clave === 'capacitacion' && puedeRegistrarAusencias;
+  const pideJustificante = Boolean(tipo?.requiereJustificante);
+  const necesitaDetalles = esIncapacidad || esCapacitacion || pideJustificante;
+  const tiposDeIncapacidad = useConsulta(puedeRegistrarAusencias ? consultarTiposDeIncapacidad : null, [puedeRegistrarAusencias]);
+
+  /* --- Datos del paso "Detalles" --- */
+  const [archivo, setArchivo] = useState<File | null>(null);
+  const [problemaDelArchivo, setProblemaDelArchivo] = useState<string | null>(null);
+  const [tipoIncapacidadId, setTipoIncapacidadId] = useState('');
+  const [entidad, setEntidad] = useState('CCSS');
+  const [numeroBoleta, setNumeroBoleta] = useState('');
+  const [curso, setCurso] = useState('');
+  const [institucion, setInstitucion] = useState('');
+  const [modalidad, setModalidad] = useState<Modalidad | ''>('');
+  const [horas, setHoras] = useState('');
+  function elegirArchivo(a: File | undefined) {
+    if (!a) return;
+    const problema = problemaDeArchivo(a, TODOS_LOS_FORMATOS, TAMANO_MAXIMO_DOCUMENTO);
+    setProblemaDelArchivo(problema);
+    setArchivo(problema ? null : a);
+  }
+
+  const PASOS: Record<ClaveDePaso, { titulo: string; sub: string }> = {
+    ...PASOS_BASE,
+    detalles: esIncapacidad
+      ? { titulo: 'Datos de la boleta', sub: 'Tipo y archivo' }
+      : esCapacitacion
+        ? { titulo: 'Datos del curso', sub: 'Curso y certificado' }
+        : { titulo: 'Justificante', sub: 'El archivo' },
+  };
+  const claves: ClaveDePaso[] = [...(paraOtraPersona ? (['persona'] as ClaveDePaso[]) : []), 'tipo', 'fechas', ...(necesitaDetalles ? (['detalles'] as ClaveDePaso[]) : []), 'revisar'];
   const [indice, setIndice] = useState(0);
   const paso = claves[indice];
   const tituloDelPaso = useRef<HTMLHeadingElement>(null);
@@ -93,23 +168,22 @@ export function NuevaSolicitud({ paraOtraPersona = false }: { paraOtraPersona?: 
     tituloDelPaso.current?.focus();
   }, [indice]);
 
-  const tipos = useConsulta(consultarTiposDeSolicitud, []);
-  const [persona, setPersona] = useState<FuncionarioEnLista | null>(null);
-  const [tipoId, setTipoId] = useState('');
-  const [inicio, setInicio] = useState('');
-  const [fin, setFin] = useState('');
-  const [motivo, setMotivo] = useState('');
-
-  const tipo = tipos.datos?.find((t) => t.id === tipoId);
   const funcionarioId = paraOtraPersona ? persona?.id : (usuario?.funcionarioId ?? undefined);
   const nombreDeLaPersona = paraOtraPersona ? (persona ? nombreCompleto(persona) : null) : null;
-  // Fechas pasadas: solo Recursos Humanos las puede registrar.
-  const minimo = paraOtraPersona && esRrhh ? undefined : hoy;
+  // Fechas pasadas: solo Recursos Humanos las puede registrar (y una incapacidad, que suele llegar despues).
+  const minimo = (paraOtraPersona && esRrhh) || esIncapacidad ? undefined : hoy;
+  const diasNaturales = inicio && fin && fin >= inicio ? fechasDelRango(inicio, fin).length : 0;
 
   // Por omision, vacaciones.
   useEffect(() => {
     if (!tipoId && tipos.datos) setTipoId(tipos.datos.find((t) => t.clave === 'vacaciones')?.id ?? tipos.datos.find((t) => !t.requiereJustificante)?.id ?? '');
   }, [tipos.datos, tipoId]);
+
+  // Cambiar de tipo descarta el archivo elegido (un justificante no sirve de boleta).
+  useEffect(() => {
+    setArchivo(null);
+    setProblemaDelArchivo(null);
+  }, [tipoId]);
 
   /* --- Saldo de la persona (para mostrarlo mientras elige) --- */
   const saldo = useConsulta(
@@ -142,7 +216,7 @@ export function NuevaSolicitud({ paraOtraPersona = false }: { paraOtraPersona?: 
   const turno = useRef(0);
   const fechasListas = Boolean(inicio && fin && fin >= inicio);
   useEffect(() => {
-    if (!tipoId || !fechasListas || !funcionarioId) {
+    if (!tipoId || esIncapacidad || !fechasListas || !funcionarioId) {
       setVista(null);
       setErrorDePrevia(null);
       return;
@@ -160,7 +234,7 @@ export function NuevaSolicitud({ paraOtraPersona = false }: { paraOtraPersona?: 
         .finally(() => miTurno === turno.current && setCalculando(false));
     }, ESPERA_DE_VISTA_PREVIA_MS);
     return () => window.clearTimeout(espera);
-  }, [tipoId, inicio, fin, fechasListas, funcionarioId, paraOtraPersona]);
+  }, [tipoId, esIncapacidad, inicio, fin, fechasListas, funcionarioId, paraOtraPersona]);
 
   /* --- Problemas de cada paso --- */
   function problemasDe(clave: ClaveDePaso): Problema[] {
@@ -168,18 +242,26 @@ export function NuevaSolicitud({ paraOtraPersona = false }: { paraOtraPersona?: 
     if (clave === 'persona' && paraOtraPersona && !persona) lista.push({ texto: 'Elija a la persona para quien es la solicitud.', paso: 'persona' });
     if (clave === 'persona' && !paraOtraPersona && !funcionarioId) lista.push({ texto: 'Su cuenta no está ligada a un funcionario: no puede hacer solicitudes propias.', paso: 'tipo' });
     if (clave === 'tipo') {
-      if (!tipo) lista.push({ texto: 'Elija qué necesita (vacaciones, permiso...).', paso: 'tipo' });
-      else if (tipo.requiereJustificante) lista.push({ texto: `${tipo.nombre} necesita un justificante, y eso todavía no se puede adjuntar aquí.`, paso: 'tipo' });
+      if (!tipo && !esIncapacidad) lista.push({ texto: 'Elija qué necesita (vacaciones, permiso...).', paso: 'tipo' });
     }
     if (clave === 'fechas') {
       if (!fechasListas) lista.push({ texto: 'Elija en el calendario el primer y el último día.', paso: 'fechas' });
-      else if (calculando) lista.push({ texto: 'Espere un momento: se están calculando los días.', paso: 'fechas' });
+      else if (esIncapacidad) {
+        if (diasNaturales > 366) lista.push({ texto: 'Una incapacidad no puede pasar de 366 días: regístrela en partes, como vienen las boletas.', paso: 'fechas' });
+      } else if (calculando) lista.push({ texto: 'Espere un momento: se están calculando los días.', paso: 'fechas' });
       else if (errorDePrevia) lista.push({ texto: errorDePrevia, paso: 'fechas' });
       else if (vista && !vista.valida) lista.push({ texto: vista.problema?.mensaje ?? 'Con esas fechas no se puede hacer la solicitud.', paso: 'fechas' });
     }
+    if (clave === 'detalles' && necesitaDetalles) {
+      if (esIncapacidad && !tipoIncapacidadId) lista.push({ texto: 'Elija el tipo de incapacidad.', paso: 'detalles' });
+      if (esCapacitacion && curso.trim().length < 2) lista.push({ texto: 'Escriba el nombre del curso o capacitación.', paso: 'detalles' });
+      if (esCapacitacion && horas && !(Number(horas.replace(',', '.')) >= 0.5)) lista.push({ texto: 'Las horas deben ser un número de al menos 0,5.', paso: 'detalles' });
+      if ((esIncapacidad || pideJustificante) && !archivo)
+        lista.push({ texto: esIncapacidad ? 'Adjunte la boleta de la incapacidad (PDF, JPG o PNG).' : 'Adjunte el justificante (PDF, JPG o PNG).', paso: 'detalles' });
+    }
     return lista;
   }
-  const todosLosProblemas = (): Problema[] => (['persona', 'tipo', 'fechas'] as ClaveDePaso[]).flatMap(problemasDe);
+  const todosLosProblemas = (): Problema[] => (['persona', 'tipo', 'fechas', 'detalles'] as ClaveDePaso[]).flatMap(problemasDe);
 
   const [problemas, setProblemas] = useState<Problema[] | null>(null);
   function irA(clave: ClaveDePaso) {
@@ -198,21 +280,42 @@ export function NuevaSolicitud({ paraOtraPersona = false }: { paraOtraPersona?: 
 
   /* --- Enviar --- */
   const [enviando, setEnviando] = useState(false);
-  const [creada, setCreada] = useState<SolicitudDeLista | null>(null);
+  const [resultado, setResultado] = useState<Resultado | null>(null);
+  const creada = resultado?.clase === 'solicitud' ? resultado.solicitud : null;
   async function enviar() {
     const encontrados = todosLosProblemas();
     if (encontrados.length) return setProblemas(encontrados);
     setEnviando(true);
+    const aNombreDe = paraOtraPersona ? funcionarioId : undefined;
+    const texto = motivo.trim() || undefined;
     try {
-      setCreada(
-        await crearSolicitud({
-          tipoSolicitudId: tipoId,
-          fechaInicio: inicio,
-          fechaFin: fin,
-          motivo: motivo.trim() || undefined,
-          funcionarioId: paraOtraPersona ? funcionarioId : undefined,
-        }),
-      );
+      if (esIncapacidad) {
+        const r = await registrarIncapacidad(
+          { funcionarioId: aNombreDe, tipoIncapacidadId, fechaInicio: inicio, fechaFin: fin, entidadEmisora: entidad.trim() || undefined, numeroBoleta: numeroBoleta.trim() || undefined, observacion: texto },
+          archivo!,
+        );
+        setResultado({ clase: 'incapacidad', ...r });
+      } else if (esCapacitacion) {
+        const c = await registrarCapacitacion(
+          {
+            funcionarioId: aNombreDe,
+            nombre: curso.trim(),
+            institucion: institucion.trim() || undefined,
+            modalidad,
+            fechaInicio: inicio,
+            fechaFin: fin,
+            cantidadHoras: horas ? Number(horas.replace(',', '.')) : '',
+            afectaJornada: true,
+            observacion: texto,
+          },
+          archivo,
+        );
+        setResultado({ clase: 'capacitacion', capacitacion: c });
+      } else {
+        const datos = { tipoSolicitudId: tipoId, fechaInicio: inicio, fechaFin: fin, motivo: texto, funcionarioId: aNombreDe };
+        const s = pideJustificante ? await crearSolicitudConJustificante(datos, archivo!) : await crearSolicitud(datos);
+        setResultado({ clase: 'solicitud', solicitud: s });
+      }
     } catch (e) {
       setProblemas([{ texto: textoDelError(e), paso: 'revisar' }]);
     } finally {
@@ -254,7 +357,12 @@ export function NuevaSolicitud({ paraOtraPersona = false }: { paraOtraPersona?: 
       <div>
         <dt>Tipo</dt>
         <dd>
-          {tipo ? (
+          {esIncapacidad ? (
+            <>
+              <PuntoDeTipo color={COLOR_INCAPACIDAD} /> Incapacidad
+              {tipoIncapacidadId && ` · ${tiposDeIncapacidad.datos?.find((t) => t.id === tipoIncapacidadId)?.nombre ?? ''}`}
+            </>
+          ) : tipo ? (
             <>
               <PuntoDeTipo color={tipo.colorCalendario} /> {tipo.nombre}
             </>
@@ -267,7 +375,33 @@ export function NuevaSolicitud({ paraOtraPersona = false }: { paraOtraPersona?: 
         <dt>Fechas</dt>
         <dd>{fechasListas ? textoDeRango(inicio, fin) : <span className="falta">Sin elegir</span>}</dd>
       </div>
-      {fechasListas && (
+      {fechasListas && esIncapacidad && (
+        <div>
+          <dt>Días</dt>
+          <dd>
+            <b className="resumen-numero">{diasNaturales}</b> <small>naturales (cuentan fines de semana y feriados)</small>
+          </dd>
+        </div>
+      )}
+      {esIncapacidad && (
+        <div>
+          <dt>Aprobación</dt>
+          <dd>No necesita: queda registrada al enviarla. No descuenta vacaciones.</dd>
+        </div>
+      )}
+      {necesitaDetalles && archivo && (
+        <div>
+          <dt>{esIncapacidad ? 'Boleta' : esCapacitacion ? 'Certificado' : 'Justificante'}</dt>
+          <dd className="texto-cortado">{archivo.name}</dd>
+        </div>
+      )}
+      {esCapacitacion && curso.trim() && (
+        <div>
+          <dt>Curso</dt>
+          <dd>{curso.trim()}{institucion.trim() ? ` · ${institucion.trim()}` : ''}</dd>
+        </div>
+      )}
+      {fechasListas && !esIncapacidad && (
         <div>
           <dt>Días hábiles</dt>
           <dd aria-live="polite">
@@ -339,10 +473,9 @@ export function NuevaSolicitud({ paraOtraPersona = false }: { paraOtraPersona?: 
                 type="button"
                 className="tipo-solicitud"
                 aria-pressed={t.id === tipoId}
-                aria-disabled={t.requiereJustificante || undefined}
-                data-ayuda={t.requiereJustificante ? 'Todavía no se puede: requiere adjuntar un justificante' : `Elegir: ${t.nombre}`}
-                onClick={() => !t.requiereJustificante && setTipoId(t.id)}
-                onDoubleClick={() => !t.requiereJustificante && (setTipoId(t.id), setIndice((i) => i + 1))}
+                data-ayuda={`Elegir: ${t.nombre}`}
+                onClick={() => setTipoId(t.id)}
+                onDoubleClick={() => (setTipoId(t.id), setIndice((i) => i + 1))}
                 style={{ ['--ev' as string]: t.colorCalendario ?? '#6b7780' }}
               >
                 <PuntoDeTipo color={t.colorCalendario} />
@@ -350,6 +483,21 @@ export function NuevaSolicitud({ paraOtraPersona = false }: { paraOtraPersona?: 
                 <small>{textoDelTipo(t)}</small>
               </button>
             ))}
+          {puedeRegistrarAusencias && (
+            <button
+              type="button"
+              className="tipo-solicitud"
+              aria-pressed={esIncapacidad}
+              data-ayuda="Registrar una incapacidad con su boleta"
+              onClick={() => setTipoId(ID_INCAPACIDAD)}
+              onDoubleClick={() => (setTipoId(ID_INCAPACIDAD), setIndice((i) => i + 1))}
+              style={{ ['--ev' as string]: COLOR_INCAPACIDAD }}
+            >
+              <PuntoDeTipo color={COLOR_INCAPACIDAD} />
+              <b>Incapacidad</b>
+              <small>Con la boleta de la CCSS, el INS o un médico. No se aprueba ni descuenta vacaciones.</small>
+            </button>
+          )}
         </div>
       </>
     );
@@ -407,13 +555,110 @@ export function NuevaSolicitud({ paraOtraPersona = false }: { paraOtraPersona?: 
         </div>
       </div>
     );
+  } else if (paso === 'detalles') {
+    const etiquetaArchivo = esIncapacidad ? 'Boleta de la incapacidad' : esCapacitacion ? 'Certificado' : 'Justificante';
+    const archivoObligatorio = esIncapacidad || pideJustificante;
+    contenido = (
+      <div className="paso-detalles">
+        {esIncapacidad && (
+          <div className="detalles-rejilla">
+            <div className="campo">
+              <label htmlFor="tipo-incapacidad">Tipo de incapacidad</label>
+              <select id="tipo-incapacidad" value={tipoIncapacidadId} onChange={(e) => setTipoIncapacidadId(e.target.value)} aria-required="true">
+                <option value="">Elija…</option>
+                {(tiposDeIncapacidad.datos ?? []).map((t) => (
+                  <option key={t.id} value={t.id}>
+                    {t.nombre}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="campo">
+              <label htmlFor="entidad-incapacidad">
+                La emitió <small className="opcional">(opcional)</small>
+              </label>
+              <input id="entidad-incapacidad" list="entidades-incapacidad" maxLength={120} value={entidad} onChange={(e) => setEntidad(e.target.value)} />
+              <datalist id="entidades-incapacidad">
+                <option value="CCSS" />
+                <option value="INS" />
+                <option value="Médico privado" />
+              </datalist>
+            </div>
+            <div className="campo">
+              <label htmlFor="numero-boleta">
+                Número de boleta <small className="opcional">(opcional)</small>
+              </label>
+              <input id="numero-boleta" maxLength={50} value={numeroBoleta} onChange={(e) => setNumeroBoleta(e.target.value)} />
+            </div>
+          </div>
+        )}
+        {esCapacitacion && (
+          <div className="detalles-rejilla">
+            <div className="campo campo-ancho">
+              <label htmlFor="nombre-curso">Nombre del curso</label>
+              <input id="nombre-curso" maxLength={200} value={curso} onChange={(e) => setCurso(e.target.value)} aria-required="true" placeholder="Por ejemplo: Gestión de proyectos municipales" />
+            </div>
+            <div className="campo">
+              <label htmlFor="institucion-curso">
+                Institución <small className="opcional">(opcional)</small>
+              </label>
+              <input id="institucion-curso" maxLength={180} value={institucion} onChange={(e) => setInstitucion(e.target.value)} placeholder="INA, IFAM, UNED…" />
+            </div>
+            <div className="campo">
+              <label htmlFor="modalidad-curso">
+                Modalidad <small className="opcional">(opcional)</small>
+              </label>
+              <select id="modalidad-curso" value={modalidad} onChange={(e) => setModalidad(e.target.value as Modalidad | '')}>
+                <option value="">Sin indicar</option>
+                <option value="presencial">Presencial</option>
+                <option value="virtual">Virtual</option>
+                <option value="mixta">Mixta</option>
+              </select>
+            </div>
+            <div className="campo">
+              <label htmlFor="horas-curso">
+                Horas <small className="opcional">(opcional)</small>
+              </label>
+              <input id="horas-curso" inputMode="decimal" value={horas} onChange={(e) => setHoras(e.target.value)} placeholder="40" />
+            </div>
+          </div>
+        )}
+        <div className="campo">
+          <span className="etiqueta-campo" id="etiqueta-archivo">
+            {etiquetaArchivo} {!archivoObligatorio && <small className="opcional">(opcional: lo puede adjuntar después en su expediente)</small>}
+          </span>
+          <ZonaDeArchivo
+            id="archivo-detalles"
+            formatos={TODOS_LOS_FORMATOS}
+            tamanoMaximo={TAMANO_MAXIMO_DOCUMENTO}
+            archivo={archivo}
+            alElegir={elegirArchivo}
+            obligatorio={archivoObligatorio}
+            invalido={Boolean(problemaDelArchivo)}
+            descritoPor={problemaDelArchivo ? 'problema-archivo' : 'etiqueta-archivo'}
+          />
+          {problemaDelArchivo && (
+            <span className="msg-error" id="problema-archivo" role="alert">
+              {problemaDelArchivo}
+            </span>
+          )}
+          <span className="ayuda">
+            {esIncapacidad
+              ? 'Queda en su expediente. Su jefatura solo verá las fechas, no el tipo ni la boleta.'
+              : esCapacitacion
+                ? 'El certificado queda en su expediente.'
+                : 'Lo verá su jefatura al revisar la solicitud, y queda en su expediente.'}
+          </span>
+        </div>
+      </div>
+    );
   } else {
     contenido = (
       <div className="paso-revisar">
         <div className="card revisar-tarjeta solo-celular">{resumen}</div>
         <div className="campo">
           <label htmlFor="motivo-solicitud">
-            Motivo <small className="opcional">(opcional)</small>
+            {esIncapacidad || esCapacitacion ? 'Observación' : 'Motivo'} <small className="opcional">(opcional)</small>
           </label>
           <textarea
             id="motivo-solicitud"
@@ -421,11 +666,11 @@ export function NuevaSolicitud({ paraOtraPersona = false }: { paraOtraPersona?: 
             maxLength={500}
             value={motivo}
             onChange={(e) => setMotivo(e.target.value)}
-            placeholder={paraOtraPersona ? 'Por ejemplo: lo coordinó por teléfono, incapacidad que llegó tarde…' : 'Si quiere, cuéntele a su jefatura el motivo.'}
+            placeholder={esIncapacidad ? 'Algo que RRHH deba saber (no hace falta el diagnóstico).' : esCapacitacion ? 'Por ejemplo: la convocatoria salió por correo de la Alcaldía.' : paraOtraPersona ? 'Por ejemplo: lo coordinó por teléfono, incapacidad que llegó tarde…' : 'Si quiere, cuéntele a su jefatura el motivo.'}
           />
           <span className="ayuda">{motivo.length}/500</span>
         </div>
-        {tipo?.descuentaVacaciones && !vista?.autoaprobada && (
+        {tipo?.descuentaVacaciones && !esIncapacidad && !vista?.autoaprobada && (
           <p className="resumen-nota">
             <Icono nombre="info" tamano={15} /> Los días no se descuentan al enviar: solo se reservan, y se descuentan cuando la jefatura la aprueba. Si la rechaza o usted la cancela, no pierde nada.
           </p>
@@ -434,8 +679,8 @@ export function NuevaSolicitud({ paraOtraPersona = false }: { paraOtraPersona?: 
     );
   }
 
-  const textoSiguiente = esUltimo ? (enviando ? 'Enviando…' : paraOtraPersona ? 'Registrar solicitud' : 'Enviar solicitud') : 'Siguiente';
-  const ayudaSiguiente = esUltimo ? 'Enviar la solicitud (antes se revisa que no falte nada)' : `Ir al paso siguiente: ${PASOS[claves[indice + 1]].titulo}`;
+  const textoSiguiente = esUltimo ? (enviando ? 'Enviando…' : esIncapacidad ? 'Registrar incapacidad' : paraOtraPersona ? 'Registrar solicitud' : 'Enviar solicitud') : 'Siguiente';
+  const ayudaSiguiente = esUltimo ? (esIncapacidad ? 'Registrar la incapacidad (antes se revisa que no falte nada)' : 'Enviar la solicitud (antes se revisa que no falte nada)') : `Ir al paso siguiente: ${PASOS[claves[indice + 1]].titulo}`;
   const ayudaAtras = indice === 0 ? 'Salir sin enviar nada' : `Volver al paso anterior: ${PASOS[claves[indice - 1]].titulo}`;
 
   return (
@@ -448,7 +693,7 @@ export function NuevaSolicitud({ paraOtraPersona = false }: { paraOtraPersona?: 
               ? esRrhh
                 ? 'Registre vacaciones o un permiso a nombre de cualquier funcionario. Primero elija la persona.'
                 : 'Registre vacaciones o un permiso a nombre de una persona de su equipo. Queda aprobada al registrarla.'
-              : 'En tres pasos: qué necesita, cuándo, y revisar. Verá al instante cuántos días hábiles son.'}
+              : 'Por pasos: qué necesita, cuándo y revisar. Verá al instante cuántos días son. Aquí también se registran incapacidades y capacitaciones.'}
           </p>
         </div>
         {paraOtraPersona && persona && paso !== 'persona' && (
@@ -548,6 +793,39 @@ export function NuevaSolicitud({ paraOtraPersona = false }: { paraOtraPersona?: 
         </ModalExito>
       )}
 
+      {resultado?.clase === 'incapacidad' && (
+        <ModalExito titulo="Incapacidad registrada" alAceptar={() => navegar(paraOtraPersona ? '/incapacidades' : '/mis-vacaciones?pestana=incapacidades')}>
+          <p>
+            <b>{resultado.incapacidad.consecutivo}</b> · {textoDeRango(resultado.incapacidad.fechaInicio, resultado.incapacidad.fechaFin)} · {dias(resultado.incapacidad.cantidadDias)} naturales
+            {paraOtraPersona ? ` · ${resultado.incapacidad.funcionario.nombre}` : ''}.
+          </p>
+          <p>La boleta quedó en el expediente. No descuenta vacaciones y en el calendario se verá como "Incapacidad".</p>
+          {resultado.avisos.length > 0 && (
+            <Mensaje tipo="advert">
+              {resultado.avisos.map((a) => (
+                <span key={a} style={{ display: 'block' }}>
+                  {a}
+                </span>
+              ))}
+            </Mensaje>
+          )}
+        </ModalExito>
+      )}
+
+      {resultado?.clase === 'capacitacion' && (
+        <ModalExito titulo="Capacitación registrada" alAceptar={() => navegar(volverA)}>
+          <p>
+            <b>{resultado.capacitacion.nombre}</b> quedó en el expediente{resultado.capacitacion.certificadoId ? ', con su certificado' : ''}.
+          </p>
+          {resultado.capacitacion.solicitud && (
+            <p>
+              Como choca con el horario se creó la solicitud <b>{resultado.capacitacion.solicitud.consecutivo}</b>
+              {resultado.capacitacion.solicitud.estado === 'aprobada' ? ', que ya quedó aprobada.' : ', que queda pendiente: su jefatura la revisará.'}
+            </p>
+          )}
+        </ModalExito>
+      )}
+
       {!paraOtraPersona && !usuario?.funcionarioId && (
         <Mensaje tipo="info">
           Su cuenta no está ligada a un funcionario. Para registrar a nombre de alguien use <Link to="/registrar-solicitud">Solicitud para otra persona</Link>.
@@ -569,7 +847,7 @@ const POR_PAGINA = 6;
  * La jefatura ve su personal a cargo (el backend ya lo filtra); RRHH, a todo
  * el personal activo.
  */
-function ElegirPersona({ elegida, soloSuEquipo, alElegir }: { elegida: FuncionarioEnLista | null; soloSuEquipo: boolean; alElegir: (f: FuncionarioEnLista) => void }) {
+export function ElegirPersona({ elegida, soloSuEquipo, alElegir }: { elegida: FuncionarioEnLista | null; soloSuEquipo: boolean; alElegir: (f: FuncionarioEnLista) => void }) {
   const [texto, setTexto] = useState('');
   const [busqueda, setBusqueda] = useState('');
   const [pagina, setPagina] = useState(1);

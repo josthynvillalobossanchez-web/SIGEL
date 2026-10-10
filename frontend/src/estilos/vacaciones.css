@@ -515,3 +515,65 @@
 .paso-fechas .selector-dia { aspect-ratio: auto; height: 40px; min-height: 0; }
 @media (max-width: 719px) { .paso-fechas .selector-dia { height: 38px; } }
 .feriado-fecha[data-regla="unica"] { background: var(--info-bg); color: var(--info-fg); }
+
+/* ==================================================================
+   Cierre del Sprint 2 (09/10): paso "Detalles", documentos de la
+   solicitud, incapacidades, capacitaciones y horas extra.
+   Primero celular; lo ancho en @media (min-width).
+   ================================================================== */
+.detalles-rejilla { display: grid; grid-template-columns: minmax(0, 1fr); gap: 0 14px; }
+.campo-ancho { grid-column: 1 / -1; }
+@media (min-width: 720px) { .detalles-rejilla { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+.paso-detalles .zona-archivo { padding: 14px; }
+.texto-cortado { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%; }
+
+.fila-acciones { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 12px; }
+.fila-acciones .ayuda-detalle { margin: 0; flex: 1 1 240px; }
+
+/* Documentos dentro del detalle de una solicitud */
+.detalle-documentos { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 4px 0 12px; }
+.constancia-fallida { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 6px; font-size: 13px; color: var(--error-fg);
+  background: var(--error-bg); border-radius: var(--radio-md); padding: 4px 10px; }
+.btn-texto-peligro { color: var(--error-fg); }
+
+/* Capacitaciones del expediente */
+.lista-capacitaciones { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; grid-template-columns: minmax(0, 1fr); }
+@media (min-width: 900px) { .lista-capacitaciones { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.capacitacion { padding: 14px 16px; display: flex; flex-direction: column; gap: 6px; }
+.capacitacion-cab { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; }
+.capacitacion-cab b { font-size: 15px; }
+.capacitacion-datos, .capacitacion-solicitud { margin: 0; font-size: 13px; color: var(--texto-sec); display: flex; align-items: center; gap: 6px; }
+.capacitacion-acciones { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 4px; }
+
+/* Horas extra */
+.selector-mes { display: inline-flex; align-items: center; gap: 6px; }
+.selector-mes-nombre { min-width: 130px; text-align: center; text-transform: capitalize; }
+.totales-horas { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin: 4px 0 14px; }
+.totales-horas .total { padding: 12px 14px; display: flex; flex-direction: column; gap: 2px; }
+.totales-horas .total span { font-size: 12px; color: var(--texto-sec); }
+.totales-horas .total b { font-size: 22px; }
+.horas-columnas { display: grid; grid-template-columns: minmax(0, 1fr); gap: 14px; }
+@media (min-width: 1024px) { .horas-columnas { grid-template-columns: minmax(0, 2fr) minmax(0, 3fr); align-items: start; } }
+.horas-columnas h2 { font-size: 16px; margin: 0 0 10px; }
+.horas-por-persona, .horas-registros { padding: 14px 16px; }
+.horas-por-persona ul, .lista-horas { list-style: none; margin: 0; padding: 0; }
+.horas-por-persona button { width: 100%; display: flex; align-items: center; gap: 10px; padding: 8px; border: 1px solid transparent; border-radius: var(--radio-md);
+  background: none; color: var(--texto); text-align: left; cursor: pointer; font: inherit; }
+.horas-por-persona button:hover { background: var(--neutro-bg); }
+.horas-por-persona button[aria-pressed='true'] { border-color: var(--accion); background: var(--accion-tinte); }
+.horas-persona { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; font-size: 14px; }
+.horas-persona small { color: var(--texto-sec); }
+.horas-barra { height: 6px; border-radius: 3px; background: var(--neutro-bg); overflow: hidden; }
+.horas-barra i { display: block; height: 100%; background: var(--accion); border-radius: 3px; }
+.lista-horas li { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 4px 12px; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--borde); }
+.lista-horas li:last-child { border-bottom: 0; }
+.lista-horas li > .btn-texto { grid-column: 1 / -1; justify-self: end; }
+@media (min-width: 720px) { .lista-horas li { grid-template-columns: 120px minmax(0, 1fr) auto auto; } .lista-horas li > .btn-texto { grid-column: auto; } }
+.lista-horas li[data-anulada] { opacity: .6; }
+.lista-horas li[data-anulada] .hora-cantidad { text-decoration: line-through; }
+.hora-fecha, .hora-datos { display: flex; flex-direction: column; gap: 2px; font-size: 14px; min-width: 0; }
+.hora-fecha small, .hora-datos small { color: var(--texto-sec); font-size: 12.5px; }
+.hora-datos .anulada { color: var(--error-fg); }
+.resumen-horas { margin: 0 0 12px; font-size: 14px; color: var(--texto-sec); }
+.resumen-horas b { color: var(--texto); }
+.lateral .chip-persona, .modal .chip-persona { margin-bottom: 12px; }

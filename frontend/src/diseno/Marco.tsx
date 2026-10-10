@@ -267,7 +267,7 @@ function MarcoInterno() {
           })}
 
           <p style={{ marginTop: 'auto', padding: 12, fontSize: 11.5, color: 'var(--texto-sec)', lineHeight: 1.5 }}>
-            Incapacidades, horas extra y Talent Pool corresponden a los Sprints 2 y 3.
+            El Talent Pool llega en el Sprint 3.
           </p>
         </nav>
 

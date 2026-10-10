@@ -13,6 +13,6 @@ import { DiasNoLaborablesController, SolicitudesController, VacacionesController
 @Module({
   controllers: [VacacionesController, SolicitudesController, DiasNoLaborablesController],
   providers: [VacacionesService, SolicitudesService, DiasNoLaborablesService],
-  exports: [VacacionesService],
+  exports: [VacacionesService, SolicitudesService, DiasNoLaborablesService],
 })
 export class VacacionesModule {}

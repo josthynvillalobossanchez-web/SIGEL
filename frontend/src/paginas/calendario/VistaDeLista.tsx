@@ -59,7 +59,7 @@ export function VistaDeLista({ primero, ultimo, solicitudes, mostrarPersona, alA
                   style={{ ['--ev' as string]: colorDelTipo(s.tipo.color) }}
                   data-estado={s.estado}
                   data-resaltada={s.id === resaltar ? 'si' : undefined}
-                  data-ayuda="Abrir el detalle de la solicitud"
+                  data-ayuda={s.origen === 'incapacidad' ? 'Abrir el detalle de la incapacidad' : 'Abrir el detalle de la solicitud'}
                   aria-label={`${s.funcionario.nombre}, ${s.tipo.nombre}, ${textoDeRango(s.fechaInicio, s.fechaFin)}, ${s.estado}. Abrir detalle`}
                 >
                   <span className="cal-lista-franja" aria-hidden="true" />

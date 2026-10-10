@@ -38,10 +38,14 @@ Las horas extra **no** son solicitud (solo las registra RRHH). Las incapacidades
 | 2 | Saldo: acumulación por aniversario, tope de 2 periodos, vencimientos, saldo inicial al crear funcionario y ajuste discreto | **Hecha** (162 pruebas de API + 26 de cálculo) |
 | 3 | Solicitudes: crear (días hábiles sin feriados ni fines de semana, saldo suficiente), cancelar, aprobar/rechazar con motivo, jefatura inmediata, tope de jerarquía, a nombre de otra persona (RRHH de cualquiera; la jefatura de su personal, y queda aprobada) | **Hecha** |
 | 4 | Feriados | **Hecha**: catálogo que se repite solo cada año (cada año el mismo día, Jueves/Viernes Santo calculados con la Pascua, o solo una vez) y botón «Cargar feriados de ley» (migración `20261004000000_feriados_que_se_repiten`) |
-| 5 | Pantallas: Mis vacaciones (pestañas), nueva solicitud por pasos, solicitud para otra persona, bandeja de la jefatura, solicitudes de RRHH, ajuste del saldo en Editar funcionario | **Hecha** (falta el justificante de las licencias, en la etapa de permisos/licencias) |
+| 5 | Pantallas: Mis vacaciones (pestañas), nueva solicitud por pasos, solicitud para otra persona, bandeja de la jefatura, solicitudes de RRHH, ajuste del saldo en Editar funcionario | **Hecha** (el justificante de las licencias, el 09/10: ver §5) |
 | 6 | Calendario inteligente (tres alcances, colores por estado y tipo, varios eventos el mismo día) | **Hecha**: vistas Mes, Por persona y Lista; filtros de estado, persona y departamento; leyenda filtrable; lista del día; «Ver en calendario» resalta la solicitud |
-| 7 | Constancia de vacaciones en PDF al aprobar (`DocumentosService.registrarGenerado`) | Pendiente |
-| 8 | Pruebas de API y de navegador; documentación | **Hecha**: API 182 + 26; navegador `ui-vacaciones.py` (102 pasos, escritorio y celular, tema oscuro); CONTEXTO y GUIA al día |
+| 7 | Constancia de vacaciones en PDF al aprobar (`DocumentosService.registrarGenerado`) | **Hecha** (09/10, §5) |
+| 9 | Permisos y licencias con justificante | **Hecha** (09/10, §5) |
+| 10 | Incapacidades (boleta obligatoria, sin aprobación, en el calendario, catálogo de tipos) | **Hecha** (09/10, §5) |
+| 11 | Capacitaciones (expediente + certificado; si chocan con el horario, solicitud a la jefatura) | **Hecha** (09/10, §5) |
+| 12 | Horas extra (registro de RRHH con totales por persona y mes) | **Hecha** (09/10, §5) |
+| 8 | Pruebas de API y de navegador; documentación | **Hecha**: API `pruebas-vacaciones` 187, `pruebas-ausencias` 106, `pruebas-documentos` 216, cálculo 26; navegador `ui-vacaciones.py` (103) y `ui-ausencias.py` (44), escritorio y celular; CONTEXTO y GUIA al día |
 
 ## 4. Ajustes del 01/10/2026 (revisión de Josthyn con las pantallas)
 
@@ -88,3 +92,42 @@ Las horas extra **no** son solicitud (solo las registra RRHH). Las incapacidades
     solo queda lo que RRHH cargue como saldo inicial. La pantalla ahora separa «Saldo inicial» de «Ganados» y,
     en el primer año, explica cuándo llegan los primeros días.
 16. «Ver en calendario» no aparece en solicitudes rechazadas o canceladas (no se pintan en el calendario).
+
+## 5. Cierre del Sprint 2 (09/10/2026)
+
+Migración `20261009000000_incapacidades_capacitaciones_horas_extra` (tablas `tipoIncapacidad`, `incapacidad`,
+`capacitacion`, `horaExtra`; 4 tipos de incapacidad; 3 tipos de documento de trámite; permiso
+`horasExtra.registrar` para SA y Administrador). Dependencia nueva del backend: `pdf-lib` 1.17.1.
+Módulo nuevo `backend/src/ausencias/`.
+
+Antes, Josthyn pidió confirmar dos reglas, y las pruebas las verifican: **(a)** al registrar a alguien
+con años de servicio, el sistema **no** le da días por los años anteriores; solo cuenta el saldo inicial
+que carga RRHH, y los días llegan en cada aniversario posterior al registro. **(b)** No se pueden acumular
+más de **dos periodos**: lo que exceda vence (movimiento «vencimiento», con aviso 60 días antes).
+
+1. **Constancia de vacaciones en PDF.** Se genera sola al aprobar unas vacaciones (también las que se
+   aprueban al crearse): logo de la Municipalidad y de SINERGIA, datos, días y un código de verificación.
+   Queda en el expediente como documento generado por SINERGIA. Si la solicitud se cancela, la constancia
+   se da de baja. Si la generación falla, la solicitud no se cae: queda «fallido» y RRHH (o quien aprobó)
+   la genera de nuevo desde el detalle. Los permisos no generan constancia.
+2. **Justificante.** Las licencias piden el archivo en un paso «Justificante» de la nueva solicitud
+   (`POST /solicitudes/con-justificante`). Antes de guardar el archivo se revisan fechas, traslapes y
+   saldo: si algo falla, no queda nada guardado. La jefatura lo ve desde la bandeja.
+3. **Incapacidades.** No son solicitudes: no se aprueban ni descuentan vacaciones. Las registra la persona
+   (opción «Incapacidad» de la nueva solicitud o la pestaña Incapacidades de Mis vacaciones) o RRHH a nombre
+   de cualquiera. La **boleta es obligatoria** y queda en el expediente. Se cuentan días naturales. En el
+   calendario salen como «Incapacidad» (rojo). **La jefatura solo ve las fechas**; el tipo, la entidad y la
+   boleta los ven la persona y RRHH. Bloquean vacaciones esos días (`INCAPACIDAD_TRASLAPADA`) y avisan si
+   coinciden con otra solicitud. RRHH tiene «Incapacidades del personal» (filtros y búsqueda por boleta) y
+   anula con motivo. Los tipos son un catálogo más en «Catálogos de personal».
+4. **Capacitaciones.** Pestaña Capacitaciones del expediente: nombre, institución, modalidad, fechas,
+   horas y certificado opcional (se adjunta después si hace falta). Las registra la persona o RRHH. Si
+   **choca con el horario**, se crea la solicitud CAP para la jefatura (desde la nueva solicitud, tipo
+   Capacitación, con el paso «Datos del curso», o con la casilla del expediente).
+5. **Horas extra.** Solo RRHH, sin aprobación: persona → día y horas (acepta turnos que pasan la
+   medianoche, máximo 16 h, sin días futuros ni traslapes). Totales del mes y reparto por persona; un
+   error se anula con motivo.
+6. **Tipos de documento «de trámite»** (justificante, boleta, certificado): se adjuntan solo desde su
+   trámite. No aparecen en «Subir documento» y no se pueden renombrar ni inactivar (sus formatos sí se
+   ajustan).
+

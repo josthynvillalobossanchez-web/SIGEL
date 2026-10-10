@@ -95,7 +95,7 @@ comunes, está en [`docs/GUIA_DESARROLLO.md`](docs/GUIA_DESARROLLO.md).
 
 ## Estado del proyecto
 
-Sprint 1 en desarrollo: autenticación y usuarios, funcionarios y expediente, y gestión documental. Las fases de análisis, diseño y prototipado están concluidas y el prototipo de interfaces fue aprobado por el supervisor.
+Sprint 1 concluido (autenticación y usuarios, funcionarios y expediente, gestión documental). Sprint 2 terminado el 09/10/2026: vacaciones con constancia en PDF, permisos y licencias con justificante, incapacidades, capacitaciones y horas extra. Las fases de análisis, diseño y prototipado están concluidas y el prototipo de interfaces fue aprobado por el supervisor.
 
 Al 25 de setiembre de 2026 el backend tiene terminada la primera épica: autenticación y seguridad (inicio de sesión con Argon2id, sesión en cookie protegida, bloqueo por intentos fallidos, límite de peticiones por IP, autorización por permisos granulares, cambio obligatorio de contraseña, recuperación por correo, manejo uniforme de errores y bitácora de auditoría), gestión de usuarios (consulta, creación de cuentas ligadas a funcionarios, cambio de estado y de correo, asignación de roles y permisos individuales con suplencias que vencen solas) y administración de roles, todo bajo reglas de reparto de acceso que impiden dar o quitar lo que uno no tiene. El frontend cubre toda la primera épica: inicio de sesión, recuperación de contraseña, primer ingreso, menú según permisos, "Mi cuenta", administración de usuarios (crear, roles con suplencias, permisos individuales, estado y correo) y administración de roles. Siguen las épicas de funcionarios y gestión documental.
 

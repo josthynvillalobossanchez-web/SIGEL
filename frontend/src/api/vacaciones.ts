@@ -34,7 +34,14 @@ export interface SolicitudDeLista {
   motivoRechazo: string | null;
   fechaResolucion: string | null;
   tieneConstancia: boolean;
+  /** Documento de la constancia en el expediente (se abre con /documentos/:id/archivo). */
+  constanciaId: string | null;
+  /** Documento del justificante (se abre con /solicitudes/:id/justificante). */
+  justificanteId: string | null;
+  /** 'noAplica' | 'pendiente' | 'generado' | 'fallido' */
   estadoDocumentoGenerado: string;
+  /** En el calendario tambien vienen las incapacidades (no son solicitudes). */
+  origen?: 'solicitud' | 'incapacidad';
   tipo: { id: string; clave: string; nombre: string; color: string | null; descuentaVacaciones: boolean };
   funcionario: { id: string; nombre: string; departamento: string | null };
   solicitadaPor: { id: string; nombre: string | null };
@@ -92,6 +99,8 @@ export interface VistaPrevia {
   autoaprobada?: boolean;
   /** La registra la jefatura de la persona (por eso queda aprobada). */
   laApruebaSuJefatura?: boolean;
+  /** El tipo pide justificante y todavia no se adjunto (se pide en el paso "Detalles"). */
+  faltaJustificante?: boolean;
 }
 
 export interface DatosDeSolicitud {

@@ -237,7 +237,7 @@ contraseña temporal.
 | `GET/PUT/DELETE /api/funcionarios/:id/foto` | ella misma o RRHH | Fotografía de perfil (JPG o PNG, máximo 5 MB, cifrada) |
 | `GET /api/salud` | público | Comprobación del servicio |
 
-**Falta en backend:** los documentos que generará el sistema de verdad (constancia de vacaciones en el Sprint 2, curriculum en el Sprint 3); la pieza que los guarda (`DocumentosService.registrarGenerado`) ya está probada.
+**Documentos que genera el sistema:** la constancia de vacaciones en PDF (Sprint 2, 09/10, `ausencias/constancia-pdf.ts` con `pdf-lib`). Falta el curriculum del Talent Pool (Sprint 3).
 
 ### Estado del frontend (desde el 25/09)
 
@@ -342,7 +342,7 @@ Decisiones de funcionarios (27/09; se pueden revertir):
 
 Expediente (28/09): página `/funcionarios/:id/expediente` y `/mi-expediente` como `pgExpediente` (perfil, aviso de información
 sensible, pestañas Información personal · Información laboral · Documentos · Capacitaciones · Historial laboral).
-Capacitaciones muestra su explicación hasta el Sprint 2; Documentos se completó en la épica 3.
+Capacitaciones lista los cursos con su certificado (Sprint 2, 09/10); Documentos se completó en la épica 3.
 
 **Decisiones de la gestión documental (épica 3, 30/09):**
 - **Cifrado**: todo archivo se guarda cifrado con **AES-256-GCM** en `backend/archivos/` (`expedientes/<funcionario>/<uuid>.enc`, `fotos/...`); la base solo tiene la ruta relativa, el hash SHA-256 y los datos. La llave maestra va en el `.env` (`ARCHIVOS_LLAVE`, 32 bytes en base64; el backend no arranca sin ella) y se amarra a la ruta de cada archivo (copiarlo a otra ruta lo vuelve ilegible). Joseph / TI guardan una **copia aparte**: perder la llave es perder todos los documentos (GUIA §10.6). Hay versión de llave para rotarla; la herramienta `npm run archivos:recifrar` recifra lo viejo con la llave nueva (GUIA §10.6).
@@ -716,7 +716,7 @@ Estas ya están validadas. **Trátelas como verdad** salvo que Josthyn diga lo c
 - **Todo usuario puede hacer solicitudes** (`solicitudes.crear`, en el autoservicio de
   Solicitante; por lo tanto también en Aprobador y Administrador): vacaciones, permisos,
   incapacidades con comprobante, capacitaciones que chocan con el horario. Es la razón principal
-  del sistema. Las pantallas llegan en el Sprint 2.
+  del sistema. Las pantallas se hicieron en el Sprint 2.
 - **El Aprobador incluye todo lo del Solicitante** (es jefatura y también pide sus vacaciones).
 - **Nombres realistas**: nombre hasta 50 caracteres y 5 palabras; cada apellido hasta 40 y 4
   palabras; solo letras, espacios, apóstrofo, guion y punto; no se acepta la misma letra 3 veces
@@ -844,6 +844,19 @@ No volver a preguntarlas. El detalle de cómo se despliega está en `GUIA_DESARR
   `editar`. Solo la jefatura queda limitada a su personal.
 - **Los días se ganan al cumplir cada año de servicio**, nunca al registrarse (solo cuenta el saldo inicial que
   cargue RRHH): 15 días por año los primeros 6 años y 20 después (régimen general) o 30 (anterior).
+
+### Decisiones del 09/10/2026 (cierre del Sprint 2)
+
+- **Confirmado con pruebas:** registrar a alguien con años de servicio no le da días por esos años (solo
+  el saldo inicial que carga RRHH); y nadie acumula más de **dos periodos** (lo que exceda vence).
+- **Constancia de vacaciones en PDF** al aprobar; se da de baja si se cancela; si falla, RRHH la genera de nuevo.
+- **Incapacidades**: sin aprobación, boleta obligatoria, días naturales, no descuentan. La jefatura solo ve
+  las fechas (privacidad de datos médicos). Bloquean vacaciones esos días. RRHH anula con motivo. Tipos en
+  «Catálogos de personal».
+- **Licencias con justificante** en la misma nueva solicitud (paso «Justificante»).
+- **Capacitaciones** en el expediente con certificado; si chocan con el horario, solicitud CAP a la jefatura.
+- **Horas extra**: registro de RRHH con totales por persona y mes; se anulan con motivo.
+- Tipos de documento de trámite (justificante, boleta, certificado): solo desde su trámite.
 
 ### Convenciones de la base de datos
 

@@ -382,7 +382,7 @@ aparece marcado como público, exige sesión.
 | `GET /vacaciones/saldo/:funcionarioId/movimientos` | `solicitudes.crear` | Historial (saldo inicial, ganados, disfrutados, devoluciones, vencidos, ajustes) |
 | `POST /vacaciones/saldo/:funcionarioId/ajuste` | `funcionarios.editar` | `{ dias, motivo }`; si no hay saldo cargado, lo carga |
 | `GET /solicitudes/tipos` | `solicitudes.crear` | Catálogo (color, `descuentaVacaciones`, `requiereJustificante`) |
-| `POST /solicitudes/calcular` | `solicitudes.crear` | Vista previa sin guardar: días hábiles, desglose, saldo, `autoaprobada`, `laApruebaSuJefatura`, o `problema` |
+| `POST /solicitudes/calcular` | `solicitudes.crear` | Vista previa sin guardar: días hábiles, desglose, saldo, `autoaprobada`, `laApruebaSuJefatura`, `faltaJustificante` (no lo exige: se adjunta después), o `problema` |
 | `POST /solicitudes` | `solicitudes.crear` | `{ tipoSolicitudId, fechaInicio, fechaFin, motivo?, funcionarioId? }`. A nombre de otra persona: RRHH (`solicitudes.administrar`) de cualquiera; la jefatura (`solicitudes.aprobar`) de su personal a cargo, y queda aprobada |
 | `GET /solicitudes/mias` · `/bandeja` · `/todas` | `solicitudes.crear` · `solicitudes.aprobar` · `solicitudes.administrar` | `?estado=&tipoSolicitudId=&departamentoId=&busqueda=&desde=&hasta=&pagina=&tamano=` |
 | `GET /solicitudes/calendario` | `solicitudes.crear` | `?desde=&hasta=&alcance=propio\|equipo\|todos&departamentoId=`. "equipo" = personal a cargo + la propia jefatura |
@@ -391,6 +391,15 @@ aparece marcado como público, exige sesión.
 | `POST /solicitudes/:id/cancelar` | `solicitudes.crear` | Pendiente sin abrir; o aprobada por la propia persona (tope) antes de empezar: devuelve los días (`SOLICITUD_YA_INICIADA`) |
 | `GET /dias-no-laborables` · `GET /dias-no-laborables/fechas?anio=` | `solicitudes.crear` | Catálogo de feriados (`regla`: `fija` con `mes`/`dia`, `unica` con `fecha`, `juevesSanto`, `viernesSanto`; trae `proxima`) · fechas de un año ya calculadas |
 | `POST /dias-no-laborables` · `PATCH /:id` · `DELETE /:id` · `POST /dias-no-laborables/de-ley` | `catalogos.editar` | `{ nombre, regla, mes?, dia?, fecha? }` (`FECHA_YA_REGISTRADA`); `de-ley` agrega los feriados de ley de Costa Rica que falten |
+| `POST /solicitudes/con-justificante` | `solicitudes.crear` | Multipart: campos de la solicitud + archivo `justificante`. Revisa todo antes de guardar el archivo |
+| `GET /solicitudes/:id/justificante` | `solicitudes.crear` | El archivo (quien puede ver la solicitud; `SIN_JUSTIFICANTE`) |
+| `POST /solicitudes/:id/constancia` | `solicitudes.crear` | Genera de nuevo una constancia fallida: RRHH o quien aprobó (`CONSTANCIA_NO_APLICA`) |
+| `GET /incapacidades/tipos` · `/mias` · `/:id` | `solicitudes.crear` | Tipos activos · las propias · detalle (la jefatura recibe `tipo`, `entidadEmisora`, `numeroBoleta` y `boletaId` en null) |
+| `GET /incapacidades` · `POST /incapacidades/:id/anular` | `solicitudes.administrar` | Todas (`?busqueda=&tipoIncapacidadId=&departamentoId=&desde=&hasta=&estado=vigentes\|anuladas\|todas`) · anular con `{ motivo }` |
+| `POST /incapacidades` | `solicitudes.crear` | Multipart con archivo `boleta` (obligatorio). De otra persona solo RRHH (`INCAPACIDAD_AJENA`). Responde `{ incapacidad, avisos }` |
+| `GET /capacitaciones?funcionarioId=` | `expediente.ver` | Las de esa persona (propias o con `expediente.verTodos`) |
+| `POST /capacitaciones` · `/:id/certificado` · `/:id/baja` | `solicitudes.crear` | Multipart con archivo `certificado` (opcional). `afectaJornada=true` + fechas crea la solicitud CAP. De otra persona, solo RRHH (`CAPACITACION_AJENA`) |
+| `GET /horas-extra` · `POST /horas-extra` · `POST /horas-extra/:id/anular` | `horasExtra.registrar` | `?mes=AAAA-MM&funcionarioId=&departamentoId=&busqueda=&incluirAnuladas=` → totales, `porPersona` y registros · `{ funcionarioId, fecha, horaInicio, horaFin, motivo? }` (`HH:MM`) |
 
 `GET /usuarios/:id` trae además `permisosEfectivos` (lo que la cuenta puede hacer de verdad),
 `puedoModificar` y `motivoNoModificable` (`CUENTA_PROPIA` o `CUENTA_CON_MAYOR_ACCESO`) respecto
@@ -459,6 +468,11 @@ Códigos de error más frecuentes:
 | `BAJA_NO_PERMITIDA` | No puede dar de baja ese documento (lo subió otra persona, lo generó SINERGIA o ya está en baja) |
 | `TIPO_DOCUMENTO_INVALIDO` / `TIPO_DOCUMENTO_INACTIVO` / `TIPO_GENERADO_POR_SISTEMA` / `TIPO_NO_ACEPTA_EL_FORMATO` | Tipo inexistente / inactivo / lo genera SINERGIA y no se elige a mano / no acepta el formato del archivo |
 | `TIPO_DOCUMENTO_NO_ENCONTRADO` / `TIPO_DE_SISTEMA` | No existe ese tipo / se quiso cambiar o inactivar un tipo que genera SINERGIA |
+| `TIPO_DE_TRAMITE` | Justificante, boleta o certificado: se adjuntan desde su trámite; no se suben a mano, ni se renombran o inactivan |
+| `JUSTIFICANTE_REQUERIDO` / `SIN_JUSTIFICANTE` / `CONSTANCIA_NO_APLICA` | La licencia necesita su archivo / la solicitud no tiene justificante / no hay constancia que generar de nuevo |
+| `INCAPACIDAD_TRASLAPADA` / `INCAPACIDAD_AJENA` / `INCAPACIDAD_YA_ANULADA` / `TIPO_INCAPACIDAD_INVALIDO` | Coincide con una incapacidad vigente / solo RRHH registra por otra persona / ya estaba anulada / tipo inexistente o inactivo |
+| `CAPACITACION_AJENA` / `FECHAS_REQUERIDAS` | No la puede registrar o modificar / choca con el horario pero no trae fechas |
+| `FECHA_FUTURA` / `HORAS_NO_VALIDAS` / `HORAS_TRASLAPADAS` | Horas extra: día que no ha pasado / iguales o más de 16 h / se cruza con otro registro (también los del día anterior que pasan la medianoche) |
 | `SIN_FOTOGRAFIA` / `CUENTA_CON_MAYOR_ACCESO` | La persona no tiene foto / no se cambia la foto de una cuenta con más acceso |
 | `CUENTA_SIN_FUNCIONARIO` / `CORREO_INSTITUCIONAL_EN_USO` | Mi cuenta: cuenta técnica sin datos personales / correo de otra persona |
 
@@ -576,11 +590,13 @@ Nada de páginas largas con scroll en PC.
 | `/mi-cuenta` | con sesión | Perfil; pestañas Mis datos personales (editable), Datos laborales (editable solo con `funcionarios.editar`) y Acceso y seguridad |
 | `/calendario` (`?alcance=`, `?vista=mes\|persona\|lista`, `?mes=AAAA-MM`, `?estado=`, `?persona=`, `?departamento=`, `?resaltar=<id>`) | con sesión | Calendario inteligente: Mi calendario / Mi equipo / Todo el personal según el acceso |
 | `/calendario/feriados` | `catalogos.editar` | Catálogo de feriados que se repiten solos (cada año, Semana Santa, una vez) y «Cargar feriados de ley» (subsección de Calendario; `/feriados` redirige) |
-| `/mis-vacaciones` (`?pestana=solicitudes\|historial`) | `solicitudes.crear` | Pestañas Mi saldo, Mis solicitudes e Historial del saldo |
-| `/mis-vacaciones/nueva` | `solicitudes.crear` | Nueva solicitud por pasos (Qué · Cuándo · Revisar) |
+| `/mis-vacaciones` (`?pestana=solicitudes\|incapacidades\|historial`) | `solicitudes.crear` | Pestañas Mi saldo, Mis solicitudes, Incapacidades e Historial del saldo |
+| `/mis-vacaciones/nueva` (`?tipo=incapacidad`) | `solicitudes.crear` | Nueva solicitud por pasos (Qué · Cuándo · [Detalles] · Revisar). «Detalles» aparece para la licencia (justificante), la incapacidad (boleta) y la capacitación (datos del curso) |
 | `/registrar-solicitud` | `solicitudes.administrar` o `solicitudes.aprobar` | Solicitud para otra persona (Quién · Qué · Cuándo · Revisar); `/solicitudes/nueva` redirige |
 | `/bandeja` (`?estado=`) | `solicitudes.aprobar` | Bandeja de la jefatura: tarjetas o lista, choques marcados, detalle con Aprobar/Rechazar y Ver en calendario |
 | `/solicitudes` (`?estado=&tipo=&departamento=&busqueda=&desde=&hasta=`) | `solicitudes.administrar` | Todas las solicitudes (RRHH), lista compacta o tarjetas |
+| `/incapacidades` | `solicitudes.administrar` | Incapacidades del personal: filtros, búsqueda por boleta, detalle con boleta y Anular |
+| `/horas-extra` (`?mes=&persona=&departamento=&anuladas=si`) | `horasExtra.registrar` | Horas extra: mes, totales, por persona y registros; Registrar (persona → día y horas) y Anular |
 
 `/usuarios/:id` y `/roles/:id` (sin "editar") abren la ventana de consulta.
 
@@ -598,6 +614,7 @@ Nada de páginas largas con scroll en PC.
 | `Pestanas` + `PanelDePestana` | Pestañas accesibles (flechas, Inicio, Fin) |
 | `BotonIcono`, `BotonConAyuda` | Botones con ayuda y **bloqueo explicado** (`bloqueadoPor="motivo"`) |
 | `ModalExito` | "Se hizo con éxito" + Aceptar (y la página vuelve a la lista) |
+| `VisorDeArchivo` | Ver un archivo que llega como Blob (constancia, boleta, certificado, justificante) con Descargar |
 | `GestorDeAyudas` | Muestra el globo de cualquier elemento con `data-ayuda="texto"` (o, si falta, el `aria-label` del botón). **Todo botón lleva `data-ayuda`**; los de solo icono, además `aria-label` |
 | `TarjetaDePerfil` | Tarjeta con degradado (foto/iniciales, nombre, chips, acciones, datos rápidos): Mi cuenta y expediente |
 | `Paginacion` | "Mostrando 1–20 de 57 …" y Anterior/Siguiente de las listas |

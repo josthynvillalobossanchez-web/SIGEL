@@ -147,6 +147,12 @@ export function TiposDeDocumento() {
                         <span className="chip chip-info">Lo genera SINERGIA</span>
                       </>
                     )}
+                    {t.deTramite && (
+                      <>
+                        {' '}
+                        <span className="chip chip-neutro" data-ayuda="Se adjunta dentro de su trámite, no desde «Subir documento»">De trámite</span>
+                      </>
+                    )}
                   </td>
                   <td data-etiqueta="Descripción">{t.descripcion ?? <span className="sec-dato">Sin descripción</span>}</td>
                   <td data-etiqueta="Formatos">
@@ -173,7 +179,7 @@ export function TiposDeDocumento() {
                         peligro
                         texto="Inactivar tipo (deja de poder elegirse)"
                         sobre={t.nombre}
-                        bloqueadoPor={t.generadoPorSistema ? 'lo genera SINERGIA y no se puede inactivar.' : null}
+                        bloqueadoPor={t.generadoPorSistema ? 'lo genera SINERGIA y no se puede inactivar.' : t.deTramite ? 'lo usa un trámite de SINERGIA y no se puede inactivar.' : null}
                         alHacerClic={() => setVentana({ tipo: 'estado', elemento: t })}
                       />
                     ) : (

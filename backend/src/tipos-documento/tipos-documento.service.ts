@@ -5,6 +5,7 @@ import { BitacoraService } from '../bitacora/bitacora.service.js';
 import type { Prisma } from '../generated/prisma/client.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import type { CrearTipoDocumentoDto, EditarTipoDocumentoDto } from './dto/tipo-documento.dto.js';
+import { TIPOS_DE_TRAMITE, esDeTramite } from './tipos-de-tramite.js';
 
 /** Un tipo de documento tal como lo devuelve la API. */
 export interface TipoDeDocumento {
@@ -14,6 +15,8 @@ export interface TipoDeDocumento {
   activo: boolean;
   /** true = lo genera SINERGIA (solo se puede renombrar). */
   generadoPorSistema: boolean;
+  /** true = se sube dentro de un tramite (justificante, boleta, certificado): no se elige en "Subir documento", ni se renombra o inactiva. */
+  deTramite: boolean;
   /** Formatos de archivo que acepta. */
   formatos: Formato[];
   /** Documentos VIGENTES de este tipo. */
@@ -40,6 +43,7 @@ function aTipo(fila: Fila): TipoDeDocumento {
     descripcion: fila.descripcion,
     activo: fila.activo,
     generadoPorSistema: fila.generadoPorSistema,
+    deTramite: esDeTramite(fila.nombre),
     formatos: leerFormatos(fila.formatosPermitidos),
     cantidadDocumentos: fila._count.documentos,
   };
@@ -74,7 +78,7 @@ export class TiposDocumentoService {
     const filas = await this.prisma.tipoDocumento.findMany({
       where: {
         ...(soloActivos || soloParaSubir ? { activo: true } : {}),
-        ...(soloParaSubir ? { generadoPorSistema: false } : {}),
+        ...(soloParaSubir ? { generadoPorSistema: false, nombre: { notIn: [...TIPOS_DE_TRAMITE] } } : {}),
       },
       select: SELECCION,
       orderBy: { nombre: 'asc' },
@@ -119,6 +123,12 @@ export class TiposDocumentoService {
         throw new BadRequestException({
           codigo: 'TIPO_DE_SISTEMA',
           message: 'Los tipos que genera SINERGIA solo se pueden renombrar: su descripción y formatos dependen del proceso que los produce.',
+        });
+      }
+      if (esDeTramite(actual.nombre) && datos.nombre !== undefined && datos.nombre !== actual.nombre) {
+        throw new BadRequestException({
+          codigo: 'TIPO_DE_TRAMITE',
+          message: `El tipo «${actual.nombre}» lo usa un trámite de SINERGIA: no se puede renombrar (sí sus formatos y descripción).`,
         });
       }
       const nombre = datos.nombre ?? actual.nombre;
@@ -169,6 +179,12 @@ export class TiposDocumentoService {
         throw new BadRequestException({
           codigo: 'TIPO_DE_SISTEMA',
           message: 'Los tipos que genera SINERGIA no se pueden inactivar: los procesos automáticos dependen de ellos.',
+        });
+      }
+      if (esDeTramite(actual.nombre) && !activo) {
+        throw new BadRequestException({
+          codigo: 'TIPO_DE_TRAMITE',
+          message: `El tipo «${actual.nombre}» lo usa un trámite de SINERGIA: no se puede inactivar.`,
         });
       }
       if (actual.activo === activo) {
