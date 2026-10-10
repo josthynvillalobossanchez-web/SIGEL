@@ -63,7 +63,7 @@ const SELECCION_DE_LISTA = {
   estadoDocumentoGenerado: true,
   documentoGeneradoId: true,
   justificanteDocumentoId: true,
-  tipoSolicitud: { select: { id: true, clave: true, nombre: true, colorCalendario: true, descuentaVacaciones: true } },
+  tipoSolicitud: { select: { id: true, clave: true, nombre: true, colorCalendario: true, descuentaVacaciones: true, requiereAprobacion: true } },
   funcionario: FUNCIONARIO_RESUMIDO,
   usuarioSolicitante: { select: { id: true, funcionario: { select: { nombre: true, primerApellido: true } } } },
   aprobador: { select: { id: true, funcionario: { select: { nombre: true, primerApellido: true } } } },
@@ -91,7 +91,8 @@ export interface SolicitudDeLista {
   estadoDocumentoGenerado: string;
   /** "solicitud" o, en el calendario, "incapacidad" (no es una solicitud: no tiene aprobacion). */
   origen: 'solicitud' | 'incapacidad';
-  tipo: { id: string; clave: string; nombre: string; color: string | null; descuentaVacaciones: boolean };
+  /** requiereAprobacion false = es un derecho (licencia): nadie la aprueba ni la rechaza, y no se cancela. */
+  tipo: { id: string; clave: string; nombre: string; color: string | null; descuentaVacaciones: boolean; requiereAprobacion: boolean };
   funcionario: { id: string; nombre: string; departamento: string | null };
   solicitadaPor: { id: string; nombre: string | null };
   aprobador: { id: string; nombre: string | null } | null;
@@ -109,6 +110,7 @@ interface SolicitudPreparada {
     nombre: string;
     descuentaVacaciones: boolean;
     requiereJustificante: boolean;
+    requiereAprobacion: boolean;
     tipoDocumentoGeneradoId: string | null;
   };
   funcionario: {
@@ -184,6 +186,7 @@ export class SolicitudesService {
         descripcion: true,
         descuentaVacaciones: true,
         requiereJustificante: true,
+        requiereAprobacion: true,
         colorCalendario: true,
       },
     });
@@ -425,10 +428,16 @@ export class SolicitudesService {
         aprobadorId: true,
         fechaInicio: true,
         cantidadDias: true,
-        tipoSolicitud: { select: { nombre: true, descuentaVacaciones: true } },
+        tipoSolicitud: { select: { nombre: true, descuentaVacaciones: true, requiereAprobacion: true } },
       },
     });
     if (!s) throw this.noEncontrada();
+    if (!s.tipoSolicitud.requiereAprobacion) {
+      throw new ConflictException({
+        codigo: 'SOLICITUD_NO_CANCELABLE',
+        message: `${s.tipoSolicitud.nombre}: es un derecho y quedó registrada con su comprobante; no se cancela. Si hubo un error, coordínelo con Recursos Humanos.`,
+      });
+    }
     const esSuya = s.usuarioSolicitanteId === quienActua.id || (quienActua.funcionarioId !== null && s.funcionarioId === quienActua.funcionarioId);
     if (!esSuya) {
       throw new ForbiddenException({ codigo: 'SOLICITUD_AJENA', message: 'Solo quien hizo la solicitud puede cancelarla.' });
@@ -707,6 +716,7 @@ export class SolicitudesService {
         afectaDisponibilidad: true,
         descuentaVacaciones: true,
         requiereJustificante: true,
+        requiereAprobacion: true,
         tipoDocumentoGeneradoId: true,
       },
     });
@@ -766,10 +776,12 @@ export class SolicitudesService {
     if ((fin.getTime() - inicio.getTime()) / 86_400_000 + 1 > MAXIMO_DE_DIAS_CORRIDOS) {
       throw new BadRequestException({ codigo: 'RANGO_NO_VALIDO', message: 'Una solicitud no puede abarcar más de un año.' });
     }
-    if (inicio < hoyEnCostaRica() && !quienActua.permisos.includes(PERMISO_ADMINISTRAR)) {
+    // De hoy en adelante, para TODOS (decision 10/10): no tiene sentido pedir vacaciones, permisos,
+    // licencias o capacitaciones para un dia que ya paso. (Las incapacidades si: la boleta llega despues.)
+    if (inicio < hoyEnCostaRica()) {
       throw new BadRequestException({
         codigo: 'FECHA_PASADA',
-        message: 'No se pueden pedir fechas que ya pasaron. Si hace falta, Recursos Humanos puede registrarla.',
+        message: 'Las solicitudes son de hoy en adelante: no se pueden pedir fechas que ya pasaron.',
       });
     }
 
@@ -1006,6 +1018,7 @@ export class SolicitudesService {
         nombre: f.tipoSolicitud.nombre,
         color: f.tipoSolicitud.colorCalendario,
         descuentaVacaciones: f.tipoSolicitud.descuentaVacaciones,
+        requiereAprobacion: f.tipoSolicitud.requiereAprobacion,
       },
       funcionario: {
         id: f.funcionario.id,
@@ -1075,7 +1088,7 @@ function incapacidadComoEvento(i: {
     justificanteId: null,
     estadoDocumentoGenerado: 'noAplica',
     origen: 'incapacidad',
-    tipo: { id: 'incapacidad', clave: 'incapacidad', nombre: 'Incapacidad', color: COLOR_INCAPACIDAD, descuentaVacaciones: false },
+    tipo: { id: 'incapacidad', clave: 'incapacidad', nombre: 'Incapacidad', color: COLOR_INCAPACIDAD, descuentaVacaciones: false, requiereAprobacion: false },
     funcionario: {
       id: i.funcionario.id,
       nombre: [i.funcionario.nombre, i.funcionario.primerApellido, i.funcionario.segundoApellido].filter(Boolean).join(' '),
@@ -1090,7 +1103,8 @@ function incapacidadComoEvento(i: {
 
 /** Queda aprobada al crearla: no tiene jefatura (tope) o la registra su propia jefatura. */
 function seApruebaAlCrear(p: SolicitudPreparada): boolean {
-  return !p.funcionario.tieneJefatura || p.funcionario.laRegistraSuJefatura;
+  // Los tramites que son un derecho (licencia) quedan aprobados al registrarlos.
+  return !p.tipo.requiereAprobacion || !p.funcionario.tieneJefatura || p.funcionario.laRegistraSuJefatura;
 }
 
 /** Error de llave unica de Prisma (P2002). */

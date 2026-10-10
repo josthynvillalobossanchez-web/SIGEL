@@ -9,17 +9,27 @@ import type { AnularDto, ConsultarHorasExtraDto, RegistrarHoraExtraDto } from '.
 
 /** Un registro no puede pasar de 16 horas (jornada + extra razonable). */
 const MAXIMO_DE_HORAS = 16;
+const MAXIMO_DE_MINUTOS = MAXIMO_DE_HORAS * 60;
+
+/** "2 h 40 min", "45 min", "3 h" (para la bitacora y los mensajes). */
+export function textoDeMinutos(total: number): string {
+  const h = Math.floor(total / 60);
+  const m = total % 60;
+  if (!h) return `${m} min`;
+  return m ? `${h} h ${m} min` : `${h} h`;
+}
 
 const minutos = (hhmm: string) => Number(hhmm.slice(0, 2)) * 60 + Number(hhmm.slice(3, 5));
 
 /**
- * Horas entre dos horas "HH:MM". Si la de fin es menor o igual que la de
- * inicio, termina al dia siguiente (jornada nocturna). Redondeado a 2 decimales.
+ * Minutos entre dos horas "HH:MM" (las horas son de 60 minutos: 17:00 a 19:40
+ * son 160 minutos = 2 h 40 min). Si la de fin es menor o igual que la de
+ * inicio, termina al dia siguiente (jornada nocturna).
  */
-export function horasEntre(inicio: string, fin: string): number {
+export function minutosEntre(inicio: string, fin: string): number {
   let diferencia = minutos(fin) - minutos(inicio);
   if (diferencia <= 0) diferencia += 24 * 60;
-  return Math.round((diferencia / 60) * 100) / 100;
+  return diferencia;
 }
 
 /** Tramo en minutos desde el inicio del dia de la fecha (el fin puede pasar de 1440). */
@@ -35,7 +45,7 @@ const SELECCION = {
   fecha: true,
   horaInicio: true,
   horaFin: true,
-  cantidadHoras: true,
+  cantidadMinutos: true,
   motivo: true,
   fechaRegistro: true,
   vigente: true,
@@ -52,7 +62,8 @@ export interface HoraExtraDeLista {
   fecha: string;
   horaInicio: string;
   horaFin: string;
-  cantidadHoras: number;
+  /** Duracion en minutos (la pantalla la muestra como "2 h 40 min"). */
+  cantidadMinutos: number;
   /** Termina al dia siguiente. */
   nocturna: boolean;
   motivo: string | null;
@@ -64,10 +75,10 @@ export interface HoraExtraDeLista {
 
 export interface ResumenDeHorasExtra {
   mes: string;
-  totalHoras: number;
+  totalMinutos: number;
   totalRegistros: number;
-  /** Total de horas por persona en el mes (vigentes), de mayor a menor. */
-  porPersona: { funcionario: { id: string; nombre: string; departamento: string | null }; horas: number; registros: number }[];
+  /** Total de minutos por persona en el mes (vigentes), de mayor a menor. */
+  porPersona: { funcionario: { id: string; nombre: string; departamento: string | null }; minutos: number; registros: number }[];
   registros: PaginaDeResultados<HoraExtraDeLista>;
 }
 
@@ -118,7 +129,7 @@ export class HorasExtraService {
       this.prisma.horaExtra.groupBy({
         by: ['funcionarioId'],
         where: { ...donde, vigente: true },
-        _sum: { cantidadHoras: true },
+        _sum: { cantidadMinutos: true },
         _count: { _all: true },
       }),
     ]);
@@ -132,15 +143,15 @@ export class HorasExtraService {
         const p = porId.get(g.funcionarioId)!;
         return {
           funcionario: { id: p.id, nombre: [p.nombre, p.primerApellido, p.segundoApellido].filter(Boolean).join(' '), departamento: p.departamento?.nombre ?? null },
-          horas: Number(g._sum.cantidadHoras ?? 0),
+          minutos: g._sum.cantidadMinutos ?? 0,
           registros: g._count._all,
         };
       })
-      .sort((a, b) => b.horas - a.horas || a.funcionario.nombre.localeCompare(b.funcionario.nombre));
+      .sort((a, b) => b.minutos - a.minutos || a.funcionario.nombre.localeCompare(b.funcionario.nombre));
 
     return {
       mes,
-      totalHoras: Math.round(porPersona.reduce((s, p) => s + p.horas, 0) * 100) / 100,
+      totalMinutos: porPersona.reduce((s, p) => s + p.minutos, 0),
       totalRegistros: porPersona.reduce((s, p) => s + p.registros, 0),
       porPersona,
       registros: armarPagina(filas.map(aLista), total, filtros.pagina, filtros.tamano),
@@ -155,15 +166,22 @@ export class HorasExtraService {
     if (!persona) throw new NotFoundException({ codigo: 'FUNCIONARIO_NO_ENCONTRADO', message: 'No se encontró el funcionario indicado.' });
     if (persona.estado !== 'activo') throw new BadRequestException({ codigo: 'FUNCIONARIO_INACTIVO', message: 'La persona no está activa.' });
 
+    // Solo se revisa que la fecha este dentro de un anio hacia atras o hacia adelante (decision 09/10).
     const fecha = interpretarFechaSola(datos.fecha, 'de las horas extra');
-    if (fecha > hoyEnCostaRica()) {
-      throw new BadRequestException({ codigo: 'FECHA_FUTURA', message: 'Las horas extra se registran cuando ya se hicieron: la fecha no puede ser futura.' });
+    const hoy = hoyEnCostaRica();
+    const haceUnAnio = new Date(Date.UTC(hoy.getUTCFullYear() - 1, hoy.getUTCMonth(), hoy.getUTCDate()));
+    const enUnAnio = new Date(Date.UTC(hoy.getUTCFullYear() + 1, hoy.getUTCMonth(), hoy.getUTCDate()));
+    if (fecha < haceUnAnio || fecha > enUnAnio) {
+      throw new BadRequestException({
+        codigo: 'FECHA_FUERA_DE_RANGO',
+        message: `La fecha debe estar entre el ${aFechaSola(haceUnAnio)} y el ${aFechaSola(enUnAnio)} (un año hacia atrás o hacia adelante).`,
+      });
     }
     if (datos.horaInicio === datos.horaFin) {
       throw new BadRequestException({ codigo: 'HORAS_NO_VALIDAS', message: 'La hora de inicio y la de fin no pueden ser iguales.' });
     }
-    const horas = horasEntre(datos.horaInicio, datos.horaFin);
-    if (horas > MAXIMO_DE_HORAS) {
+    const duracion = minutosEntre(datos.horaInicio, datos.horaFin);
+    if (duracion > MAXIMO_DE_MINUTOS) {
       throw new BadRequestException({ codigo: 'HORAS_NO_VALIDAS', message: `Un registro no puede pasar de ${MAXIMO_DE_HORAS} horas. Revise las horas (o divídalo en dos días).` });
     }
 
@@ -188,7 +206,7 @@ export class HorasExtraService {
           fecha,
           horaInicio: datos.horaInicio,
           horaFin: datos.horaFin,
-          cantidadHoras: horas,
+          cantidadMinutos: duracion,
           motivo: datos.motivo ?? null,
           usuarioRegistroId: quienActua.id,
         },
@@ -202,8 +220,8 @@ export class HorasExtraService {
           registroAfectadoId: fila.id,
           accion: 'crear',
           direccionIp,
-          datosNuevos: { fecha: datos.fecha, horaInicio: datos.horaInicio, horaFin: datos.horaFin, horas },
-          descripcion: `Registró ${horas} hora(s) extra de ${persona.nombre} ${persona.primerApellido} el ${datos.fecha} (${datos.horaInicio} a ${datos.horaFin}).`,
+          datosNuevos: { fecha: datos.fecha, horaInicio: datos.horaInicio, horaFin: datos.horaFin, minutos: duracion },
+          descripcion: `Registró ${textoDeMinutos(duracion)} de horas extra de ${persona.nombre} ${persona.primerApellido} el ${datos.fecha} (${datos.horaInicio} a ${datos.horaFin}).`,
         },
         tx,
       );
@@ -213,7 +231,7 @@ export class HorasExtraService {
   }
 
   async anular(id: string, datos: AnularDto, quienActua: UsuarioAutenticado, direccionIp?: string): Promise<HoraExtraDeLista> {
-    const fila = await this.prisma.horaExtra.findUnique({ where: { id }, select: { vigente: true, funcionarioId: true, fecha: true, cantidadHoras: true } });
+    const fila = await this.prisma.horaExtra.findUnique({ where: { id }, select: { vigente: true, funcionarioId: true, fecha: true, cantidadMinutos: true } });
     if (!fila) throw new NotFoundException({ codigo: 'HORA_EXTRA_NO_ENCONTRADA', message: 'No se encontró el registro de horas extra.' });
     if (!fila.vigente) throw new ConflictException({ codigo: 'HORA_EXTRA_YA_ANULADA', message: 'Ese registro ya está anulado.' });
     await this.prisma.$transaction(async (tx) => {
@@ -227,7 +245,7 @@ export class HorasExtraService {
           accion: 'modificar',
           direccionIp,
           datosNuevos: { vigente: false, motivo: datos.motivo },
-          descripcion: `Anuló ${Number(fila.cantidadHoras)} hora(s) extra del ${aFechaSola(fila.fecha)}: ${datos.motivo}`,
+          descripcion: `Anuló ${textoDeMinutos(fila.cantidadMinutos)} de horas extra del ${aFechaSola(fila.fecha)}: ${datos.motivo}`,
         },
         tx,
       );
@@ -247,7 +265,7 @@ function aLista(f: Fila): HoraExtraDeLista {
     fecha: aFechaSola(f.fecha)!,
     horaInicio: f.horaInicio,
     horaFin: f.horaFin,
-    cantidadHoras: Number(f.cantidadHoras),
+    cantidadMinutos: f.cantidadMinutos,
     nocturna: minutos(f.horaFin) <= minutos(f.horaInicio),
     motivo: f.motivo,
     registradaPor: f.usuarioRegistro.funcionario ? `${f.usuarioRegistro.funcionario.nombre} ${f.usuarioRegistro.funcionario.primerApellido}` : f.usuarioRegistro.correo,

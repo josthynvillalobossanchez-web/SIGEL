@@ -577,3 +577,9 @@
 .resumen-horas { margin: 0 0 12px; font-size: 14px; color: var(--texto-sec); }
 .resumen-horas b { color: var(--texto); }
 .lateral .chip-persona, .modal .chip-persona { margin-bottom: 12px; }
+/* "¿Quien la emitio?": botones en vez de la lista de sugerencias del navegador (09/10). */
+.campo-emisor .segmentado { display: flex; flex-wrap: wrap; width: fit-content; max-width: 100%; }
+.campo-emisor input { margin-top: 8px; }
+/* Incapacidad: Tipo | Numero de boleta; debajo, a lo ancho, "¿Quien la emitio?". */
+@media (min-width: 720px) { .detalles-incapacidad { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.detalles-incapacidad .campo-emisor { order: 3; grid-column: 1 / -1; }

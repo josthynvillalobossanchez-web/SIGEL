@@ -169,7 +169,7 @@ export function Calendario() {
         </div>
         <div className="acc acc-principal">
           {usuario?.funcionarioId && (
-            <Link className="btn btn-primario" to="/mis-vacaciones/nueva" data-ayuda="Pedir vacaciones o un permiso">
+            <Link className="btn btn-primario" to="/mis-ausencias/nueva" data-ayuda="Pedir vacaciones o un permiso">
               <Icono nombre="mas" /> Solicitar
             </Link>
           )}
@@ -324,14 +324,7 @@ export function Calendario() {
       {abierta?.origen === 'incapacidad' && (
         <DetalleDeIncapacidad
           id={abierta.id}
-          puedeAnular={tienePermisos('solicitudes.administrar')}
-          alCerrar={() => setAbierta(null)}
-          alCambiar={(mensaje) => {
-            setAbierta(null);
-            setAviso(mensaje);
-            datos.recargar();
-          }}
-        />
+          alCerrar={() => setAbierta(null)} />
       )}
       {abierta && abierta.origen !== 'incapacidad' && (
         <DetalleDeSolicitud

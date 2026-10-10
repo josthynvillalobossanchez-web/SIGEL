@@ -131,3 +131,37 @@ más de **dos periodos**: lo que exceda vence (movimiento «vencimiento», con a
    trámite. No aparecen en «Subir documento» y no se pueden renombrar ni inactivar (sus formatos sí se
    ajustan).
 
+## 6. Ajustes del 09/10/2026 (revisión de Josthyn con las pantallas)
+
+1. **Horas extra en horas y minutos.** Se guardan en **minutos enteros** (migración
+   `20261010000000_horas_extra_en_minutos`; los registros existentes se convierten). Se muestran como
+   «2 h 40 min», nunca «2,67 h». El único límite de fecha es **un año hacia atrás o hacia adelante**
+   (`FECHA_FUERA_DE_RANGO`); ya se pueden registrar fechas futuras.
+2. **«Mis vacaciones» pasa a llamarse «Mis ausencias»** (`/mis-ausencias`; la dirección vieja redirige):
+   ahí están el saldo, las solicitudes, las incapacidades y el historial.
+3. **Zona de archivo:** al elegir un archivo se vuelve una tarjeta verde con miniatura (imágenes) o la hoja
+   del formato, el nombre, el tamaño, «Listo para enviar», Cambiar y Quitar. Aplica en todos los formularios
+   con archivo.
+4. **Incapacidad:** «¿Quién la emitió?» con botones (CCSS, INS, Médico privado, Otra) en lugar de la lista
+   de sugerencias del navegador. El número de boleta sirve para buscarla y para que **la misma boleta no se
+   registre dos veces** (`BOLETA_YA_REGISTRADA`, mismo número y emisor).
+5. **Una incapacidad no la aprueba, rechaza ni anula nadie** (corregido el 10/10: tampoco quien la
+   registró). La boleta es el control; un abuso se maneja fuera del sistema.
+6. **Perfil del Super Administrador:** `npm run db:perfil-super-administrador -- <archivo.json>` liga la
+   cuenta del SA a la persona que la usa (Joseph). **Los datos personales no están en el código**: se leen de
+   un JSON que queda fuera de Git (en desarrollo, `docs/_trabajo/perfil-super-administrador.json`). La fecha
+   de ingreso queda provisional (la corrige RRHH) y la persona completa sus datos en «Mi cuenta». No va en el
+   seed, para que las bases de prueba conserven la cuenta técnica sin funcionario.
+
+## 7. Ajustes del 10/10/2026
+
+1. **La licencia es un derecho:** comprobante obligatorio, **queda aprobada al registrarla**, nadie la
+   rechaza y no se cancela (`SOLICITUD_NO_CANCELABLE`). Es una casilla del catálogo de tipos de solicitud
+   (`requiereAprobacion`, migración `20261010010000_licencias_sin_aprobacion`). La licencia y la incapacidad
+   son cosas distintas y siguen separadas.
+2. **Solicitudes de hoy en adelante para todos** (también RRHH y la jefatura): vacaciones, permisos,
+   licencias y capacitaciones que chocan con el horario (`FECHA_PASADA`). La incapacidad sí acepta fechas
+   pasadas (la boleta llega después) y las horas extra tienen su propio límite (un año).
+3. **Quién ve qué en el detalle de una solicitud:** «Ver mi saldo» solo la persona; la constancia, la
+   persona y RRHH (generarla de nuevo, solo RRHH). La jefatura ve el justificante, que necesita para decidir.
+4. **Documentos del expediente:** tocar la fila abre el documento, igual que el ojo.

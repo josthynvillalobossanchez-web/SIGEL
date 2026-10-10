@@ -129,8 +129,9 @@ export class ConstanciasService {
       select: { estado: true, aprobadorId: true, documentoGeneradoId: true, estadoDocumentoGenerado: true },
     });
     if (!s) throw new NotFoundException({ codigo: 'SOLICITUD_NO_ENCONTRADA', message: 'No se encontró la solicitud indicada.' });
-    if (!quienActua.permisos.includes(PERMISO_ADMINISTRAR) && s.aprobadorId !== quienActua.id) {
-      throw new ForbiddenException({ codigo: 'SOLICITUD_AJENA', message: 'Solo Recursos Humanos o quien la aprobó pueden generar la constancia.' });
+    // La constancia la ven la persona y RRHH (decision 09/10): generarla de nuevo, solo RRHH.
+    if (!quienActua.permisos.includes(PERMISO_ADMINISTRAR)) {
+      throw new ForbiddenException({ codigo: 'SOLICITUD_AJENA', message: 'Solo Recursos Humanos puede generar de nuevo la constancia.' });
     }
     if (s.estado !== 'aprobada' || s.estadoDocumentoGenerado === 'noAplica' || s.documentoGeneradoId) {
       throw new ConflictException({ codigo: 'CONSTANCIA_NO_APLICA', message: 'Esta solicitud no tiene una constancia pendiente de generar.' });

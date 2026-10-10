@@ -857,6 +857,15 @@ No volver a preguntarlas. El detalle de cómo se despliega está en `GUIA_DESARR
 - **Capacitaciones** en el expediente con certificado; si chocan con el horario, solicitud CAP a la jefatura.
 - **Horas extra**: registro de RRHH con totales por persona y mes; se anulan con motivo.
 - Tipos de documento de trámite (justificante, boleta, certificado): solo desde su trámite.
+- **Revisión de la noche (09/10):** horas extra en **minutos** (se muestran «2 h 40 min») y con fecha hasta un
+  año atrás o adelante; «Mis vacaciones» se llama **«Mis ausencias»**; una incapacidad no la aprueba, rechaza ni
+  anula nadie más que **quien la registró**; la misma boleta no se registra dos veces; la cuenta del Super
+  Administrador queda ligada a Joseph con un script que lee sus datos de un JSON fuera de Git.
+- **10/10:** la **licencia es un derecho**: comprobante obligatorio, queda aprobada al registrarla, nadie la
+  rechaza ni se cancela. La **incapacidad** tampoco se aprueba, rechaza ni anula (ni quien la registró). Las
+  **solicitudes son de hoy en adelante para todos** (la incapacidad acepta fechas pasadas). En el detalle,
+  «Ver mi saldo» solo para la persona y la constancia para la persona y RRHH. Tocar la fila de un documento lo
+  abre.
 
 ### Convenciones de la base de datos
 

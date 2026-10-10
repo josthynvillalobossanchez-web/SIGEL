@@ -79,13 +79,13 @@ export const MENU: GrupoDeMenu[] = [
         subopciones: [{ texto: 'Feriados', ruta: '/calendario/feriados', permisos: ['catalogos.editar'] }],
       },
       {
-        texto: 'Mis vacaciones',
-        ruta: '/mis-vacaciones',
+        texto: 'Mis ausencias',
+        ruta: '/mis-ausencias',
         icono: 'sombrilla',
         permisos: ['solicitudes.crear'],
         requiereFuncionario: true,
-        descripcion: 'Su saldo de días, sus solicitudes y el botón para pedir vacaciones o un permiso.',
-        subopciones: [{ texto: 'Nueva solicitud', ruta: '/mis-vacaciones/nueva', permisos: ['solicitudes.crear'] }],
+        descripcion: 'Sus días fuera del trabajo: saldo de vacaciones, solicitudes, incapacidades y el botón para pedir.',
+        subopciones: [{ texto: 'Nueva solicitud', ruta: '/mis-ausencias/nueva', permisos: ['solicitudes.crear'] }],
       },
       {
         // Aparte y a la vista (decision 01/10): la jefatura, para su personal; RRHH, para cualquiera.

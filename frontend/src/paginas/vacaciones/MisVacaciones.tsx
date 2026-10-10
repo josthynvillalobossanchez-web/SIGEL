@@ -1,5 +1,5 @@
 /*
- * Mis vacaciones (/mis-vacaciones): lo principal del modulo para cualquier
+ * Mis ausencias (/mis-ausencias; antes "Mis vacaciones"): lo principal del modulo para cualquier
  * persona. Arriba el boton para pedir y, en pestanas (sin tener que bajar,
  * decision 01/10): el saldo, sus solicitudes, sus incapacidades y el
  * historial del saldo.
@@ -59,12 +59,12 @@ export function MisVacaciones() {
     <section className="pagina">
       <div className="pagina-cab">
         <div>
-          <h1>Mis vacaciones</h1>
-          <p>Su saldo de días, lo que ha pedido y en qué estado va cada solicitud.</p>
+          <h1>Mis ausencias</h1>
+          <p>Todo lo de sus días fuera del trabajo: el saldo de vacaciones, sus solicitudes (vacaciones, permisos, licencias, capacitaciones) y sus incapacidades.</p>
         </div>
         <div className="acc acc-principal">
-          <Link className="btn btn-primario btn-grande" to="/mis-vacaciones/nueva" data-ayuda="Pedir vacaciones, un permiso o registrar una capacitación, en tres pasos">
-            <Icono nombre="mas" /> Solicitar vacaciones o permiso
+          <Link className="btn btn-primario btn-grande" to="/mis-ausencias/nueva" data-ayuda="Pedir vacaciones, un permiso o una licencia, o registrar una incapacidad o capacitación">
+            <Icono nombre="mas" /> Nueva solicitud
           </Link>
         </div>
       </div>
@@ -72,7 +72,7 @@ export function MisVacaciones() {
       {aviso && <Mensaje tipo="exito">{aviso}</Mensaje>}
 
       <Pestanas
-        etiqueta="Mis vacaciones"
+        etiqueta="Mis ausencias"
         actual={pestana}
         alCambiar={(id) => cambiar({ pestana: id === 'saldo' ? '' : id, estado: '' })}
         opciones={[
@@ -125,7 +125,7 @@ export function MisVacaciones() {
       <PanelDePestana id="incapacidades" actual={pestana}>
         <div className="fila-acciones">
           <p className="ayuda-detalle">Las incapacidades no se aprueban ni descuentan vacaciones. Su jefatura solo ve las fechas.</p>
-          <Link className="btn btn-secundario" to="/mis-vacaciones/nueva?tipo=incapacidad" data-ayuda="Registrar una incapacidad con su boleta">
+          <Link className="btn btn-secundario" to="/mis-ausencias/nueva?tipo=incapacidad" data-ayuda="Registrar una incapacidad con su boleta">
             <Icono nombre="mas" /> Registrar incapacidad
           </Link>
         </div>
@@ -152,7 +152,9 @@ export function MisVacaciones() {
         {usuario?.funcionarioId && <HistorialDelSaldo funcionarioId={usuario.funcionarioId} siempreAbierto />}
       </PanelDePestana>
 
-      {incapacidadAbierta && <DetalleDeIncapacidad id={incapacidadAbierta.id} alCerrar={() => setIncapacidadAbierta(null)} />}
+      {incapacidadAbierta && (
+        <DetalleDeIncapacidad id={incapacidadAbierta.id} alCerrar={() => setIncapacidadAbierta(null)} />
+      )}
       {abierta && <DetalleDeSolicitud solicitud={abierta} modo="propia" alCerrar={() => setAbierta(null)} alCambiar={alCambiar} />}
     </section>
   );

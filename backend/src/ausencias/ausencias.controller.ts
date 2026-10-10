@@ -128,19 +128,6 @@ export class IncapacidadesController {
   ): Promise<{ incapacidad: IncapacidadDeLista; avisos: string[] }> {
     return this.incapacidades.registrar(datos, boleta, quienActua, direccionIp);
   }
-
-  /** POST /api/incapacidades/:id/anular  { motivo }  (RRHH) */
-  @RequierePermisos('solicitudes.administrar')
-  @Post(':id/anular')
-  @HttpCode(HttpStatus.OK)
-  anular(
-    @Param('id', uuidValido('incapacidad')) id: string,
-    @Body() datos: AnularDto,
-    @UsuarioActual() quienActua: UsuarioAutenticado,
-    @DireccionIp() direccionIp: string | undefined,
-  ): Promise<IncapacidadDeLista> {
-    return this.incapacidades.anular(id, datos, quienActua, direccionIp);
-  }
 }
 
 /** Capacitaciones del expediente (autoservicio y RRHH). */

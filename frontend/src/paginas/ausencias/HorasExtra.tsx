@@ -7,11 +7,13 @@
  * Arriba el mes (anterior / siguiente), los totales y el reparto por persona
  * (tocar una persona filtra los registros). Registrar va por pasos:
  * primero la persona y luego el dia y las horas (un turno que pasa la
- * medianoche se escribe tal cual, p. ej. 22:00 a 02:00).
+ * medianoche se escribe tal cual, p. ej. 22:00 a 02:00). Todo se cuenta en
+ * minutos (17:00 a 19:40 = 2 h 40 min) y la fecha puede estar hasta un anio
+ * hacia atras o hacia adelante.
  */
 import { useState } from 'react';
 import { consultarOpcionesDeFuncionario, type FuncionarioEnLista } from '../../api/funcionarios';
-import { anularHoraExtra, consultarHorasExtra, horasEntre, registrarHoraExtra, type HoraExtra } from '../../api/ausencias';
+import { anularHoraExtra, consultarHorasExtra, minutosEntre, registrarHoraExtra, textoDeMinutos, type HoraExtra } from '../../api/ausencias';
 import { textoDelError } from '../../api/cliente';
 import { Icono } from '../../componentes/Icono';
 import { Mensaje } from '../../componentes/Mensaje';
@@ -25,7 +27,11 @@ import { nombreCompleto } from '../../utilidades/texto';
 import { Avatar } from '../vacaciones/comunes';
 import { ElegirPersona } from '../vacaciones/NuevaSolicitud';
 
-const horasEnTexto = (h: number) => `${h.toLocaleString('es-CR', { maximumFractionDigits: 2 })} h`;
+/** Un anio hacia atras y hacia adelante: el unico limite de fechas (decision 09/10). */
+function limitesDeFecha(hoy: string): { minimo: string; maximo: string } {
+  const anio = Number(hoy.slice(0, 4));
+  return { minimo: `${anio - 1}${hoy.slice(4)}`, maximo: `${anio + 1}${hoy.slice(4)}` };
+}
 
 export function HorasExtra() {
   const hoy = hoyEnCostaRica();
@@ -63,8 +69,11 @@ export function HorasExtra() {
     cambiar({ mes: `${m.anio}-${String(m.mes + 1).padStart(2, '0')}` });
   }
   const esMesActual = mes === hoy.slice(0, 7);
+  const { minimo: fechaMinima, maximo: fechaMaxima } = limitesDeFecha(hoy);
+  const enElPrimerMes = mes <= fechaMinima.slice(0, 7);
+  const enElUltimoMes = mes >= fechaMaxima.slice(0, 7);
   const r = datos.datos;
-  const maximo = Math.max(1, ...(r?.porPersona.map((p) => p.horas) ?? [1]));
+  const maximo = Math.max(1, ...(r?.porPersona.map((p) => p.minutos) ?? [1]));
   const personaFiltrada = r?.porPersona.find((p) => p.funcionario.id === funcionarioId)?.funcionario.nombre;
   const hayFiltros = Boolean(funcionarioId || departamentoId || busqueda || incluirAnuladas);
 
@@ -93,13 +102,13 @@ export function HorasExtra() {
 
       <div className="herramientas">
         <div className="selector-mes" role="group" aria-label="Mes">
-          <button type="button" className="icono-btn" onClick={() => irAlMes(-1)} aria-label="Mes anterior" data-ayuda="Mes anterior">
+          <button type="button" className="icono-btn" onClick={() => irAlMes(-1)} disabled={enElPrimerMes} aria-label="Mes anterior" data-ayuda={enElPrimerMes ? 'Solo se consulta hasta un año hacia atrás' : 'Mes anterior'}>
             <Icono nombre="plegar" />
           </button>
           <b className="selector-mes-nombre">
             {nombreDelMes(numeroDeMes)} {anio}
           </b>
-          <button type="button" className="icono-btn" onClick={() => irAlMes(1)} disabled={esMesActual} aria-label="Mes siguiente" data-ayuda={esMesActual ? 'No hay horas extra en meses futuros' : 'Mes siguiente'}>
+          <button type="button" className="icono-btn" onClick={() => irAlMes(1)} disabled={enElUltimoMes} aria-label="Mes siguiente" data-ayuda={enElUltimoMes ? 'Solo se consulta hasta un año hacia adelante' : 'Mes siguiente'}>
             <Icono nombre="siguiente" />
           </button>
           {!esMesActual && (
@@ -142,7 +151,7 @@ export function HorasExtra() {
           <div className="totales-horas" aria-live="polite">
             <div className="card total">
               <span>Total del mes</span>
-              <b>{horasEnTexto(r.totalHoras)}</b>
+              <b>{textoDeMinutos(r.totalMinutos)}</b>
             </div>
             <div className="card total">
               <span>Registros</span>
@@ -176,10 +185,10 @@ export function HorasExtra() {
                             <small> · {p.registros} {p.registros === 1 ? 'registro' : 'registros'}</small>
                           </span>
                           <span className="horas-barra" aria-hidden="true">
-                            <i style={{ width: `${(p.horas / maximo) * 100}%` }} />
+                            <i style={{ width: `${(p.minutos / maximo) * 100}%` }} />
                           </span>
                         </span>
-                        <b>{horasEnTexto(p.horas)}</b>
+                        <b>{textoDeMinutos(p.minutos)}</b>
                       </button>
                     </li>
                   ))}
@@ -208,7 +217,7 @@ export function HorasExtra() {
                           {h.motivo && <small>{h.motivo}</small>}
                           {!h.vigente && <small className="anulada">Anulada: {h.motivoAnulacion}</small>}
                         </span>
-                        <b className="hora-cantidad">{horasEnTexto(h.cantidadHoras)}</b>
+                        <b className="hora-cantidad">{textoDeMinutos(h.cantidadMinutos)}</b>
                         {h.vigente && (
                           <button type="button" className="btn-texto btn-texto-peligro" onClick={() => setAnulando(h)} data-ayuda="Anular este registro (le pedirá el motivo)">
                             Anular
@@ -241,22 +250,23 @@ function ModalRegistrar({ hoy, alCerrar, alTerminar }: { hoy: string; alCerrar: 
   const [motivo, setMotivo] = useState('');
   const [ocupado, setOcupado] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const horas = horasEntre(inicio, fin);
-  const nocturna = horas !== null && fin < inicio;
+  const duracion = minutosEntre(inicio, fin);
+  const nocturna = duracion !== null && fin < inicio;
+  const { minimo, maximo } = limitesDeFecha(hoy);
 
   async function guardar() {
     if (!persona) return;
     const faltan: string[] = [];
     if (!fecha) faltan.push('Indique el día.');
-    else if (fecha > hoy) faltan.push('No se registran horas extra de días que todavía no pasan.');
-    if (horas === null) faltan.push('Indique la hora de inicio y la de fin (no pueden ser iguales).');
-    else if (horas > 16) faltan.push('Un registro no puede pasar de 16 horas.');
+    else if (fecha < minimo || fecha > maximo) faltan.push('La fecha debe estar dentro de un año hacia atrás o hacia adelante.');
+    if (duracion === null) faltan.push('Indique la hora de inicio y la de fin (no pueden ser iguales).');
+    else if (duracion > 16 * 60) faltan.push(`Un registro no puede pasar de 16 horas (este sería de ${textoDeMinutos(duracion)}).`);
     if (faltan.length) return setError(faltan.join(' '));
     setOcupado(true);
     setError(null);
     try {
       const h = await registrarHoraExtra({ funcionarioId: persona.id, fecha, horaInicio: inicio, horaFin: fin, motivo: motivo.trim() || undefined });
-      alTerminar(`Se registraron ${horasEnTexto(h.cantidadHoras)} a ${h.funcionario.nombre} (${fechaCorta(h.fecha)}).`);
+      alTerminar(`Se registraron ${textoDeMinutos(h.cantidadMinutos)} a ${h.funcionario.nombre} (${fechaCorta(h.fecha)}).`);
     } catch (e) {
       setError(textoDelError(e));
       setOcupado(false);
@@ -289,7 +299,7 @@ function ModalRegistrar({ hoy, alCerrar, alTerminar }: { hoy: string; alCerrar: 
           <label htmlFor="he-fecha">
             Día <span className="obligatorio">*</span>
           </label>
-          <input id="he-fecha" type="date" value={fecha} max={hoy} onChange={(e) => setFecha(e.target.value)} />
+          <input id="he-fecha" type="date" value={fecha} min={minimo} max={maximo} onChange={(e) => setFecha(e.target.value)} />
         </div>
         <div className="campo">
           <label htmlFor="he-inicio">
@@ -305,7 +315,14 @@ function ModalRegistrar({ hoy, alCerrar, alTerminar }: { hoy: string; alCerrar: 
         </div>
       </div>
       <p className="resumen-horas" aria-live="polite">
-        {horas === null ? 'Escriba la hora de inicio y la de fin.' : <>Son <b>{horasEnTexto(horas)}</b>{nocturna ? ', terminando al día siguiente' : ''}.</>}
+        {duracion === null ? (
+          'Escriba la hora de inicio y la de fin.'
+        ) : (
+          <>
+            Son <b>{textoDeMinutos(duracion)}</b>
+            {nocturna ? ', terminando al día siguiente' : ''}.{duracion > 16 * 60 && <span className="msg-error"> Pasa del máximo de 16 horas por registro: revise las horas.</span>}
+          </>
+        )}
       </p>
       <div className="campo">
         <label htmlFor="he-motivo">
@@ -338,7 +355,7 @@ function ModalAnular({ hora, alCerrar, alTerminar }: { hora: HoraExtra; alCerrar
   return (
     <Modal
       titulo="¿Anular el registro?"
-      descripcion={`${hora.funcionario.nombre} · ${fechaCorta(hora.fecha)} · ${hora.horaInicio} – ${hora.horaFin} · ${horasEnTexto(hora.cantidadHoras)}`}
+      descripcion={`${hora.funcionario.nombre} · ${fechaCorta(hora.fecha)} · ${hora.horaInicio} – ${hora.horaFin} · ${textoDeMinutos(hora.cantidadMinutos)}`}
       icono="alerta"
       alCerrar={alCerrar}
       alEnviar={() => void confirmar()}

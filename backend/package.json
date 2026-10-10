@@ -17,7 +17,8 @@
     "contrasena:restablecer": "tsx prisma/restablecer-contrasena.ts",
     "db:datos-de-prueba": "tsx prisma/datos-de-prueba.ts",
     "archivos:generar-llave": "tsx prisma/generar-llave-de-archivos.ts",
-    "archivos:recifrar": "tsx prisma/recifrar-archivos.ts"
+    "archivos:recifrar": "tsx prisma/recifrar-archivos.ts",
+    "db:perfil-super-administrador": "tsx prisma/perfil-super-administrador.ts"
   },
   "dependencies": {
     "@nestjs/common": "^12.0.0",

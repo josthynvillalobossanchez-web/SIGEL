@@ -8,7 +8,7 @@ import { DocumentosService } from '../documentos/documentos.service.js';
 import type { Prisma } from '../generated/prisma/client.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { PERMISO_ADMINISTRAR } from '../vacaciones/vacaciones.service.js';
-import type { AnularDto, ConsultarIncapacidadesDto, RegistrarIncapacidadDto } from './dto.js';
+import type { ConsultarIncapacidadesDto, RegistrarIncapacidadDto } from './dto.js';
 
 const UN_DIA = 86_400_000;
 /** Una boleta no cubre mas de un anio. */
@@ -72,7 +72,8 @@ export interface IncapacidadDeLista {
  * o Recursos Humanos por ella. La boleta es OBLIGATORIA y queda en el
  * expediente. No afecta el saldo de vacaciones (confirmado). La jefatura
  * la ve en el calendario de su equipo como "Incapacidad", sin el tipo ni
- * la boleta (datos medicos). Errores se corrigen anulando con motivo.
+ * la boleta (datos medicos). Nadie la aprueba, la rechaza ni la anula
+ * (decision 10/10): la boleta es el control; un abuso se maneja fuera del sistema.
  */
 @Injectable()
 export class IncapacidadesService {
@@ -125,6 +126,20 @@ export class IncapacidadesService {
         codigo: 'INCAPACIDAD_TRASLAPADA',
         message: `Ya hay una incapacidad registrada (${choque.consecutivo}, del ${aFechaSola(choque.fechaInicio)} al ${aFechaSola(choque.fechaFin)}) que coincide con esas fechas.`,
       });
+    }
+
+    // La misma boleta no se registra dos veces (el numero viene impreso en la boleta de la CCSS o el INS).
+    if (datos.numeroBoleta) {
+      const repetida = await this.prisma.incapacidad.findFirst({
+        where: { numeroBoleta: datos.numeroBoleta, entidadEmisora: datos.entidadEmisora ?? null, vigente: true },
+        select: { consecutivo: true },
+      });
+      if (repetida) {
+        throw new ConflictException({
+          codigo: 'BOLETA_YA_REGISTRADA',
+          message: `La boleta ${datos.numeroBoleta}${datos.entidadEmisora ? ` de ${datos.entidadEmisora}` : ''} ya está registrada (${repetida.consecutivo}).`,
+        });
+      }
     }
 
     // No se bloquea, pero se avisa: si coincide con vacaciones o permisos, RRHH revisa (p. ej. devolver los dias).
@@ -227,32 +242,6 @@ export class IncapacidadesService {
     const esSuJefatura = quienActua.funcionarioId !== null && fila.funcionario.jefaturaId === quienActua.funcionarioId;
     if (!completa && !esSuJefatura) throw new ForbiddenException({ codigo: 'INCAPACIDAD_AJENA', message: 'No tiene acceso a esa incapacidad.' });
     return this.aLista(fila, completa);
-  }
-
-  async anular(id: string, datos: AnularDto, quienActua: UsuarioAutenticado, direccionIp?: string): Promise<IncapacidadDeLista> {
-    const fila = await this.prisma.incapacidad.findUnique({ where: { id }, select: { consecutivo: true, funcionarioId: true, vigente: true } });
-    if (!fila) throw this.noEncontrada();
-    if (!fila.vigente) throw new ConflictException({ codigo: 'INCAPACIDAD_YA_ANULADA', message: 'Esa incapacidad ya está anulada.' });
-    await this.prisma.$transaction(async (tx) => {
-      await tx.incapacidad.update({
-        where: { id },
-        data: { vigente: false, motivoAnulacion: datos.motivo, usuarioAnulacionId: quienActua.id, fechaAnulacion: new Date() },
-      });
-      await this.bitacora.registrar(
-        {
-          usuarioId: quienActua.id,
-          funcionarioAfectadoId: fila.funcionarioId,
-          entidad: 'incapacidad',
-          registroAfectadoId: id,
-          accion: 'modificar',
-          direccionIp,
-          datosNuevos: { vigente: false, motivo: datos.motivo },
-          descripcion: `Anuló la incapacidad ${fila.consecutivo}: ${datos.motivo}`,
-        },
-        tx,
-      );
-    });
-    return this.detalleSinPermisos(id, true);
   }
 
   /* ---------------------------------------------------------------- */

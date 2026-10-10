@@ -2,7 +2,7 @@
  * Nueva solicitud, por pasos (decision de Josthyn, 01/10: "por secciones,
  * sin scroll"). Dos entradas:
  *
- *   /mis-vacaciones/nueva    la propia:              Qué -> Cuándo -> Revisar
+ *   /mis-ausencias/nueva    la propia:              Qué -> Cuándo -> Revisar
  *   /registrar-solicitud     a nombre de otra persona: Quién -> Qué -> Cuándo -> Revisar
  *                            (RRHH, de cualquiera; la jefatura, de su personal
  *                            a cargo: el backend decide y la lista ya viene filtrada)
@@ -100,6 +100,7 @@ const dias = (n: number) => `${n} ${n === 1 ? 'día' : 'días'}`;
 
 /** Que pasa con el saldo segun el tipo (para no decir "se descuenta" de un permiso o una capacitacion). */
 function textoDelTipo(t: TipoDeSolicitud): string {
+  if (!t.requiereAprobacion) return 'Es un derecho (matrimonio, nacimiento, fallecimiento…): con el comprobante queda registrada; nadie la aprueba ni la rechaza.';
   if (t.requiereJustificante) return 'Se adjunta el justificante (PDF, JPG o PNG). No descuenta vacaciones.';
   if (t.clave === 'capacitacion') return 'Un curso en horario de trabajo: lo aprueba la jefatura y queda en su expediente. No descuenta vacaciones.';
   if (t.descuentaVacaciones) return 'Se descuenta de las vacaciones cuando se aprueba.';
@@ -109,7 +110,7 @@ function textoDelTipo(t: TipoDeSolicitud): string {
 export function NuevaSolicitud({ paraOtraPersona = false }: { paraOtraPersona?: boolean }) {
   const { usuario, tienePermisos } = useSesion();
   const navegar = useNavigate();
-  const volverA = paraOtraPersona ? (tienePermisos('solicitudes.administrar') ? '/solicitudes' : '/bandeja') : '/mis-vacaciones';
+  const volverA = paraOtraPersona ? (tienePermisos('solicitudes.administrar') ? '/solicitudes' : '/bandeja') : '/mis-ausencias';
   const hoy = hoyEnCostaRica();
   const esRrhh = tienePermisos('solicitudes.administrar');
 
@@ -135,7 +136,10 @@ export function NuevaSolicitud({ paraOtraPersona = false }: { paraOtraPersona?: 
   const [archivo, setArchivo] = useState<File | null>(null);
   const [problemaDelArchivo, setProblemaDelArchivo] = useState<string | null>(null);
   const [tipoIncapacidadId, setTipoIncapacidadId] = useState('');
-  const [entidad, setEntidad] = useState('CCSS');
+  // Quien emitio la boleta: CCSS, INS, medico privado u otra (se escribe).
+  const [entidad, setEntidad] = useState<'CCSS' | 'INS' | 'Médico privado' | 'Otra'>('CCSS');
+  const [otraEntidad, setOtraEntidad] = useState('');
+  const entidadElegida = entidad === 'Otra' ? otraEntidad.trim() : entidad;
   const [numeroBoleta, setNumeroBoleta] = useState('');
   const [curso, setCurso] = useState('');
   const [institucion, setInstitucion] = useState('');
@@ -170,8 +174,9 @@ export function NuevaSolicitud({ paraOtraPersona = false }: { paraOtraPersona?: 
 
   const funcionarioId = paraOtraPersona ? persona?.id : (usuario?.funcionarioId ?? undefined);
   const nombreDeLaPersona = paraOtraPersona ? (persona ? nombreCompleto(persona) : null) : null;
-  // Fechas pasadas: solo Recursos Humanos las puede registrar (y una incapacidad, que suele llegar despues).
-  const minimo = (paraOtraPersona && esRrhh) || esIncapacidad ? undefined : hoy;
+  // Las solicitudes son de hoy en adelante para todos (10/10). Solo la incapacidad acepta fechas
+  // pasadas: la boleta suele llegar despues de que empezo.
+  const minimo = esIncapacidad ? undefined : hoy;
   const diasNaturales = inicio && fin && fin >= inicio ? fechasDelRango(inicio, fin).length : 0;
 
   // Por omision, vacaciones.
@@ -254,6 +259,7 @@ export function NuevaSolicitud({ paraOtraPersona = false }: { paraOtraPersona?: 
     }
     if (clave === 'detalles' && necesitaDetalles) {
       if (esIncapacidad && !tipoIncapacidadId) lista.push({ texto: 'Elija el tipo de incapacidad.', paso: 'detalles' });
+      if (esIncapacidad && entidad === 'Otra' && otraEntidad.trim().length < 2) lista.push({ texto: 'Escriba quién emitió la boleta (o elija CCSS, INS o Médico privado).', paso: 'detalles' });
       if (esCapacitacion && curso.trim().length < 2) lista.push({ texto: 'Escriba el nombre del curso o capacitación.', paso: 'detalles' });
       if (esCapacitacion && horas && !(Number(horas.replace(',', '.')) >= 0.5)) lista.push({ texto: 'Las horas deben ser un número de al menos 0,5.', paso: 'detalles' });
       if ((esIncapacidad || pideJustificante) && !archivo)
@@ -291,7 +297,7 @@ export function NuevaSolicitud({ paraOtraPersona = false }: { paraOtraPersona?: 
     try {
       if (esIncapacidad) {
         const r = await registrarIncapacidad(
-          { funcionarioId: aNombreDe, tipoIncapacidadId, fechaInicio: inicio, fechaFin: fin, entidadEmisora: entidad.trim() || undefined, numeroBoleta: numeroBoleta.trim() || undefined, observacion: texto },
+          { funcionarioId: aNombreDe, tipoIncapacidadId, fechaInicio: inicio, fechaFin: fin, entidadEmisora: entidadElegida || undefined, numeroBoleta: numeroBoleta.trim() || undefined, observacion: texto },
           archivo!,
         );
         setResultado({ clase: 'incapacidad', ...r });
@@ -327,7 +333,9 @@ export function NuevaSolicitud({ paraOtraPersona = false }: { paraOtraPersona?: 
   const finesDeSemana = excluidos.filter((d) => d.tipo === 'finDeSemana').length;
   const diasFeriados = excluidos.filter((d) => d.tipo === 'feriado');
   const esUltimo = indice === claves.length - 1;
-  const quienAprueba = vista?.laApruebaSuJefatura
+  const quienAprueba = tipo && !tipo.requiereAprobacion
+    ? 'No necesita: es un derecho y queda registrada al enviarla, con su comprobante. Nadie la rechaza y no se cancela.'
+    : vista?.laApruebaSuJefatura
     ? 'Usted, como su jefatura: queda aprobada al registrarla.'
     : vista?.autoaprobada
       ? 'Se aprueba automáticamente (no tiene una jefatura por encima).'
@@ -561,7 +569,7 @@ export function NuevaSolicitud({ paraOtraPersona = false }: { paraOtraPersona?: 
     contenido = (
       <div className="paso-detalles">
         {esIncapacidad && (
-          <div className="detalles-rejilla">
+          <div className="detalles-rejilla detalles-incapacidad">
             <div className="campo">
               <label htmlFor="tipo-incapacidad">Tipo de incapacidad</label>
               <select id="tipo-incapacidad" value={tipoIncapacidadId} onChange={(e) => setTipoIncapacidadId(e.target.value)} aria-required="true">
@@ -573,22 +581,35 @@ export function NuevaSolicitud({ paraOtraPersona = false }: { paraOtraPersona?: 
                 ))}
               </select>
             </div>
-            <div className="campo">
-              <label htmlFor="entidad-incapacidad">
-                La emitió <small className="opcional">(opcional)</small>
-              </label>
-              <input id="entidad-incapacidad" list="entidades-incapacidad" maxLength={120} value={entidad} onChange={(e) => setEntidad(e.target.value)} />
-              <datalist id="entidades-incapacidad">
-                <option value="CCSS" />
-                <option value="INS" />
-                <option value="Médico privado" />
-              </datalist>
+            <div className="campo campo-emisor">
+              <span className="etiqueta-campo" id="etiqueta-emisor">
+                ¿Quién la emitió?
+              </span>
+              <div className="segmentado segmentado-chico" role="group" aria-labelledby="etiqueta-emisor">
+                {(['CCSS', 'INS', 'Médico privado', 'Otra'] as const).map((e) => (
+                  <button
+                    key={e}
+                    type="button"
+                    aria-pressed={entidad === e}
+                    onClick={() => setEntidad(e)}
+                    data-ayuda={e === 'CCSS' ? 'Caja Costarricense de Seguro Social' : e === 'INS' ? 'Instituto Nacional de Seguros (riesgos del trabajo)' : e === 'Otra' ? 'Escribir quién la emitió' : 'Un médico particular'}
+                  >
+                    {e}
+                  </button>
+                ))}
+              </div>
+              {entidad === 'Otra' && (
+                <input aria-label="Quién emitió la boleta" maxLength={120} value={otraEntidad} onChange={(ev) => setOtraEntidad(ev.target.value)} placeholder="Por ejemplo: Hospital Clínica Bíblica" />
+              )}
             </div>
             <div className="campo">
               <label htmlFor="numero-boleta">
                 Número de boleta <small className="opcional">(opcional)</small>
               </label>
-              <input id="numero-boleta" maxLength={50} value={numeroBoleta} onChange={(e) => setNumeroBoleta(e.target.value)} />
+              <input id="numero-boleta" maxLength={50} value={numeroBoleta} onChange={(e) => setNumeroBoleta(e.target.value)} aria-describedby="numero-boleta-ayuda" placeholder="Viene impreso en la boleta" />
+              <span className="ayuda" id="numero-boleta-ayuda">
+                Evita que la misma boleta se registre dos veces.
+              </span>
             </div>
           </div>
         )}
@@ -633,6 +654,10 @@ export function NuevaSolicitud({ paraOtraPersona = false }: { paraOtraPersona?: 
             tamanoMaximo={TAMANO_MAXIMO_DOCUMENTO}
             archivo={archivo}
             alElegir={elegirArchivo}
+            alQuitar={() => {
+              setArchivo(null);
+              setProblemaDelArchivo(null);
+            }}
             obligatorio={archivoObligatorio}
             invalido={Boolean(problemaDelArchivo)}
             descritoPor={problemaDelArchivo ? 'problema-archivo' : 'etiqueta-archivo'}
@@ -778,13 +803,15 @@ export function NuevaSolicitud({ paraOtraPersona = false }: { paraOtraPersona?: 
       )}
 
       {creada && (
-        <ModalExito titulo={creada.estado === 'aprobada' ? 'Solicitud aprobada' : 'Solicitud enviada'} alAceptar={() => navegar(volverA)}>
+        <ModalExito titulo={!creada.tipo.requiereAprobacion ? `${creada.tipo.nombre} registrada` : creada.estado === 'aprobada' ? 'Solicitud aprobada' : 'Solicitud enviada'} alAceptar={() => navegar(volverA)}>
           <p>
             <b>{creada.consecutivo}</b> · {creada.tipo.nombre} · {textoDeRango(creada.fechaInicio, creada.fechaFin)}
             {paraOtraPersona ? ` · ${creada.funcionario.nombre}` : ''}.
           </p>
           <p>
-            {creada.estado === 'aprobada'
+            {!creada.tipo.requiereAprobacion
+              ? 'Quedó registrada con su comprobante. Es un derecho: nadie la aprueba ni la rechaza. No descuenta vacaciones.'
+              : creada.estado === 'aprobada'
               ? creada.tipo.descuentaVacaciones
                 ? `Quedó aprobada y se descontaron ${dias(creada.cantidadDias ?? 0)} del saldo.`
                 : 'Quedó aprobada. No descuenta vacaciones.'
@@ -794,7 +821,7 @@ export function NuevaSolicitud({ paraOtraPersona = false }: { paraOtraPersona?: 
       )}
 
       {resultado?.clase === 'incapacidad' && (
-        <ModalExito titulo="Incapacidad registrada" alAceptar={() => navegar(paraOtraPersona ? '/incapacidades' : '/mis-vacaciones?pestana=incapacidades')}>
+        <ModalExito titulo="Incapacidad registrada" alAceptar={() => navegar(paraOtraPersona ? '/incapacidades' : '/mis-ausencias?pestana=incapacidades')}>
           <p>
             <b>{resultado.incapacidad.consecutivo}</b> · {textoDeRango(resultado.incapacidad.fechaInicio, resultado.incapacidad.fechaFin)} · {dias(resultado.incapacidad.cantidadDias)} naturales
             {paraOtraPersona ? ` · ${resultado.incapacidad.funcionario.nombre}` : ''}.

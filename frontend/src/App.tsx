@@ -20,7 +20,7 @@
  *     /catalogos                                 departamentos, puestos, profesiones (ventanas cortas)
  *     /tipos-documento                           tipos de documento y sus formatos (ventanas cortas)
  *     /calendario                                calendario inteligente (propio, equipo o todos, segun permisos)
- *     /mis-vacaciones, /mis-vacaciones/nueva     saldo y solicitudes propias; pedir vacaciones o permiso
+ *     /mis-ausencias, /mis-ausencias/nueva       saldo, solicitudes e incapacidades propias; pedir (antes /mis-vacaciones: redirige)
  *     /bandeja                                   solicitudes que le toca resolver a la jefatura
  *     /solicitudes, /solicitudes/nueva           todas las solicitudes y registrar una a nombre de otra persona (RRHH)
  *     /feriados                                  feriados y dias no laborables (RRHH)
@@ -36,7 +36,7 @@
  * (con <ConPermisos> si pide permisos) y agregarla a src/diseno/menu.ts con
  * los MISMOS permisos.
  */
-import { BrowserRouter, Navigate, Route, Routes, useParams } from 'react-router';
+import { BrowserRouter, Navigate, Route, Routes, useLocation, useParams } from 'react-router';
 import { SesionProveedor } from './sesion/SesionProveedor';
 import { ConPermisos, RutaDePrimerIngreso, RutaProtegida, RutaSinSesion } from './sesion/Guardias';
 import { IniciarSesion } from './paginas/acceso/IniciarSesion';
@@ -232,9 +232,9 @@ export function App() {
                 }
               />
               <Route path="/calendario" element={<Calendario />} />
-              <Route path="/mis-vacaciones" element={<MisVacaciones />} />
+              <Route path="/mis-ausencias" element={<MisVacaciones />} />
               <Route
-                path="/mis-vacaciones/nueva"
+                path="/mis-ausencias/nueva"
                 element={
                   <ConPermisos permisos={['solicitudes.crear']}>
                     <NuevaSolicitud />
@@ -284,6 +284,9 @@ export function App() {
               {/* Direcciones anteriores (01/10): se movieron. */}
               <Route path="/solicitudes/nueva" element={<Navigate to="/registrar-solicitud" replace />} />
               <Route path="/feriados" element={<Navigate to="/calendario/feriados" replace />} />
+              {/* "Mis vacaciones" paso a llamarse "Mis ausencias" (09/10): las direcciones viejas siguen sirviendo. */}
+              <Route path="/mis-vacaciones" element={<RedirigirConParametros a="/mis-ausencias" />} />
+              <Route path="/mis-vacaciones/nueva" element={<RedirigirConParametros a="/mis-ausencias/nueva" />} />
               <Route
                 path="/calendario/feriados"
                 element={
@@ -299,4 +302,10 @@ export function App() {
       </SesionProveedor>
     </BrowserRouter>
   );
+}
+
+/** Lleva a otra direccion conservando los parametros (?pestana=..., ?tipo=...). */
+function RedirigirConParametros({ a }: { a: string }) {
+  const { search } = useLocation();
+  return <Navigate to={a + search} replace />;
 }

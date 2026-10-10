@@ -104,7 +104,7 @@ function Resumen() {
   const porResolver = useConsulta(tienePermisos('solicitudes.aprobar') ? () => consultarBandeja({ estado: 'pendiente', tamano: 1 }) : null, []).datos;
 
   const cifras = [
-    saldo?.saldoCargado && { valor: saldo.disponible, texto: saldo.disponible === 1 ? 'día de vacaciones disponible' : 'días de vacaciones disponibles', a: '/mis-vacaciones', ayuda: 'Ver su saldo y pedir vacaciones' },
+    saldo?.saldoCargado && { valor: saldo.disponible, texto: saldo.disponible === 1 ? 'día de vacaciones disponible' : 'días de vacaciones disponibles', a: '/mis-ausencias', ayuda: 'Ver su saldo y pedir vacaciones' },
     porResolver && { valor: porResolver.total, texto: 'solicitudes por resolver', a: '/bandeja', ayuda: 'Solicitudes de su equipo que esperan su respuesta' },
     verFuncionarios &&
       (tienePermisos('funcionarios.verTodos')

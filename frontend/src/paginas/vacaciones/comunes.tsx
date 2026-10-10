@@ -109,7 +109,12 @@ export function DetalleDeSolicitud({ solicitud: inicial, modo, alCerrar, alCambi
   // Al abrirla la jefatura queda "leida" en el servidor, por eso se vuelve a pedir.
   const { datos, recargar } = useConsulta(() => consultarSolicitud(inicial.id), [inicial.id]);
   const s = datos ?? inicial;
-  const { tienePermisos } = useSesion();
+  const { usuario, tienePermisos } = useSesion();
+  // Quien ve que (decision 09/10): la constancia, solo la persona y Recursos Humanos; "Ver mi saldo",
+  // solo la persona (la solicitud de otro no toca el saldo de quien la mira).
+  const esPropia = Boolean(usuario?.funcionarioId) && s.funcionario.id === usuario?.funcionarioId;
+  const esRrhh = tienePermisos('solicitudes.administrar');
+  const veConstancia = esPropia || esRrhh;
   const [viendo, setViendo] = useState<'constancia' | 'justificante' | null>(null);
   const [generando, setGenerando] = useState(false);
   const [avisoDeDocumento, setAvisoDeDocumento] = useState<string | null>(null);
@@ -156,8 +161,9 @@ export function DetalleDeSolicitud({ solicitud: inicial, modo, alCerrar, alCambi
   }
 
   // Pendiente sin abrir: cualquiera. Aprobada: solo quien se la aprobo a si mismo (tope) y antes de que empiece.
-  const cancelaAprobada = modo === 'propia' && s.estado === 'aprobada' && s.autoaprobada && s.fechaInicio > hoyEnCostaRica();
-  const puedeCancelar = (modo === 'propia' && pendiente && !s.leidaPorAprobador) || cancelaAprobada;
+  // Un tramite que es un derecho (licencia) no se cancela (decision 10/10).
+  const cancelaAprobada = modo === 'propia' && s.tipo.requiereAprobacion && s.estado === 'aprobada' && s.autoaprobada && s.fechaInicio > hoyEnCostaRica();
+  const puedeCancelar = s.tipo.requiereAprobacion && ((modo === 'propia' && pendiente && !s.leidaPorAprobador) || cancelaAprobada);
   const alcanceDelCalendario = modo === 'jefatura' ? 'equipo' : modo === 'rrhh' ? 'todos' : 'propio';
   const motivoValido = motivo.trim().length >= 5;
 
@@ -250,8 +256,8 @@ export function DetalleDeSolicitud({ solicitud: inicial, modo, alCerrar, alCambi
     );
   }
 
-  const constanciaFallida = s.estado === 'aprobada' && s.estadoDocumentoGenerado === 'fallido';
-  const hayDocumentos = Boolean(s.constanciaId || s.justificanteId || constanciaFallida);
+  const constanciaFallida = veConstancia && s.estado === 'aprobada' && s.estadoDocumentoGenerado === 'fallido';
+  const hayDocumentos = Boolean((veConstancia && s.constanciaId) || s.justificanteId || constanciaFallida);
 
   return (
     <Modal
@@ -290,7 +296,12 @@ export function DetalleDeSolicitud({ solicitud: inicial, modo, alCerrar, alCambi
               <dd>{s.motivo}</dd>
             </div>
           )}
-          {s.aprobador && (
+          {!s.tipo.requiereAprobacion ? (
+            <div>
+              <dt>Aprobación</dt>
+              <dd>No requiere: es un derecho y quedó registrada con su comprobante</dd>
+            </div>
+          ) : s.aprobador && (
             <div>
               <dt>{s.autoaprobada ? 'Aprobación' : 'Le corresponde aprobar a'}</dt>
               <dd>{s.autoaprobada ? 'Automática (no tiene jefatura por encima)' : s.aprobador.nombre}</dd>
@@ -312,7 +323,7 @@ export function DetalleDeSolicitud({ solicitud: inicial, modo, alCerrar, alCambi
 
         {hayDocumentos && !cancelando && !rechazando && (
           <div className="detalle-documentos" role="group" aria-label="Documentos de la solicitud">
-            {s.constanciaId && (
+            {veConstancia && s.constanciaId && (
               <button type="button" className="btn btn-secundario btn-chico" onClick={() => setViendo('constancia')} data-ayuda="Ver la constancia en PDF que generó SINERGIA al aprobarse">
                 <Icono nombre="documento" /> Constancia (PDF)
               </button>
@@ -325,7 +336,7 @@ export function DetalleDeSolicitud({ solicitud: inicial, modo, alCerrar, alCambi
             {constanciaFallida && (
               <span className="constancia-fallida">
                 No se pudo generar la constancia.
-                {tienePermisos('solicitudes.administrar') || modo === 'jefatura' ? (
+                {esRrhh ? (
                   <button type="button" className="btn-texto" disabled={generando} onClick={() => void generarDeNuevo()} data-ayuda="Intentar generar la constancia otra vez">
                     {generando ? 'Generando…' : 'Generar de nuevo'}
                   </button>
@@ -424,9 +435,9 @@ export function DetalleDeSolicitud({ solicitud: inicial, modo, alCerrar, alCambi
           </div>
         )}
 
-        {s.estado === 'aprobada' && s.tipo.descuentaVacaciones && modo !== 'jefatura' && !cancelando && (
+        {s.estado === 'aprobada' && s.tipo.descuentaVacaciones && esPropia && !cancelando && (
           <p className="ayuda-detalle">
-            Los días ya se descontaron del saldo. <Link to="/mis-vacaciones">Ver mi saldo</Link>
+            Los días ya se descontaron del saldo. <Link to="/mis-ausencias">Ver mi saldo</Link>
           </p>
         )}
 

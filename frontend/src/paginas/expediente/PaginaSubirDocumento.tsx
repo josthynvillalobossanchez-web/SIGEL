@@ -222,6 +222,7 @@ function SubirDocumento({ funcionarioId: ajeno }: { funcionarioId?: string }) {
                 tamanoMaximo={TAMANO_MAXIMO_DOCUMENTO}
                 archivo={archivo}
                 alElegir={elegirArchivo}
+                alQuitar={() => elegirArchivo(undefined)}
                 obligatorio
                 invalido={Boolean(problemaDeArchivoElegido)}
                 descritoPor="docNuevoArchivo-nota"

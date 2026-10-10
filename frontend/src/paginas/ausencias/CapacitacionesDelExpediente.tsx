@@ -23,7 +23,7 @@ import { VisorDeArchivo } from '../../componentes/VisorDeArchivo';
 import { ZonaDeArchivo } from '../../componentes/ZonaDeArchivo';
 import { useSesion } from '../../sesion/SesionProveedor';
 import { problemaDeArchivo, TAMANO_MAXIMO_DOCUMENTO, TODOS_LOS_FORMATOS } from '../../utilidades/archivos';
-import { textoDeRango } from '../../utilidades/calendario';
+import { hoyEnCostaRica, textoDeRango } from '../../utilidades/calendario';
 import { useConsulta } from '../../utilidades/useConsulta';
 
 const MODALIDAD: Record<Modalidad, string> = { presencial: 'Presencial', virtual: 'Virtual', mixta: 'Mixta' };
@@ -140,7 +140,11 @@ function useArchivo() {
     setProblema(p);
     setArchivo(p ? null : a);
   }
-  return { archivo, problema, elegir };
+  const quitar = () => {
+    setArchivo(null);
+    setProblema(null);
+  };
+  return { archivo, problema, elegir, quitar };
 }
 
 function ModalRegistrar({ funcionarioId, alCerrar, alTerminar }: { funcionarioId?: string; alCerrar: () => void; alTerminar: (m: string) => void }) {
@@ -151,7 +155,7 @@ function ModalRegistrar({ funcionarioId, alCerrar, alTerminar }: { funcionarioId
   const [fin, setFin] = useState('');
   const [horas, setHoras] = useState('');
   const [chocaConHorario, setChocaConHorario] = useState(false);
-  const { archivo, problema, elegir } = useArchivo();
+  const { archivo, problema, elegir, quitar } = useArchivo();
   const [ocupado, setOcupado] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -160,6 +164,7 @@ function ModalRegistrar({ funcionarioId, alCerrar, alTerminar }: { funcionarioId
     if (nombre.trim().length < 2) faltan.push('Escriba el nombre del curso.');
     if ((inicio && !fin) || (!inicio && fin)) faltan.push('Indique las dos fechas, o ninguna.');
     if (inicio && fin && fin < inicio) faltan.push('La fecha de fin no puede ser antes del inicio.');
+    if (chocaConHorario && inicio && inicio < hoyEnCostaRica()) faltan.push('Si choca con el horario se pide permiso a la jefatura, así que las fechas deben ser de hoy en adelante.');
     if (chocaConHorario && !(inicio && fin)) faltan.push('Si choca con el horario, indique las fechas: con ellas se crea la solicitud para la jefatura.');
     if (horas && !(Number(horas.replace(',', '.')) >= 0.5)) faltan.push('Las horas deben ser un número de al menos 0,5.');
     if (faltan.length) return setError(faltan.join(' '));
@@ -226,7 +231,7 @@ function ModalRegistrar({ funcionarioId, alCerrar, alTerminar }: { funcionarioId
       </label>
       <div className="campo">
         <span className="etiqueta-campo">Certificado <small className="opcional">(opcional: se puede adjuntar después)</small></span>
-        <ZonaDeArchivo id="cap-certificado" formatos={TODOS_LOS_FORMATOS} tamanoMaximo={TAMANO_MAXIMO_DOCUMENTO} archivo={archivo} alElegir={elegir} invalido={Boolean(problema)} />
+        <ZonaDeArchivo id="cap-certificado" formatos={TODOS_LOS_FORMATOS} tamanoMaximo={TAMANO_MAXIMO_DOCUMENTO} archivo={archivo} alElegir={elegir} alQuitar={quitar} invalido={Boolean(problema)} />
         {problema && <span className="msg-error" role="alert">{problema}</span>}
       </div>
       {error && <Mensaje tipo="error">{error}</Mensaje>}
@@ -235,7 +240,7 @@ function ModalRegistrar({ funcionarioId, alCerrar, alTerminar }: { funcionarioId
 }
 
 function ModalCertificado({ capacitacion, alCerrar, alTerminar }: { capacitacion: Capacitacion; alCerrar: () => void; alTerminar: (m: string) => void }) {
-  const { archivo, problema, elegir } = useArchivo();
+  const { archivo, problema, elegir, quitar } = useArchivo();
   const [ocupado, setOcupado] = useState(false);
   const [error, setError] = useState<string | null>(null);
   async function guardar() {
@@ -252,7 +257,7 @@ function ModalCertificado({ capacitacion, alCerrar, alTerminar }: { capacitacion
   }
   return (
     <Modal titulo="Adjuntar certificado" descripcion={capacitacion.nombre} icono="subirNube" alCerrar={alCerrar} alEnviar={() => void guardar()} textoConfirmar={ocupado ? 'Subiendo…' : 'Adjuntar'} ocupado={ocupado} confirmarDesactivado={!archivo}>
-      <ZonaDeArchivo id="cert-archivo" formatos={TODOS_LOS_FORMATOS} tamanoMaximo={TAMANO_MAXIMO_DOCUMENTO} archivo={archivo} alElegir={elegir} invalido={Boolean(problema)} obligatorio />
+      <ZonaDeArchivo id="cert-archivo" formatos={TODOS_LOS_FORMATOS} tamanoMaximo={TAMANO_MAXIMO_DOCUMENTO} archivo={archivo} alElegir={elegir} alQuitar={quitar} invalido={Boolean(problema)} obligatorio />
       {problema && <span className="msg-error" role="alert">{problema}</span>}
       {error && <Mensaje tipo="error">{error}</Mensaje>}
     </Modal>
@@ -276,7 +281,7 @@ function ModalBaja({ capacitacion, alCerrar, alTerminar }: { capacitacion: Capac
   return (
     <Modal titulo="¿Dar de baja la capacitación?" descripcion={capacitacion.nombre} icono="alerta" alCerrar={alCerrar} alEnviar={() => void confirmar()} textoConfirmar="Sí, dar de baja" peligro ocupado={ocupado}>
       <p>Deja de aparecer en el expediente. Queda en la bitácora{capacitacion.certificadoId ? '; el certificado se conserva en la pestaña Documentos' : ''}.</p>
-      {capacitacion.solicitud?.estado === 'pendiente' && <p>La solicitud {capacitacion.solicitud.consecutivo} sigue pendiente: si ya no aplica, cancélela desde «Mis vacaciones».</p>}
+      {capacitacion.solicitud?.estado === 'pendiente' && <p>La solicitud {capacitacion.solicitud.consecutivo} sigue pendiente: si ya no aplica, cancélela desde «Mis ausencias».</p>}
       {error && <Mensaje tipo="error">{error}</Mensaje>}
     </Modal>
   );

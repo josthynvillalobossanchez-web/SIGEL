@@ -232,6 +232,8 @@ const TIPOS_SOLICITUD = [
     descripcion: 'Licencias previstas por la normativa (por ejemplo matrimonio o fallecimiento de un familiar)',
     descuentaVacaciones: false,
     requiereJustificante: true,
+    // Es un derecho: nadie la aprueba ni la rechaza (decision 10/10).
+    requiereAprobacion: false,
     generaConstancia: false,
     colorCalendario: '#7b5ea7',
   },

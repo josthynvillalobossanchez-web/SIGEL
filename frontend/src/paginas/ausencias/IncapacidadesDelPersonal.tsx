@@ -1,7 +1,8 @@
 /*
  * Incapacidades del personal (/incapacidades), para Recursos Humanos:
- * buscar y filtrar las de todos (tipo, departamento, fechas, estado), ver la
- * boleta, registrar a nombre de alguien y anular con motivo.
+ * buscar y filtrar las de todos (tipo, departamento, fechas), ver la
+ * boleta y registrar a nombre de alguien. Nadie aprueba, rechaza ni anula una
+ * incapacidad (decision 10/10).
  */
 import { useState } from 'react';
 import { Link } from 'react-router';
@@ -17,19 +18,16 @@ import { useConsulta } from '../../utilidades/useConsulta';
 import { DetalleDeIncapacidad } from './DetalleDeIncapacidad';
 import { ListaDeIncapacidades } from './ListaDeIncapacidades';
 
-type Estado = 'vigentes' | 'anuladas' | 'todas';
-
 export function IncapacidadesDelPersonal() {
   const { tienePermisos } = useSesion();
   const [parametros, cambiar] = useParametrosEnUrl({ reiniciaPagina: true });
-  const estado = (['anuladas', 'todas'].includes(parametros.get('estado') ?? '') ? parametros.get('estado') : 'vigentes') as Estado;
   const tipoIncapacidadId = parametros.get('tipo') ?? '';
   const departamentoId = parametros.get('departamento') ?? '';
   const busqueda = parametros.get('busqueda') ?? '';
   const desde = parametros.get('desde') ?? '';
   const hasta = parametros.get('hasta') ?? '';
   const pagina = Math.max(1, Number(parametros.get('pagina')) || 1);
-  const hayFiltros = Boolean(estado !== 'vigentes' || tipoIncapacidadId || departamentoId || busqueda || desde || hasta);
+  const hayFiltros = Boolean(tipoIncapacidadId || departamentoId || busqueda || desde || hasta);
   const [texto, setTexto] = useBusquedaDiferida(busqueda, (t) => cambiar({ busqueda: t }));
 
   const tipos = useConsulta(consultarTiposDeIncapacidad, []).datos ?? [];
@@ -37,7 +35,6 @@ export function IncapacidadesDelPersonal() {
   const lista = useConsulta(
     () =>
       consultarTodasLasIncapacidades({
-        estado,
         tipoIncapacidadId: tipoIncapacidadId || undefined,
         departamentoId: departamentoId || undefined,
         busqueda: busqueda || undefined,
@@ -46,17 +43,16 @@ export function IncapacidadesDelPersonal() {
         pagina,
         tamano: 12,
       }),
-    [estado, tipoIncapacidadId, departamentoId, busqueda, desde, hasta, pagina],
+    [tipoIncapacidadId, departamentoId, busqueda, desde, hasta, pagina],
   );
   const [abierta, setAbierta] = useState<Incapacidad | null>(null);
-  const [aviso, setAviso] = useState<string | null>(null);
 
   return (
     <section className="pagina">
       <div className="pagina-cab">
         <div>
           <h1>Incapacidades del personal</h1>
-          <p>Las incapacidades registradas, con su boleta. No se aprueban ni descuentan vacaciones; un error se anula con motivo.</p>
+          <p>Las incapacidades registradas, con su boleta. Nadie las aprueba, rechaza ni anula, y no descuentan vacaciones: la boleta es el respaldo.</p>
         </div>
         <div className="acc">
           <Link className="btn btn-primario" to="/registrar-solicitud?tipo=incapacidad" data-ayuda="Registrar una incapacidad a nombre de cualquier funcionario">
@@ -65,21 +61,12 @@ export function IncapacidadesDelPersonal() {
         </div>
       </div>
 
-      {aviso && <Mensaje tipo="exito">{aviso}</Mensaje>}
 
       <div className="herramientas">
         <div className="buscador">
           <Icono nombre="buscar" />
           <input type="search" value={texto} onChange={(e) => setTexto(e.target.value)} placeholder="Nombre, cédula, consecutivo o boleta" aria-label="Buscar incapacidades" />
         </div>
-        <label className="filtro-select">
-          <span className="sr">Estado</span>
-          <select value={estado} onChange={(e) => cambiar({ estado: e.target.value === 'vigentes' ? '' : e.target.value })}>
-            <option value="vigentes">Registradas</option>
-            <option value="anuladas">Anuladas</option>
-            <option value="todas">Todas</option>
-          </select>
-        </label>
         <label className="filtro-select">
           <span className="sr">Tipo</span>
           <select value={tipoIncapacidadId} onChange={(e) => cambiar({ tipo: e.target.value })}>
@@ -113,7 +100,7 @@ export function IncapacidadesDelPersonal() {
           <input type="date" value={hasta} min={desde || undefined} onChange={(e) => cambiar({ hasta: e.target.value })} aria-label="Incapacidades que empiezan hasta esta fecha" />
         </label>
         {hayFiltros && (
-          <button type="button" className="btn-texto" onClick={() => { setTexto(''); cambiar({ estado: '', tipo: '', departamento: '', busqueda: '', desde: '', hasta: '' }); }} data-ayuda="Quitar todos los filtros y la búsqueda">
+          <button type="button" className="btn-texto" onClick={() => { setTexto(''); cambiar({ tipo: '', departamento: '', busqueda: '', desde: '', hasta: '' }); }} data-ayuda="Quitar todos los filtros y la búsqueda">
             Limpiar filtros
           </button>
         )}
@@ -139,14 +126,7 @@ export function IncapacidadesDelPersonal() {
       {abierta && (
         <DetalleDeIncapacidad
           id={abierta.id}
-          puedeAnular
-          alCerrar={() => setAbierta(null)}
-          alCambiar={(mensaje) => {
-            setAbierta(null);
-            setAviso(mensaje);
-            lista.recargar();
-          }}
-        />
+          alCerrar={() => setAbierta(null)} />
       )}
     </section>
   );

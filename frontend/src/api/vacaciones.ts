@@ -18,6 +18,8 @@ export interface TipoDeSolicitud {
   descripcion: string | null;
   descuentaVacaciones: boolean;
   requiereJustificante: boolean;
+  /** false = es un derecho (licencia): queda aprobada al registrarla, nadie la rechaza y no se cancela. */
+  requiereAprobacion: boolean;
   colorCalendario: string | null;
 }
 
@@ -42,7 +44,7 @@ export interface SolicitudDeLista {
   estadoDocumentoGenerado: string;
   /** En el calendario tambien vienen las incapacidades (no son solicitudes). */
   origen?: 'solicitud' | 'incapacidad';
-  tipo: { id: string; clave: string; nombre: string; color: string | null; descuentaVacaciones: boolean };
+  tipo: { id: string; clave: string; nombre: string; color: string | null; descuentaVacaciones: boolean; requiereAprobacion: boolean };
   funcionario: { id: string; nombre: string; departamento: string | null };
   solicitadaPor: { id: string; nombre: string | null };
   aprobador: { id: string; nombre: string | null } | null;

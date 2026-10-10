@@ -136,8 +136,12 @@ Qué hace cada uno:
 3. **`prisma:migrate`** compara el esquema con la base de datos, escribe el SQL de los
    cambios en `prisma/migrations` y lo aplica. Ese historial de migraciones es lo que
    permite que cualquier persona levante la base idéntica.
-4. **`db:seed`** carga los datos base: los 19 permisos, los cinco roles de sistema, los
-   regímenes de vacaciones, los tipos de documento y la cuenta del Súper Administrador.
+4. **`db:seed`** carga los datos base: los permisos, los cinco roles de sistema, los
+   regímenes de vacaciones, los tipos de documento y de incapacidad, y la cuenta del Súper Administrador.
+5. **`db:perfil-super-administrador -- <archivo.json>`** (una sola vez por base, después del seed) liga la
+   cuenta del Súper Administrador a la persona que la usa. Los datos personales vienen de un JSON **fuera de
+   Git** (en desarrollo: `npm run db:perfil-super-administrador -- ..\docs\_trabajo\perfil-super-administrador.json`).
+   Si ya está ligada, no hace nada.
 
 > **Si `npm install` avisa que bloqueó scripts de instalación.** npm ya no ejecuta los
 > scripts de los paquetes sin permiso, y `argon2`, `prisma`, `@prisma/engines` y `esbuild`
@@ -395,11 +399,11 @@ aparece marcado como público, exige sesión.
 | `GET /solicitudes/:id/justificante` | `solicitudes.crear` | El archivo (quien puede ver la solicitud; `SIN_JUSTIFICANTE`) |
 | `POST /solicitudes/:id/constancia` | `solicitudes.crear` | Genera de nuevo una constancia fallida: RRHH o quien aprobó (`CONSTANCIA_NO_APLICA`) |
 | `GET /incapacidades/tipos` · `/mias` · `/:id` | `solicitudes.crear` | Tipos activos · las propias · detalle (la jefatura recibe `tipo`, `entidadEmisora`, `numeroBoleta` y `boletaId` en null) |
-| `GET /incapacidades` · `POST /incapacidades/:id/anular` | `solicitudes.administrar` | Todas (`?busqueda=&tipoIncapacidadId=&departamentoId=&desde=&hasta=&estado=vigentes\|anuladas\|todas`) · anular con `{ motivo }` |
-| `POST /incapacidades` | `solicitudes.crear` | Multipart con archivo `boleta` (obligatorio). De otra persona solo RRHH (`INCAPACIDAD_AJENA`). Responde `{ incapacidad, avisos }` |
+| `GET /incapacidades` | `solicitudes.administrar` | Todas (`?busqueda=&tipoIncapacidadId=&departamentoId=&desde=&hasta=&estado=vigentes\|anuladas\|todas`) |
+| `POST /incapacidades` | `solicitudes.crear` | Multipart con archivo `boleta` (obligatorio). De otra persona solo RRHH (`INCAPACIDAD_AJENA`). Misma boleta (número + emisor) dos veces: `BOLETA_YA_REGISTRADA`. Responde `{ incapacidad, avisos }` |
 | `GET /capacitaciones?funcionarioId=` | `expediente.ver` | Las de esa persona (propias o con `expediente.verTodos`) |
 | `POST /capacitaciones` · `/:id/certificado` · `/:id/baja` | `solicitudes.crear` | Multipart con archivo `certificado` (opcional). `afectaJornada=true` + fechas crea la solicitud CAP. De otra persona, solo RRHH (`CAPACITACION_AJENA`) |
-| `GET /horas-extra` · `POST /horas-extra` · `POST /horas-extra/:id/anular` | `horasExtra.registrar` | `?mes=AAAA-MM&funcionarioId=&departamentoId=&busqueda=&incluirAnuladas=` → totales, `porPersona` y registros · `{ funcionarioId, fecha, horaInicio, horaFin, motivo? }` (`HH:MM`) |
+| `GET /horas-extra` · `POST /horas-extra` · `POST /horas-extra/:id/anular` | `horasExtra.registrar` | `?mes=AAAA-MM&funcionarioId=&departamentoId=&busqueda=&incluirAnuladas=` → `totalMinutos`, `porPersona` (`minutos`) y registros (`cantidadMinutos`) · `{ funcionarioId, fecha, horaInicio, horaFin, motivo? }` (`HH:MM`; fecha hasta un año atrás o adelante) |
 
 `GET /usuarios/:id` trae además `permisosEfectivos` (lo que la cuenta puede hacer de verdad),
 `puedoModificar` y `motivoNoModificable` (`CUENTA_PROPIA` o `CUENTA_CON_MAYOR_ACCESO`) respecto
@@ -472,7 +476,9 @@ Códigos de error más frecuentes:
 | `JUSTIFICANTE_REQUERIDO` / `SIN_JUSTIFICANTE` / `CONSTANCIA_NO_APLICA` | La licencia necesita su archivo / la solicitud no tiene justificante / no hay constancia que generar de nuevo |
 | `INCAPACIDAD_TRASLAPADA` / `INCAPACIDAD_AJENA` / `INCAPACIDAD_YA_ANULADA` / `TIPO_INCAPACIDAD_INVALIDO` | Coincide con una incapacidad vigente / solo RRHH registra por otra persona / ya estaba anulada / tipo inexistente o inactivo |
 | `CAPACITACION_AJENA` / `FECHAS_REQUERIDAS` | No la puede registrar o modificar / choca con el horario pero no trae fechas |
-| `FECHA_FUTURA` / `HORAS_NO_VALIDAS` / `HORAS_TRASLAPADAS` | Horas extra: día que no ha pasado / iguales o más de 16 h / se cruza con otro registro (también los del día anterior que pasan la medianoche) |
+| `FECHA_FUERA_DE_RANGO` / `HORAS_NO_VALIDAS` / `HORAS_TRASLAPADAS` | Horas extra: más de un año atrás o adelante / iguales o más de 16 h / se cruza con otro registro (también los del día anterior que pasan la medianoche) |
+| `BOLETA_YA_REGISTRADA` | La boleta (número + emisor) ya está registrada (una incapacidad no se anula ni se rechaza) |
+| `SOLICITUD_NO_CANCELABLE` / `FECHA_PASADA` | El tipo es un derecho (licencia): no se cancela / las solicitudes son de hoy en adelante, para todos |
 | `SIN_FOTOGRAFIA` / `CUENTA_CON_MAYOR_ACCESO` | La persona no tiene foto / no se cambia la foto de una cuenta con más acceso |
 | `CUENTA_SIN_FUNCIONARIO` / `CORREO_INSTITUCIONAL_EN_USO` | Mi cuenta: cuenta técnica sin datos personales / correo de otra persona |
 
@@ -590,8 +596,8 @@ Nada de páginas largas con scroll en PC.
 | `/mi-cuenta` | con sesión | Perfil; pestañas Mis datos personales (editable), Datos laborales (editable solo con `funcionarios.editar`) y Acceso y seguridad |
 | `/calendario` (`?alcance=`, `?vista=mes\|persona\|lista`, `?mes=AAAA-MM`, `?estado=`, `?persona=`, `?departamento=`, `?resaltar=<id>`) | con sesión | Calendario inteligente: Mi calendario / Mi equipo / Todo el personal según el acceso |
 | `/calendario/feriados` | `catalogos.editar` | Catálogo de feriados que se repiten solos (cada año, Semana Santa, una vez) y «Cargar feriados de ley» (subsección de Calendario; `/feriados` redirige) |
-| `/mis-vacaciones` (`?pestana=solicitudes\|incapacidades\|historial`) | `solicitudes.crear` | Pestañas Mi saldo, Mis solicitudes, Incapacidades e Historial del saldo |
-| `/mis-vacaciones/nueva` (`?tipo=incapacidad`) | `solicitudes.crear` | Nueva solicitud por pasos (Qué · Cuándo · [Detalles] · Revisar). «Detalles» aparece para la licencia (justificante), la incapacidad (boleta) y la capacitación (datos del curso) |
+| `/mis-ausencias` (antes `/mis-vacaciones`, que redirige; `?pestana=solicitudes\|incapacidades\|historial`) | `solicitudes.crear` | «Mis ausencias»: pestañas Mi saldo, Mis solicitudes, Incapacidades e Historial del saldo |
+| `/mis-ausencias/nueva` (`?tipo=incapacidad`) | `solicitudes.crear` | Nueva solicitud por pasos (Qué · Cuándo · [Detalles] · Revisar). «Detalles» aparece para la licencia (justificante), la incapacidad (boleta) y la capacitación (datos del curso) |
 | `/registrar-solicitud` | `solicitudes.administrar` o `solicitudes.aprobar` | Solicitud para otra persona (Quién · Qué · Cuándo · Revisar); `/solicitudes/nueva` redirige |
 | `/bandeja` (`?estado=`) | `solicitudes.aprobar` | Bandeja de la jefatura: tarjetas o lista, choques marcados, detalle con Aprobar/Rechazar y Ver en calendario |
 | `/solicitudes` (`?estado=&tipo=&departamento=&busqueda=&desde=&hasta=`) | `solicitudes.administrar` | Todas las solicitudes (RRHH), lista compacta o tarjetas |
@@ -786,6 +792,7 @@ npm ci
 npx prisma generate
 npx prisma migrate deploy        # aplica las migraciones sin borrar datos
 npm run db:seed                  # solo la primera vez y cuando cambian permisos
+npm run db:perfil-super-administrador -- C:\ruta\fuera-del-repo\perfil-super-administrador.json   # solo la primera vez
 npm run build
 cd ..\frontend
 npm ci

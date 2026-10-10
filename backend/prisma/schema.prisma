@@ -450,6 +450,9 @@ model tipoSolicitud {
   afectaDisponibilidad Boolean @default(true)
   descuentaVacaciones  Boolean @default(false)
   requiereJustificante Boolean @default(false)
+  /// false = es un derecho (licencia): queda aprobada al registrarla, nadie la
+  /// rechaza y no se cancela. El comprobante es el control.
+  requiereAprobacion   Boolean @default(true)
   /// true = se registra en horas (hora extra); false = en dias completos.
   seMideEnHoras        Boolean @default(false)
   /// Tipo del PDF que SINERGIA genera al aprobar. Nulo = no genera documento.
@@ -696,7 +699,8 @@ model horaExtra {
   /// "HH:MM" (24 horas).
   horaInicio        String   @db.VarChar(5)
   horaFin           String   @db.VarChar(5)
-  cantidadHoras     Decimal  @db.Decimal(5, 2)
+  /// Duracion en minutos enteros (la pantalla la muestra como "2 h 40 min").
+  cantidadMinutos   Int
   motivo            String?  @db.VarChar(500)
   usuarioRegistroId String   @db.Char(36)
   fechaRegistro     DateTime @default(now())

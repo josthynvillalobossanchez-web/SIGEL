@@ -80,8 +80,6 @@ export const consultarTodasLasIncapacidades = (filtros: FiltrosDeIncapacidades) 
 export const consultarIncapacidad = (id: string) => pedirAlServidor<Incapacidad>('GET', `/incapacidades/${ruta(id)}`);
 export const registrarIncapacidad = (datos: DatosDeIncapacidad, boleta: File) =>
   pedirAlServidor<{ incapacidad: Incapacidad; avisos: string[] }>('POST', '/incapacidades', { cuerpo: formulario({ ...datos }, 'boleta', boleta) });
-export const anularIncapacidad = (id: string, motivo: string) =>
-  pedirAlServidor<Incapacidad>('POST', `/incapacidades/${ruta(id)}/anular`, { cuerpo: { motivo } });
 
 /* --- Capacitaciones --- */
 export type Modalidad = 'presencial' | 'virtual' | 'mixta';
@@ -130,7 +128,8 @@ export interface HoraExtra {
   fecha: string;
   horaInicio: string;
   horaFin: string;
-  cantidadHoras: number;
+  /** Duracion en minutos (se muestra con textoDeMinutos: "2 h 40 min"). */
+  cantidadMinutos: number;
   nocturna: boolean;
   motivo: string | null;
   registradaPor: string;
@@ -141,9 +140,9 @@ export interface HoraExtra {
 
 export interface ResumenDeHorasExtra {
   mes: string;
-  totalHoras: number;
+  totalMinutos: number;
   totalRegistros: number;
-  porPersona: { funcionario: { id: string; nombre: string; departamento: string | null }; horas: number; registros: number }[];
+  porPersona: { funcionario: { id: string; nombre: string; departamento: string | null }; minutos: number; registros: number }[];
   registros: Pagina<HoraExtra>;
 }
 
@@ -171,10 +170,19 @@ export const registrarHoraExtra = (datos: DatosDeHoraExtra) => pedirAlServidor<H
 export const anularHoraExtra = (id: string, motivo: string) =>
   pedirAlServidor<HoraExtra>('POST', `/horas-extra/${ruta(id)}/anular`, { cuerpo: { motivo } });
 
-/** Horas entre dos "HH:MM" (si el fin es menor, termina al dia siguiente). Igual que el backend. */
-export function horasEntre(inicio: string, fin: string): number | null {
+/** Minutos entre dos "HH:MM" (si el fin es menor, termina al dia siguiente). Igual que el backend. */
+export function minutosEntre(inicio: string, fin: string): number | null {
   const m = (h: string) => (/^([01]\d|2[0-3]):[0-5]\d$/.test(h) ? Number(h.slice(0, 2)) * 60 + Number(h.slice(3)) : null);
   const a = m(inicio), b = m(fin);
   if (a === null || b === null || a === b) return null;
-  return ((b - a + 1440) % 1440) / 60;
+  return (b - a + 1440) % 1440;
+}
+
+/** 160 -> "2 h 40 min"; 45 -> "45 min"; 180 -> "3 h"; 0 -> "0 h". Las horas son de 60 minutos. */
+export function textoDeMinutos(total: number): string {
+  const h = Math.floor(total / 60);
+  const m = total % 60;
+  if (!h && !m) return '0 h';
+  if (!h) return `${m} min`;
+  return m ? `${h} h ${m} min` : `${h} h`;
 }
