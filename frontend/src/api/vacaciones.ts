@@ -202,3 +202,33 @@ export const editarFeriado = (id: string, cambios: Partial<DatosDeFeriado & { ac
   pedirAlServidor<DiaNoLaborable>('PATCH', `/dias-no-laborables/${ruta(id)}`, { cuerpo: cambios });
 export const eliminarFeriado = (id: string) => pedirAlServidor<unknown>('DELETE', `/dias-no-laborables/${ruta(id)}`);
 export const cargarFeriadosDeLey = () => pedirAlServidor<DiaNoLaborable[]>('POST', '/dias-no-laborables/de-ley');
+
+/* --- Reglas de vacaciones por regimen (RRHH, HU 27 CA04) --- */
+export interface TramoDeVacaciones {
+  aniosMinimos: number;
+  /** null = en adelante. */
+  aniosMaximos: number | null;
+  diasPorPeriodo: number;
+}
+
+export interface RegimenDeVacaciones {
+  id: string;
+  nombre: string;
+  descripcion: string | null;
+  periodosMaximosAcumulables: number;
+  diasAvisoAntesDeVencer: number;
+  activo: boolean;
+  funcionariosActivos: number;
+  tramos: TramoDeVacaciones[];
+}
+
+export interface DatosDeRegimen {
+  descripcion?: string;
+  periodosMaximosAcumulables: number;
+  diasAvisoAntesDeVencer: number;
+  tramos: TramoDeVacaciones[];
+}
+
+export const consultarReglasDeVacaciones = () => pedirAlServidor<RegimenDeVacaciones[]>('GET', '/reglas-vacaciones');
+export const guardarRegimen = (id: string, datos: DatosDeRegimen) =>
+  pedirAlServidor<RegimenDeVacaciones>('PUT', `/reglas-vacaciones/${ruta(id)}`, { cuerpo: datos });

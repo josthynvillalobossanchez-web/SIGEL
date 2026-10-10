@@ -63,6 +63,7 @@ import { BandejaDeJefatura } from './paginas/vacaciones/BandejaDeJefatura';
 import { TodasLasSolicitudes } from './paginas/vacaciones/TodasLasSolicitudes';
 import { IncapacidadesDelPersonal } from './paginas/ausencias/IncapacidadesDelPersonal';
 import { HorasExtra } from './paginas/ausencias/HorasExtra';
+import { ReglasDeVacaciones } from './paginas/vacaciones/ReglasDeVacaciones';
 import { Feriados } from './paginas/vacaciones/Feriados';
 import { PaginaNoEncontrada } from './paginas/SinPermiso';
 import { GestorDeAyudas } from './componentes/Ayudas';
@@ -262,6 +263,14 @@ export function App() {
                 element={
                   <ConPermisos permisos={['solicitudes.administrar']}>
                     <IncapacidadesDelPersonal />
+                  </ConPermisos>
+                }
+              />
+              <Route
+                path="/reglas-vacaciones"
+                element={
+                  <ConPermisos permisos={['catalogos.editar']}>
+                    <ReglasDeVacaciones />
                   </ConPermisos>
                 }
               />

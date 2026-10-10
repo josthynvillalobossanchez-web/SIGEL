@@ -194,6 +194,13 @@ export const MENU: GrupoDeMenu[] = [
         permisos: ['tiposDocumento.editar'],
         descripcion: 'Los tipos de documento del expediente y los formatos de archivo que acepta cada uno.',
       },
+      {
+        texto: 'Reglas de vacaciones',
+        ruta: '/reglas-vacaciones',
+        icono: 'sombrilla',
+        permisos: ['catalogos.editar'],
+        descripcion: 'Cuántos días de vacaciones da cada año de servicio, el tope de periodos y el aviso antes de perder días.',
+      },
     ],
   },
   {

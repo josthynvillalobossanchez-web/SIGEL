@@ -583,3 +583,25 @@
 /* Incapacidad: Tipo | Numero de boleta; debajo, a lo ancho, "¿Quien la emitio?". */
 @media (min-width: 720px) { .detalles-incapacidad { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 .detalles-incapacidad .campo-emisor { order: 3; grid-column: 1 / -1; }
+
+/* Reglas de vacaciones (10/10) */
+.lista-regimenes { display: grid; gap: 16px; grid-template-columns: minmax(0, 1fr); }
+@media (min-width: 1100px) { .lista-regimenes { grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; } }
+.regimen { padding: 18px 20px; display: flex; flex-direction: column; gap: 10px; }
+.regimen-cab h2 { font-size: 18px; margin: 0 0 2px; }
+.regimen-cab .ayuda-detalle { margin: 0; }
+.regimen-sub { font-size: 14px; margin: 6px 0 0; }
+.tramos { display: flex; flex-direction: column; gap: 6px; }
+.tramo { display: grid; grid-template-columns: 90px minmax(0, 1fr) minmax(0, 1fr) 40px; gap: 10px; align-items: center; }
+.tramo-cab { font-size: 12px; font-weight: 700; color: var(--texto-sec); text-transform: uppercase; letter-spacing: .03em; }
+.tramo input { width: 100%; }
+.tramo-desde { font-weight: 600; }
+.tramo-abierto { color: var(--texto-sec); font-style: italic; }
+.regimen > .btn-texto { align-self: flex-start; display: inline-flex; align-items: center; gap: 4px; }
+@media (min-width: 720px) { .regimen-limites { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.regimen-acciones { display: flex; justify-content: flex-end; gap: 8px; flex-wrap: wrap; }
+.tramo input { padding: 8px 10px; font-size: 15px; font-family: inherit; color: var(--texto); background: var(--card);
+  border: 1px solid var(--borde-fuerte); border-radius: var(--radio-md); }
+.tramo input:focus-visible { outline: 3px solid var(--foco); outline-offset: 1px; }
+/* Un boton deshabilitado debe verse deshabilitado (no habia estilo general para :disabled). */
+.btn:disabled { opacity: .45; cursor: not-allowed; }

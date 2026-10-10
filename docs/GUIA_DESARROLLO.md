@@ -366,7 +366,7 @@ aparece marcado como público, exige sesión.
 | `POST /funcionarios/:id/reingreso` | `funcionarios.editar` | `{ fechaIngreso }` |
 | `GET /expedientes/propio` | `expediente.ver` | Expediente propio `{ funcionario, esPropio, tieneFoto }`; se anota en la bitácora |
 | `GET /expedientes/:funcionarioId` | `expediente.ver` (+ `expediente.verTodos` si es de otra persona) | Abre un expediente; se anota en la bitácora |
-| `GET /expedientes/:funcionarioId/historial` | igual | `?pagina=&tamano=`; movimientos `{ tipo, titulo, fechaEfectiva, cambios[{campo, antes, despues}], detalle, quien }` |
+| `GET /expedientes/:funcionarioId/historial` | igual | `?pagina=&tamano=&tipo=ingreso\|cambio\|salida\|reingreso\|documentos&desde=&hasta=&busqueda=`; movimientos `{ tipo, titulo, fechaEfectiva, cambios[{campo, antes, despues}], detalle, quien }` |
 | `GET /expedientes/:funcionarioId/documentos` | `expediente.ver` (+ `expediente.verTodos` si es de otra persona) | `?pagina=&tamano=&busqueda=&tipoDocumentoId=&estado=vigentes\|bajas\|todos`. Cada documento trae `acciones` (qué puede hacer quien consulta y por qué no). `bajas`/`todos` solo con `documentos.restaurar`; para los demás se ignoran |
 | `POST /expedientes/:funcionarioId/documentos` | `documentos.crear` | Subir (multipart: campo `archivo` + `tipoDocumentoId`, `titulo`, `descripcion?`, `fechaDocumento?`). Máximo 25 MB; PDF, JPG o PNG según el tipo |
 | `GET /documentos/:id/archivo?modo=ver\|descargar` | `documentos.descargar` | Entrega el archivo ya descifrado (se anota `consultar` o `descargar` en la bitácora) |
@@ -395,6 +395,7 @@ aparece marcado como público, exige sesión.
 | `POST /solicitudes/:id/cancelar` | `solicitudes.crear` | Pendiente sin abrir; o aprobada por la propia persona (tope) antes de empezar: devuelve los días (`SOLICITUD_YA_INICIADA`) |
 | `GET /dias-no-laborables` · `GET /dias-no-laborables/fechas?anio=` | `solicitudes.crear` | Catálogo de feriados (`regla`: `fija` con `mes`/`dia`, `unica` con `fecha`, `juevesSanto`, `viernesSanto`; trae `proxima`) · fechas de un año ya calculadas |
 | `POST /dias-no-laborables` · `PATCH /:id` · `DELETE /:id` · `POST /dias-no-laborables/de-ley` | `catalogos.editar` | `{ nombre, regla, mes?, dia?, fecha? }` (`FECHA_YA_REGISTRADA`); `de-ley` agrega los feriados de ley de Costa Rica que falten |
+| `GET /reglas-vacaciones` · `PUT /reglas-vacaciones/:regimenId` | `catalogos.editar` | Regímenes con tramos, tope y aviso · `{ descripcion?, periodosMaximosAcumulables, diasAvisoAntesDeVencer, tramos: [{ aniosMinimos, aniosMaximos\|null, diasPorPeriodo }] }` (`REGLA_NO_VALIDA`, `SIN_CAMBIOS`) |
 | `POST /solicitudes/con-justificante` | `solicitudes.crear` | Multipart: campos de la solicitud + archivo `justificante`. Revisa todo antes de guardar el archivo |
 | `GET /solicitudes/:id/justificante` | `solicitudes.crear` | El archivo (quien puede ver la solicitud; `SIN_JUSTIFICANTE`) |
 | `POST /solicitudes/:id/constancia` | `solicitudes.crear` | Genera de nuevo una constancia fallida: RRHH o quien aprobó (`CONSTANCIA_NO_APLICA`) |

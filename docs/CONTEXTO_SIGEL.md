@@ -866,6 +866,10 @@ No volver a preguntarlas. El detalle de cómo se despliega está en `GUIA_DESARR
   **solicitudes son de hoy en adelante para todos** (la incapacidad acepta fechas pasadas). En el detalle,
   «Ver mi saldo» solo para la persona y la constancia para la persona y RRHH. Tocar la fila de un documento lo
   abre.
+- **Cierre del Sprint 2 (10/10):** constancia en PDF también para permisos y licencias; pantalla «Reglas de
+  vacaciones» (tramos, tope y aviso por régimen, sin tocar código); filtros en Capacitaciones e Historial laboral.
+  Las decisiones que se apartan de las HU están en ENTREGABLE_2 §8. **Sigue el Sprint 3** (notificaciones y
+  auditoría primero; el Talent Pool al final).
 
 ### Convenciones de la base de datos
 

@@ -205,7 +205,7 @@ const TIPOS_SOLICITUD = [
     descripcion: 'Descuentan del saldo de vacaciones y generan una constancia al aprobarse',
     descuentaVacaciones: true,
     requiereJustificante: false,
-    generaConstancia: true,
+    generaConstancia: 'Constancia de vacaciones',
     colorCalendario: '#2f7d5b',
   },
   {
@@ -214,7 +214,7 @@ const TIPOS_SOLICITUD = [
     descripcion: 'Ausencia autorizada sin rebajo de salario ni de vacaciones',
     descuentaVacaciones: false,
     requiereJustificante: false,
-    generaConstancia: false,
+    generaConstancia: 'Constancia de permiso o licencia',
     colorCalendario: '#3b6fb6',
   },
   {
@@ -223,7 +223,7 @@ const TIPOS_SOLICITUD = [
     descripcion: 'Ausencia autorizada con rebajo de salario',
     descuentaVacaciones: false,
     requiereJustificante: false,
-    generaConstancia: false,
+    generaConstancia: 'Constancia de permiso o licencia',
     colorCalendario: '#8a6d3b',
   },
   {
@@ -234,7 +234,7 @@ const TIPOS_SOLICITUD = [
     requiereJustificante: true,
     // Es un derecho: nadie la aprueba ni la rechaza (decision 10/10).
     requiereAprobacion: false,
-    generaConstancia: false,
+    generaConstancia: 'Constancia de permiso o licencia',
     colorCalendario: '#7b5ea7',
   },
   {
@@ -256,6 +256,12 @@ const TIPOS_DOCUMENTO = [
   { nombre: 'Accion de personal', descripcion: 'Nombramientos y cambios de puesto', generadoPorSistema: false, formatosPermitidos: 'pdf' },
   { nombre: 'Hoja de delincuencia', descripcion: 'Documento emitido por el Registro Judicial', generadoPorSistema: false, formatosPermitidos: 'pdf' },
   { nombre: 'Curriculum', descripcion: 'Se copia desde el Talent Pool al contratar', generadoPorSistema: true, formatosPermitidos: 'pdf' },
+  {
+    nombre: 'Constancia de permiso o licencia',
+    descripcion: 'La genera SINERGIA al aprobarse un permiso o al registrarse una licencia',
+    generadoPorSistema: true,
+    formatosPermitidos: 'pdf',
+  },
   {
     nombre: 'Constancia de vacaciones',
     descripcion: 'La genera SINERGIA al aprobarse una solicitud de vacaciones',
@@ -351,13 +357,13 @@ async function main(): Promise<void> {
   console.log(`  Tramos de vacaciones: ${REGLAS_VACACIONES.length}`);
 
   // --- Tipos de solicitud ---
-  const constancia = await prisma.tipoDocumento.findUniqueOrThrow({ where: { nombre: 'Constancia de vacaciones' } });
   for (const { generaConstancia, ...tipo } of TIPOS_SOLICITUD) {
+    const constancia = typeof generaConstancia === 'string' ? await prisma.tipoDocumento.findUniqueOrThrow({ where: { nombre: generaConstancia } }) : null;
     await prisma.tipoSolicitud.upsert({
       where: { clave: tipo.clave },
       // Solo se crean: el nombre y los demas ajustes los puede cambiar RRHH.
       update: {},
-      create: { ...tipo, tipoDocumentoGeneradoId: generaConstancia ? constancia.id : null },
+      create: { ...tipo, tipoDocumentoGeneradoId: constancia?.id ?? null },
     });
   }
   console.log(`  Tipos de solicitud: ${TIPOS_SOLICITUD.length}`);

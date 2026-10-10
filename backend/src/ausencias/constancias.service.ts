@@ -31,7 +31,7 @@ export function fechaYHoraCR(f: Date): string {
 }
 
 /**
- * Constancia de vacaciones (HU 26, Diagrama 3c): al aprobarse una solicitud
+ * Constancias de vacaciones, permisos y licencias (HU 26 y 33, Diagrama 3c): al aprobarse una solicitud
  * cuyo tipo genera documento, SINERGIA arma el PDF y lo guarda en el
  * expediente de la persona (DocumentosService.registrarGenerado). Si falla,
  * la solicitud queda con el documento "fallido" para que RRHH lo reintente.
@@ -78,7 +78,7 @@ export class ConstanciasService {
             },
           },
           usuarioResolucion: { select: { correo: true, funcionario: { select: { nombre: true, primerApellido: true, segundoApellido: true } } } },
-          tipoSolicitud: { select: { nombre: true, tipoDocumentoGeneradoId: true } },
+          tipoSolicitud: { select: { clave: true, nombre: true, requiereAprobacion: true, tipoDocumentoGeneradoId: true } },
         },
       });
       if (!s || s.estado !== 'aprobada' || !s.tipoSolicitud.tipoDocumentoGeneradoId || s.documentoGeneradoId) return false;
@@ -86,8 +86,12 @@ export class ConstanciasService {
       const f = s.funcionario;
       const r = s.usuarioResolucion;
       const feriados = await this.feriados.entre(s.fechaInicio, s.fechaFin);
-      const saldo = await this.vacaciones.resumen(f.id);
+      const esVacaciones = s.tipoSolicitud.clave === 'vacaciones';
+      const saldo = esVacaciones ? await this.vacaciones.resumen(f.id) : null;
       const contenido = await generarConstanciaPdf({
+        clave: s.tipoSolicitud.clave,
+        nombreDelTipo: s.tipoSolicitud.nombre,
+        requiereAprobacion: s.tipoSolicitud.requiereAprobacion,
         consecutivo: s.consecutivo,
         nombreCompleto: [f.nombre, f.primerApellido, f.segundoApellido].filter(Boolean).join(' '),
         cedula: f.cedula,
@@ -100,13 +104,13 @@ export class ConstanciasService {
         aprobadaPor: r?.funcionario ? [r.funcionario.nombre, r.funcionario.primerApellido, r.funcionario.segundoApellido].filter(Boolean).join(' ') : (r?.correo ?? 'el sistema'),
         aprobadaEl: fechaYHoraCR(s.fechaResolucion ?? new Date()),
         emitidaEl: fechaYHoraCR(new Date()),
-        saldoDisponible: saldo.disponible,
+        saldoDisponible: saldo?.disponible ?? null,
         motivo: s.motivo,
       });
       const doc = await this.documentos.registrarGenerado({
         funcionarioId: f.id,
         tipoDocumentoId: s.tipoSolicitud.tipoDocumentoGeneradoId,
-        titulo: `Constancia de vacaciones ${s.consecutivo}`,
+        titulo: `Constancia de ${s.tipoSolicitud.nombre.toLowerCase()} ${s.consecutivo}`,
         descripcion: `Del ${aFechaSola(s.fechaInicio)} al ${aFechaSola(s.fechaFin)} (${Number(s.cantidadDias ?? 0)} día(s) hábil(es)).`,
         contenido,
         usuarioOrigenId,

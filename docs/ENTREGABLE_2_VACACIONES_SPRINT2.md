@@ -165,3 +165,25 @@ más de **dos periodos**: lo que exceda vence (movimiento «vencimiento», con a
 3. **Quién ve qué en el detalle de una solicitud:** «Ver mi saldo» solo la persona; la constancia, la
    persona y RRHH (generarla de nuevo, solo RRHH). La jefatura ve el justificante, que necesita para decidir.
 4. **Documentos del expediente:** tocar la fila abre el documento, igual que el ojo.
+
+## 8. Cierre del Sprint 2 (10/10/2026)
+
+1. **Constancia de permisos y licencias** (HU 33 CA06): al aprobarse un permiso con o sin goce, o al registrarse
+   una licencia, SINERGIA genera su constancia en PDF y la deja en el expediente (tipo «Constancia de permiso o
+   licencia», migración `20261010020000_constancia_de_permisos`). El texto cambia según el tipo; el saldo solo
+   aparece en la de vacaciones.
+2. **Reglas de vacaciones** (HU 27 CA04, menú Catálogos → «Reglas de vacaciones», `catalogos.editar`): por régimen,
+   RRHH edita los tramos (días por periodo según los años cumplidos), el tope de periodos y el aviso antes de perder
+   días. Los tramos van de 0 años en adelante, seguidos y sin huecos; solo días completos. Rigen para los próximos
+   aniversarios; cada cambio queda en la bitácora con el antes y el después.
+3. **Filtros en Capacitaciones** del expediente (HU 35 CA03): texto, año, modalidad y certificado.
+4. **Filtros en Historial laboral** del expediente: tipo de movimiento, rango de fechas y texto libre.
+
+### Decisiones que se apartan de las historias de usuario (a propósito)
+
+| HU | Lo que decía | Lo que quedó | Por qué |
+|---|---|---|---|
+| HU 32 | La licencia se aprueba o rechaza | Queda aprobada al registrarla; no se rechaza ni se cancela | Es un derecho; el comprobante obligatorio es el control (Josthyn, 10/10) |
+| HU 36 | Horas extra con aprobación (pendiente/aprobada/rechazada) | Registro de RRHH, sin aprobación; se anula con motivo | La jefatura las autoriza fuera del sistema (Joseph y Josthyn, 30/09) |
+| HU 31/32 (incapacidades) | — | Nadie la aprueba, rechaza ni anula | La boleta es el control; un abuso se maneja fuera del sistema (10/10) |
+| HU 28 CA03 | El funcionario selecciona su aprobador | Lo asigna el sistema: la jefatura inmediata | Evita que alguien elija quién le aprueba (01/10) |

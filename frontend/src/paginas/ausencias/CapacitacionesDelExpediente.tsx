@@ -4,6 +4,8 @@
  * choca con el horario, el backend crea la solicitud para la jefatura (para
  * eso tambien sirve "Nueva solicitud" > Capacitacion).
  * Quien la registro (o RRHH) adjunta el certificado despues o la da de baja.
+ * Filtros (HU 35 CA03, 10/10): texto (nombre o institucion), anio, modalidad
+ * y si tiene certificado. Se filtra en el navegador: son pocas por persona.
  */
 import { useState } from 'react';
 import {
@@ -48,6 +50,25 @@ export function CapacitacionesDelExpediente({ funcionarioId, propio }: { funcion
 
   const totalHoras = (lista.datos ?? []).reduce((t, c) => t + (c.cantidadHoras ?? 0), 0);
 
+  // --- Filtros ---
+  const [texto, setTexto] = useState('');
+  const [anio, setAnio] = useState('');
+  const [modalidad, setModalidad] = useState<Modalidad | ''>('');
+  const [certificado, setCertificado] = useState<'' | 'con' | 'sin'>('');
+  const hayFiltros = Boolean(texto.trim() || anio || modalidad || certificado);
+  const anioDe = (c: Capacitacion) => (c.fechaInicio ?? c.fechaRegistro).slice(0, 4);
+  const anios = [...new Set((lista.datos ?? []).map(anioDe))].sort().reverse();
+  const sinTildes = (t: string) => t.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  const palabras = sinTildes(texto).split(/\s+/).filter(Boolean);
+  const visibles = (lista.datos ?? []).filter((c) => {
+    if (anio && anioDe(c) !== anio) return false;
+    if (modalidad && c.modalidad !== modalidad) return false;
+    if (certificado === 'con' && !c.certificadoId) return false;
+    if (certificado === 'sin' && c.certificadoId) return false;
+    const enTexto = sinTildes(`${c.nombre} ${c.institucion ?? ''}`);
+    return palabras.every((p) => enTexto.includes(p));
+  });
+
   return (
     <div className="capacitaciones">
       <div className="fila-acciones">
@@ -65,6 +86,53 @@ export function CapacitacionesDelExpediente({ funcionarioId, propio }: { funcion
 
       {aviso && <Mensaje tipo="exito">{aviso}</Mensaje>}
       {lista.error && <Mensaje tipo="error">{lista.error}</Mensaje>}
+      {(lista.datos?.length ?? 0) > 0 && (
+        <div className="herramientas filtros-capacitaciones">
+          <div className="buscador">
+            <Icono nombre="buscar" />
+            <input type="search" value={texto} onChange={(e) => setTexto(e.target.value)} placeholder="Nombre del curso o institución" aria-label="Buscar capacitaciones" />
+          </div>
+          <label className="filtro-select">
+            <span className="sr">Año</span>
+            <select value={anio} onChange={(e) => setAnio(e.target.value)}>
+              <option value="">Todos los años</option>
+              {anios.map((a) => (
+                <option key={a} value={a}>
+                  {a}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="filtro-select">
+            <span className="sr">Modalidad</span>
+            <select value={modalidad} onChange={(e) => setModalidad(e.target.value as Modalidad | '')}>
+              <option value="">Toda modalidad</option>
+              <option value="presencial">Presencial</option>
+              <option value="virtual">Virtual</option>
+              <option value="mixta">Mixta</option>
+            </select>
+          </label>
+          <label className="filtro-select">
+            <span className="sr">Certificado</span>
+            <select value={certificado} onChange={(e) => setCertificado(e.target.value as '' | 'con' | 'sin')}>
+              <option value="">Con o sin certificado</option>
+              <option value="con">Con certificado</option>
+              <option value="sin">Sin certificado</option>
+            </select>
+          </label>
+          {hayFiltros && (
+            <button type="button" className="btn-texto" onClick={() => { setTexto(''); setAnio(''); setModalidad(''); setCertificado(''); }} data-ayuda="Quitar todos los filtros">
+              Limpiar filtros
+            </button>
+          )}
+        </div>
+      )}
+      {lista.datos && lista.datos.length > 0 && visibles.length === 0 && (
+        <div className="vacio">
+          <h3>Ninguna capacitación coincide con esos filtros</h3>
+          <p>Pruebe con otro filtro o quítelos.</p>
+        </div>
+      )}
       {lista.datos && lista.datos.length === 0 && (
         <div className="vacio">
           <Icono nombre="reloj" tamano={36} />
@@ -73,9 +141,9 @@ export function CapacitacionesDelExpediente({ funcionarioId, propio }: { funcion
         </div>
       )}
 
-      {lista.datos && lista.datos.length > 0 && (
+      {visibles.length > 0 && (
         <ul className="lista-capacitaciones">
-          {lista.datos.map((c) => (
+          {visibles.map((c) => (
             <li key={c.id} className="card capacitacion">
               <div className="capacitacion-cab">
                 <b>{c.nombre}</b>
