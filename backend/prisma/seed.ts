@@ -32,7 +32,11 @@ const prisma = new PrismaClient({ adapter: new PrismaMariaDb(configuracionDeCone
 // Catalogo de permisos del Sprint 1
 // ---------------------------------------------------------------------
 const PERMISOS: { clave: string; modulo: string; descripcion: string }[] = [
-  { clave: 'funcionarios.ver', modulo: 'funcionarios', descripcion: 'Consultar funcionarios y su ficha resumida' },
+  // Alcance (decision de Josthyn, 01/10): con solo funcionarios.ver se ve al
+  // personal A CARGO (la jefatura ve a su equipo); con funcionarios.verTodos,
+  // a todo el personal (Recursos Humanos, Auditoria).
+  { clave: 'funcionarios.ver', modulo: 'funcionarios', descripcion: 'Consultar funcionarios y su ficha resumida (sin verTodos, solo el personal a su cargo)' },
+  { clave: 'funcionarios.verTodos', modulo: 'funcionarios', descripcion: 'Consultar a todo el personal, no solo al que tiene a cargo' },
   { clave: 'funcionarios.crear', modulo: 'funcionarios', descripcion: 'Registrar un funcionario nuevo' },
   { clave: 'funcionarios.editar', modulo: 'funcionarios', descripcion: 'Modificar la información de un funcionario' },
   // Expediente (decision de Josthyn, 28/09): cada persona abre el SUYO
@@ -83,6 +87,16 @@ const PERMISOS: { clave: string; modulo: string; descripcion: string }[] = [
     modulo: 'solicitudes',
     descripcion: 'Aprobar o rechazar las solicitudes del personal a cargo (puede ser jefatura inmediata)',
   },
+  // Lo usa Recursos Humanos: ver las solicitudes y el calendario de todo el
+  // personal, y hacer solicitudes en nombre de otra persona (Ficha 25). No
+  // aprueba: aprobar sigue siendo de la jefatura inmediata (T-1).
+  {
+    clave: 'solicitudes.administrar',
+    modulo: 'solicitudes',
+    descripcion: 'Ver las solicitudes y el calendario de todo el personal y registrar solicitudes en nombre de cualquier persona',
+  },
+  // Horas extra (09/10): solo un registro que lleva RRHH, sin aprobacion.
+  { clave: 'horasExtra.registrar', modulo: 'horasExtra', descripcion: 'Registrar, consultar y anular las horas extra del personal' },
 ];
 
 // ---------------------------------------------------------------------
@@ -111,6 +125,7 @@ const ROLES: { nombre: string; descripcion: string; permisos: string[] | 'todos'
     descripcion: 'Gestión completa de funcionarios, expedientes, usuarios y catálogos. Lo usa Recursos Humanos.',
     permisos: [
       'funcionarios.ver',
+      'funcionarios.verTodos',
       'funcionarios.crear',
       'funcionarios.editar',
       'expediente.ver',
@@ -132,6 +147,8 @@ const ROLES: { nombre: string; descripcion: string; permisos: string[] | 'todos'
       'perfilPropio.editar',
       'solicitudes.crear',
       'solicitudes.aprobar',
+      'solicitudes.administrar',
+      'horasExtra.registrar',
     ],
   },
   {
@@ -149,7 +166,7 @@ const ROLES: { nombre: string; descripcion: string; permisos: string[] | 'todos'
   {
     nombre: 'Consulta',
     descripcion: 'Solo lectura de funcionarios y usuarios, sin ningún permiso de escritura (abre solo su propio expediente). Auditoría Interna.',
-    permisos: ['funcionarios.ver', 'expediente.ver', 'documentos.descargar', 'usuarios.ver'],
+    permisos: ['funcionarios.ver', 'funcionarios.verTodos', 'expediente.ver', 'documentos.descargar', 'usuarios.ver'],
   },
 ];
 
@@ -168,6 +185,69 @@ const REGIMENES = [
   },
 ];
 
+// Tramos de vacaciones por regimen. aniosMinimos/aniosMaximos son anios de
+// servicio CUMPLIDOS: "general" da 15 dias por periodo durante los primeros 6
+// anios (0 a 5 cumplidos) y 20 desde que cumple 6. Si la normativa cambia, se
+// editan estas filas (no el codigo).
+const REGLAS_VACACIONES = [
+  { regimen: 'general', aniosMinimos: 0, aniosMaximos: 5, diasPorPeriodo: 15 },
+  { regimen: 'general', aniosMinimos: 6, aniosMaximos: null, diasPorPeriodo: 20 },
+  { regimen: 'anterior', aniosMinimos: 0, aniosMaximos: null, diasPorPeriodo: 30 },
+];
+
+// Tramites que se piden desde "Solicitudes". Las horas extra NO van aqui: son
+// solo un registro que hace RRHH (decision del 30/09). Las incapacidades
+// tienen su propia tabla porque no pasan por aprobacion.
+const TIPOS_SOLICITUD = [
+  {
+    clave: 'vacaciones',
+    nombre: 'Vacaciones',
+    descripcion: 'Descuentan del saldo de vacaciones y generan una constancia al aprobarse',
+    descuentaVacaciones: true,
+    requiereJustificante: false,
+    generaConstancia: 'Constancia de vacaciones',
+    colorCalendario: '#2f7d5b',
+  },
+  {
+    clave: 'permisoConGoce',
+    nombre: 'Permiso con goce de salario',
+    descripcion: 'Ausencia autorizada sin rebajo de salario ni de vacaciones',
+    descuentaVacaciones: false,
+    requiereJustificante: false,
+    generaConstancia: 'Constancia de permiso o licencia',
+    colorCalendario: '#3b6fb6',
+  },
+  {
+    clave: 'permisoSinGoce',
+    nombre: 'Permiso sin goce de salario',
+    descripcion: 'Ausencia autorizada con rebajo de salario',
+    descuentaVacaciones: false,
+    requiereJustificante: false,
+    generaConstancia: 'Constancia de permiso o licencia',
+    colorCalendario: '#8a6d3b',
+  },
+  {
+    clave: 'licencia',
+    nombre: 'Licencia',
+    descripcion: 'Licencias previstas por la normativa (por ejemplo matrimonio o fallecimiento de un familiar)',
+    descuentaVacaciones: false,
+    requiereJustificante: true,
+    // Es un derecho: nadie la aprueba ni la rechaza (decision 10/10).
+    requiereAprobacion: false,
+    generaConstancia: 'Constancia de permiso o licencia',
+    colorCalendario: '#7b5ea7',
+  },
+  {
+    clave: 'capacitacion',
+    nombre: 'Capacitación que choca con el horario',
+    descripcion: 'Curso o actividad de formación que se cruza con la jornada laboral',
+    descuentaVacaciones: false,
+    requiereJustificante: false,
+    generaConstancia: false,
+    colorCalendario: '#c2762b',
+  },
+];
+
 // formatosPermitidos: pdf, jpg y/o png. Se aplican solo al CREAR el tipo: si RRHH
 // los cambia despues desde la pantalla de tipos, el seed no los pisa.
 const TIPOS_DOCUMENTO = [
@@ -177,11 +257,29 @@ const TIPOS_DOCUMENTO = [
   { nombre: 'Hoja de delincuencia', descripcion: 'Documento emitido por el Registro Judicial', generadoPorSistema: false, formatosPermitidos: 'pdf' },
   { nombre: 'Curriculum', descripcion: 'Se copia desde el Talent Pool al contratar', generadoPorSistema: true, formatosPermitidos: 'pdf' },
   {
+    nombre: 'Constancia de permiso o licencia',
+    descripcion: 'La genera SINERGIA al aprobarse un permiso o al registrarse una licencia',
+    generadoPorSistema: true,
+    formatosPermitidos: 'pdf',
+  },
+  {
     nombre: 'Constancia de vacaciones',
     descripcion: 'La genera SINERGIA al aprobarse una solicitud de vacaciones',
     generadoPorSistema: true,
     formatosPermitidos: 'pdf',
   },
+  // Adjuntos de los tramites del Sprint 2 (se suben junto con el tramite).
+  { nombre: 'Justificante de solicitud', descripcion: 'Respaldo de una licencia o permiso (se adjunta al pedirlo)', generadoPorSistema: false, formatosPermitidos: 'pdf,jpg,png' },
+  { nombre: 'Boleta de incapacidad', descripcion: 'Boleta o dictamen médico de una incapacidad', generadoPorSistema: false, formatosPermitidos: 'pdf,jpg,png' },
+  { nombre: 'Certificado de capacitación', descripcion: 'Certificado o constancia de un curso o capacitación', generadoPorSistema: false, formatosPermitidos: 'pdf,jpg,png' },
+];
+
+// Tipos de incapacidad iniciales: RRHH agrega o desactiva desde Catalogos.
+const TIPOS_INCAPACIDAD = [
+  { nombre: 'Enfermedad', descripcion: 'Incapacidad por enfermedad común (CCSS o médico privado)' },
+  { nombre: 'Maternidad', descripcion: 'Licencia por maternidad (CCSS)' },
+  { nombre: 'Riesgo del trabajo', descripcion: 'Accidente o enfermedad laboral (INS)' },
+  { nombre: 'Cuido de familiar', descripcion: 'Licencia para cuidar a un familiar enfermo (CCSS)' },
 ];
 
 async function main(): Promise<void> {
@@ -239,6 +337,42 @@ async function main(): Promise<void> {
     });
   }
   console.log(`  Tipos de documento: ${TIPOS_DOCUMENTO.length}`);
+
+  // --- Tramos de vacaciones ---
+  for (const regla of REGLAS_VACACIONES) {
+    const regimen = await prisma.regimenVacaciones.findUniqueOrThrow({ where: { nombre: regla.regimen } });
+    await prisma.reglaVacaciones.upsert({
+      where: { regimenVacacionesId_aniosMinimos: { regimenVacacionesId: regimen.id, aniosMinimos: regla.aniosMinimos } },
+      // Si RRHH ya ajusto los dias, el seed no los pisa.
+      update: {},
+      create: {
+        regimenVacacionesId: regimen.id,
+        aniosMinimos: regla.aniosMinimos,
+        aniosMaximos: regla.aniosMaximos,
+        diasPorPeriodo: regla.diasPorPeriodo,
+        vigenteDesde: new Date('2000-01-01'),
+      },
+    });
+  }
+  console.log(`  Tramos de vacaciones: ${REGLAS_VACACIONES.length}`);
+
+  // --- Tipos de solicitud ---
+  for (const { generaConstancia, ...tipo } of TIPOS_SOLICITUD) {
+    const constancia = typeof generaConstancia === 'string' ? await prisma.tipoDocumento.findUniqueOrThrow({ where: { nombre: generaConstancia } }) : null;
+    await prisma.tipoSolicitud.upsert({
+      where: { clave: tipo.clave },
+      // Solo se crean: el nombre y los demas ajustes los puede cambiar RRHH.
+      update: {},
+      create: { ...tipo, tipoDocumentoGeneradoId: constancia?.id ?? null },
+    });
+  }
+  console.log(`  Tipos de solicitud: ${TIPOS_SOLICITUD.length}`);
+
+  // --- Tipos de incapacidad (solo se crean; RRHH los administra) ---
+  for (const tipo of TIPOS_INCAPACIDAD) {
+    await prisma.tipoIncapacidad.upsert({ where: { nombre: tipo.nombre }, update: {}, create: tipo });
+  }
+  console.log(`  Tipos de incapacidad: ${TIPOS_INCAPACIDAD.length}`);
 
   // --- Cuenta del Super Administrador ---
   const correo = process.env.SEED_ADMIN_CORREO ?? 'informatica@munipalmares.go.cr';

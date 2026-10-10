@@ -4,7 +4,7 @@
  */
 import { pedirAlServidor } from './cliente';
 
-export type TipoDeCatalogo = 'departamentos' | 'puestos' | 'profesiones';
+export type TipoDeCatalogo = 'departamentos' | 'puestos' | 'profesiones' | 'tiposIncapacidad';
 
 export interface ElementoDeCatalogo {
   id: string;

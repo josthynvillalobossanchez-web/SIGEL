@@ -2,7 +2,8 @@ import { Controller, Get, Param, Query } from '@nestjs/common';
 import { RequierePermisos, UsuarioActual } from '../autenticacion/decoradores.js';
 import type { UsuarioAutenticado } from '../autenticacion/tipos.js';
 import { DireccionIp } from '../comun/decoradores.js';
-import { PaginacionDto, type PaginaDeResultados } from '../comun/dto/paginacion.dto.js';
+import type { PaginaDeResultados } from '../comun/dto/paginacion.dto.js';
+import { ConsultarHistorialDto } from './dto/consultar-historial.dto.js';
 import { uuidValido } from '../comun/pipes/uuid.pipe.js';
 import { ExpedientesService, type Expediente, type MovimientoDelHistorial } from './expedientes.service.js';
 
@@ -40,14 +41,14 @@ export class ExpedientesController {
   }
 
   /**
-   * GET /api/expedientes/:funcionarioId/historial?pagina=1&tamano=20
+   * GET /api/expedientes/:funcionarioId/historial?pagina=1&tamano=20&tipo=&desde=&hasta=&busqueda=
    * Historial laboral: linea de tiempo, lo mas reciente primero.
    */
   @RequierePermisos('expediente.ver')
   @Get(':funcionarioId/historial')
   historial(
     @Param('funcionarioId', uuidValido('funcionario')) funcionarioId: string,
-    @Query() paginacion: PaginacionDto,
+    @Query() paginacion: ConsultarHistorialDto,
     @UsuarioActual() quienActua: UsuarioAutenticado,
   ): Promise<PaginaDeResultados<MovimientoDelHistorial>> {
     return this.expedientes.historial(funcionarioId, paginacion, quienActua);

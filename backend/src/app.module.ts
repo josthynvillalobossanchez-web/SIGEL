@@ -15,6 +15,8 @@ import { RolesModule } from './roles/roles.module.js';
 import { TiposDocumentoModule } from './tipos-documento/tipos-documento.module.js';
 import { MiCuentaModule } from './mi-cuenta/mi-cuenta.module.js';
 import { UsuariosModule } from './usuarios/usuarios.module.js';
+import { VacacionesModule } from './vacaciones/vacaciones.module.js';
+import { AusenciasModule } from './ausencias/ausencias.module.js';
 import { SaludController } from './salud/salud.controller.js';
 
 @Module({
@@ -40,6 +42,8 @@ import { SaludController } from './salud/salud.controller.js';
     // Gestion documental (epica 3): documentos cifrados, tipos de documento y foto de perfil.
     TiposDocumentoModule,
     DocumentosModule,
+    VacacionesModule,
+    AusenciasModule,
   ],
   controllers: [SaludController],
   providers: [

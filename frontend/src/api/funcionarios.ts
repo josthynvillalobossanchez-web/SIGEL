@@ -85,6 +85,8 @@ export interface DatosDeFuncionario {
   tipoNombramiento: TipoDeNombramiento;
   regimenVacacionesId: string;
   fechaIngreso: string;
+  /** Solo al registrar: dias con los que empieza el saldo de vacaciones (0 a 365). */
+  saldoInicialVacaciones?: number;
 }
 
 export interface FiltrosDeFuncionarios {

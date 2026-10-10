@@ -4,7 +4,7 @@ import { BitacoraService } from '../bitacora/bitacora.service.js';
 import type { Prisma } from '../generated/prisma/client.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import type { CrearElementoDto, EditarElementoDto } from './dto/elemento-de-catalogo.dto.js';
-import { TIPOS_DE_CATALOGO, type TipoDeCatalogo } from './tipos-de-catalogo.js';
+import { conteoDe, TIPOS_DE_CATALOGO, type TipoDeCatalogo } from './tipos-de-catalogo.js';
 
 /** Un elemento de catalogo tal como lo devuelve la API. */
 export interface ElementoDeCatalogo {
@@ -36,8 +36,8 @@ interface FilaDeCatalogo {
  * revisarlo.
  */
 interface DelegadoDeCatalogo {
-  findMany(args: unknown): Promise<(FilaDeCatalogo & { _count: { funcionarios: number } })[]>;
-  findUnique(args: unknown): Promise<(FilaDeCatalogo & { _count: { funcionarios: number } }) | null>;
+  findMany(args: unknown): Promise<(FilaDeCatalogo & { _count: Record<string, number> })[]>;
+  findUnique(args: unknown): Promise<(FilaDeCatalogo & { _count: Record<string, number> }) | null>;
   findFirst(args: unknown): Promise<{ nombre: string } | null>;
   create(args: unknown): Promise<FilaDeCatalogo>;
   update(args: unknown): Promise<FilaDeCatalogo>;
@@ -49,14 +49,16 @@ function delegado(cliente: Cliente, tipo: TipoDeCatalogo): DelegadoDeCatalogo {
   return cliente[TIPOS_DE_CATALOGO[tipo].modelo] as unknown as DelegadoDeCatalogo;
 }
 
-/** Lo que se pide de cada fila: sus datos y cuantos funcionarios activos la usan. */
-const SELECCION = {
-  id: true,
-  nombre: true,
-  descripcion: true,
-  activo: true,
-  _count: { select: { funcionarios: { where: { estado: 'activo' } } } },
-} as const;
+/** Lo que se pide de cada fila: sus datos y cuantos la usan (funcionarios activos, o incapacidades vigentes). */
+function seleccion(tipo: TipoDeCatalogo) {
+  return { id: true, nombre: true, descripcion: true, activo: true, _count: { select: conteoDe(tipo).select } };
+}
+
+/** Las filas traen el conteo con el nombre de su relacion; se deja siempre como "funcionarios". */
+function normalizarConteo(fila: FilaDeCatalogo & { _count: Record<string, number> }): FilaDeCatalogo & { _count: { funcionarios: number } } {
+  const valor = Object.values(fila._count)[0] ?? 0;
+  return { ...fila, _count: { funcionarios: valor } };
+}
 
 function aElemento(fila: FilaDeCatalogo & { _count: { funcionarios: number } }): ElementoDeCatalogo {
   return {
@@ -98,20 +100,21 @@ export class CatalogosService {
   async consultar(tipo: TipoDeCatalogo, soloActivos = false): Promise<ElementoDeCatalogo[]> {
     const filas = await delegado(this.prisma, tipo).findMany({
       where: soloActivos ? { activo: true } : undefined,
-      select: SELECCION,
+      select: seleccion(tipo),
       orderBy: { nombre: 'asc' },
     });
-    return filas.map(aElemento);
+    return filas.map((f) => aElemento(normalizarConteo(f)));
   }
 
   /** Los tres catalogos de una vez (para la pantalla y los formularios). */
   async consultarTodos(soloActivos = false): Promise<CatalogosCompletos> {
-    const [departamentos, puestos, profesiones] = await Promise.all([
+    const [departamentos, puestos, profesiones, tiposIncapacidad] = await Promise.all([
       this.consultar('departamentos', soloActivos),
       this.consultar('puestos', soloActivos),
       this.consultar('profesiones', soloActivos),
+      this.consultar('tiposIncapacidad', soloActivos),
     ]);
-    return { departamentos, puestos, profesiones };
+    return { departamentos, puestos, profesiones, tiposIncapacidad };
   }
 
   async crear(
@@ -234,7 +237,7 @@ export class CatalogosService {
           datosNuevos: { activo, funcionariosActivosQueLoTienen: enUso },
           descripcion:
             `${activo ? 'Activó' : 'Inactivó'} ${info.el} ${info.singular} "${actual.nombre}"` +
-            (!activo && enUso > 0 ? ` (${enUso} funcionario(s) activo(s) lo conservan).` : '.'),
+            (!activo && enUso > 0 ? (tipo === 'tiposIncapacidad' ? ` (${enUso} incapacidad(es) vigente(s) lo conservan).` : ` (${enUso} funcionario(s) activo(s) lo conservan).`) : '.'),
         },
         tx,
       );
@@ -250,7 +253,8 @@ export class CatalogosService {
 
   /** Trae el elemento o responde 404 con el codigo del sistema. */
   private async cargar(cliente: Cliente, tipo: TipoDeCatalogo, id: string) {
-    const fila = await delegado(cliente, tipo).findUnique({ where: { id }, select: SELECCION });
+    const encontrada = await delegado(cliente, tipo).findUnique({ where: { id }, select: seleccion(tipo) });
+    const fila = encontrada ? normalizarConteo(encontrada) : null;
     if (!fila) {
       const info = TIPOS_DE_CATALOGO[tipo];
       throw new NotFoundException({

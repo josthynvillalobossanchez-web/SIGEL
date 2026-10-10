@@ -92,7 +92,7 @@ export function ModalEditarDocumento({
       ocupado={ocupado}
       pie={
         <>
-          <button className="btn btn-secundario" type="button" onClick={alCerrar} disabled={ocupado}>
+          <button className="btn btn-secundario" type="button" onClick={alCerrar} disabled={ocupado} data-ayuda="Cerrar sin guardar los cambios">
             Cancelar
           </button>
           <BotonConAyuda

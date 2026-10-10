@@ -35,7 +35,18 @@ export function abrirExpediente(funcionarioId?: string) {
   return pedirAlServidor<Expediente>('GET', `/expedientes/${funcionarioId ?? 'propio'}`);
 }
 
-/** GET /expedientes/:id/historial, paginado (lo mas reciente primero). */
-export function consultarHistorial(funcionarioId: string, pagina: number, tamano = 20) {
-  return pedirAlServidor<Pagina<MovimientoDelHistorial>>('GET', `/expedientes/${funcionarioId}/historial?pagina=${pagina}&tamano=${tamano}`);
+export type TipoDeFiltroDeHistorial = '' | 'ingreso' | 'cambio' | 'salida' | 'reingreso' | 'documentos';
+
+export interface FiltrosDeHistorial {
+  tipo?: TipoDeFiltroDeHistorial;
+  desde?: string;
+  hasta?: string;
+  busqueda?: string;
+}
+
+/** GET /expedientes/:id/historial, paginado (lo mas reciente primero), con filtros opcionales. */
+export function consultarHistorial(funcionarioId: string, pagina: number, filtros: FiltrosDeHistorial = {}, tamano = 20) {
+  return pedirAlServidor<Pagina<MovimientoDelHistorial>>('GET', `/expedientes/${encodeURIComponent(funcionarioId)}/historial`, {
+    parametros: { pagina, tamano, tipo: filtros.tipo, desde: filtros.desde, hasta: filtros.hasta, busqueda: filtros.busqueda },
+  });
 }

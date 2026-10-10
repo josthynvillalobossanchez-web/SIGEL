@@ -163,6 +163,7 @@ export function SelectorPorModulos({
                 aria-controls={idPanel}
                 tabIndex={activo || (encontrados && i === 0) ? 0 : -1}
                 className="sm-modulo"
+                data-ayuda={`Ver los permisos de ${nombreDeModulo(modulo.modulo)} (${cuenta} de ${total} marcados)`}
                 data-con-marcados={cuenta > 0 ? 'si' : 'no'}
                 onClick={() => {
                   setBusqueda('');
@@ -186,10 +187,10 @@ export function SelectorPorModulos({
           <h3>{tituloPanel}</h3>
           {!soloLectura && cambiables.length > 0 && (
             <div className="sm-todos">
-              <button type="button" className="btn btn-texto btn-chico" onClick={() => marcarTodos(true)} data-ayuda={`Marcar todos los permisos que se pueden de "${tituloPanel}"`}>
+              <button type="button" className="btn btn-texto btn-chico" data-ayuda={`Marcar todos los permisos que se pueden de "${tituloPanel}"`} onClick={() => marcarTodos(true)}>
                 Marcar todos
               </button>
-              <button type="button" className="btn btn-texto btn-chico" onClick={() => marcarTodos(false)} data-ayuda={`Quitar la marca a todos los de "${tituloPanel}"`}>
+              <button type="button" className="btn btn-texto btn-chico" data-ayuda={`Quitar la marca a todos los de "${tituloPanel}"`} onClick={() => marcarTodos(false)}>
                 Quitar todos
               </button>
             </div>

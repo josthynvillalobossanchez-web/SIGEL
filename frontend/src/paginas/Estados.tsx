@@ -24,7 +24,7 @@ export function SinServidor() {
         <h1>No hay conexión con el sistema</h1>
         <p className="sub">SINERGIA no respondió. Puede ser un problema de red o que el servidor esté en mantenimiento.</p>
         <Mensaje tipo="info">Si el problema continúa, avise al Departamento de TI.</Mensaje>
-        <button className="btn btn-primario btn-bloque" type="button" onClick={() => void recargar()}>
+        <button className="btn btn-primario btn-bloque" type="button" data-ayuda="Volver a intentar la conexión con el sistema" onClick={() => void recargar()}>
           Intentar de nuevo
         </button>
       </div>

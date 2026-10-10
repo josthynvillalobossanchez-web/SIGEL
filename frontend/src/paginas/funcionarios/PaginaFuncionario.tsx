@@ -53,6 +53,7 @@ import { formatearFecha, hoyEnCostaRica } from '../../utilidades/fechas';
 import { nombreCompleto } from '../../utilidades/texto';
 import { ContrasenaTemporal } from '../usuarios/ContrasenaTemporal';
 import { aPedidos, revisarRoles, type RolesMarcados } from '../usuarios/SelectorDeRoles';
+import { AjusteDeSaldo } from './AjusteDeSaldo';
 import { motivoParaEditar } from './motivos';
 import { listasConActuales } from './listasDeFormulario';
 import {
@@ -82,6 +83,7 @@ const PASO_DEL_ERROR: Record<string, number> = {
   JEFATURA_NO_VALIDA: 2,
   JEFATURA_CICLICA: 2,
   FECHA_INGRESO_NO_VALIDA: 2,
+  SALDO_INICIAL_NEGATIVO: 2,
   CUENTA_SIN_CORREO_INSTITUCIONAL: 3,
   CORREO_EN_USO: 3,
   ROL_NO_ASIGNABLE: 3,
@@ -126,7 +128,7 @@ function Cargando({ titulo, error, bloqueo, detalle }: { titulo: string; error: 
       {error && <Mensaje tipo="error">{error}</Mensaje>}
       {bloqueo && <Mensaje tipo="info">No puede editar este registro: {bloqueo}</Mensaje>}
       {(error || bloqueo) && (
-        <button className="volver" type="button" onClick={() => navegar(LISTA)}>
+        <button className="volver" type="button" data-ayuda="Volver a la lista de funcionarios" onClick={() => navegar(LISTA)}>
           <Icono nombre="volver" tamano={17} /> Volver a funcionarios
         </button>
       )}
@@ -161,6 +163,7 @@ function FormularioDeFuncionario({ opciones, detalle }: { opciones: OpcionesDeFo
       tipoNombramiento: detalle?.tipoNombramiento ?? 'propiedad',
       regimenVacacionesId: detalle?.regimenVacaciones.id ?? opciones.regimenes.find((r) => r.nombre === 'general')?.id ?? '',
       fechaIngreso: detalle?.fechaIngreso ?? hoy,
+      saldoInicialVacaciones: '',
     }),
     [detalle, opciones, hoy],
   );
@@ -195,7 +198,7 @@ function FormularioDeFuncionario({ opciones, detalle }: { opciones: OpcionesDeFo
 
   /* ---------- Cambios (editar) ---------- */
   const cambios = useMemo(
-    () => (Object.keys(datos) as (keyof Formulario)[]).filter((c) => c !== 'cedula' && datos[c].trim() !== inicial[c].trim()),
+    () => (Object.keys(datos) as (keyof Formulario)[]).filter((c) => c !== 'cedula' && c !== 'saldoInicialVacaciones' && datos[c].trim() !== inicial[c].trim()),
     [datos, inicial],
   );
   const hayCambios = editando ? cambios.length > 0 : Object.entries(datos).some(([c, v]) => v.trim() !== inicial[c as keyof Formulario].trim()) || crearCuenta;
@@ -246,6 +249,10 @@ function FormularioDeFuncionario({ opciones, detalle }: { opciones: OpcionesDeFo
       if (!datos.regimenVacacionesId) return 'Elija el régimen de vacaciones.';
       if (!datos.fechaIngreso) return 'Indique la fecha de ingreso.';
       if (errorIngreso) return `Fecha de ingreso: ${errorIngreso}`;
+      const saldo = datos.saldoInicialVacaciones.trim();
+      if (!editando && saldo !== '' && !(Number.isInteger(Number(saldo)) && Number(saldo) >= 0 && Number(saldo) <= 365)) {
+        return 'El saldo inicial de vacaciones debe ser un número entero de días entre 0 y 365.';
+      }
     }
     if (indice === 3 && !editando && crearCuenta) {
       return revisarRoles(marcados, (id) => roles?.find((r) => r.id === id)?.nombre ?? 'Rol');
@@ -265,6 +272,9 @@ function FormularioDeFuncionario({ opciones, detalle }: { opciones: OpcionesDeFo
     try {
       if (!detalle) {
         const cuerpo = Object.fromEntries((Object.keys(datos) as (keyof Formulario)[]).map((c) => [c, aEnviar(c)])) as unknown as DatosDeFuncionario;
+        // El saldo inicial es numero (vacio = sin indicar).
+        const saldo = datos.saldoInicialVacaciones.trim();
+        cuerpo.saldoInicialVacaciones = saldo === '' ? undefined : Number(saldo);
         const r = await registrarFuncionario({ ...cuerpo, ...(crearCuenta ? { cuenta: { roles: aPedidos(marcados) } } : {}) });
         setRegistrado({ nombre: nombreCompleto(r.funcionario), cuenta: r.cuenta });
       } else {
@@ -365,6 +375,8 @@ function FormularioDeFuncionario({ opciones, detalle }: { opciones: OpcionesDeFo
             minimoIngreso={minimoIngreso}
             errorIngreso={errorIngreso}
             hoy={hoy}
+            editando={editando}
+            saldoAlEditar={detalle ? <AjusteDeSaldo funcionarioId={detalle.id} nombre={nombreCompleto(detalle)} /> : undefined}
           />
         )}
         {editando && detalle && paso === 3 && (

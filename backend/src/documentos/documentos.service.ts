@@ -12,6 +12,7 @@ import {
   type ArchivoSubido,
   type Formato,
 } from '../almacenamiento/validacion-de-archivos.js';
+import { esDeTramite } from '../tipos-documento/tipos-de-tramite.js';
 import { BitacoraService } from '../bitacora/bitacora.service.js';
 import { armarPagina, type PaginaDeResultados } from '../comun/dto/paginacion.dto.js';
 import { aFechaSola, hoyEnCostaRica, interpretarFechaSola } from '../comun/fechas.js';
@@ -406,6 +407,118 @@ export class DocumentosService {
     }
   }
 
+  /**
+   * Guarda el ADJUNTO de un tramite (justificante de una licencia, boleta de
+   * incapacidad, certificado de una capacitacion) en el expediente de la
+   * persona. Quien llama YA reviso que quien actua puede hacer ese tramite
+   * por esa persona (la propia persona, su jefatura o RRHH segun el caso):
+   * por eso aqui no se pide expediente.verTodos. El archivo se valida y se
+   * cifra igual que al subirlo desde el expediente, y queda en la bitacora.
+   */
+  async registrarAdjunto(datos: {
+    funcionarioId: string;
+    nombreDelTipo: string;
+    titulo: string;
+    archivo: ArchivoSubido | undefined;
+    quienActua: UsuarioAutenticado;
+    direccionIp?: string;
+    fechaDocumento?: Date;
+  }): Promise<{ id: string }> {
+    await this.verificarFuncionario(this.prisma, datos.funcionarioId);
+    const tipo = await this.prisma.tipoDocumento.findUnique({
+      where: { nombre: datos.nombreDelTipo },
+      select: { id: true, nombre: true, formatosPermitidos: true },
+    });
+    if (!tipo) {
+      throw new InternalServerErrorException({ codigo: 'TIPO_DOCUMENTO_FALTANTE', message: `Falta el tipo de documento «${datos.nombreDelTipo}»: corra las migraciones.` });
+    }
+    const permitidos = leerFormatos(tipo.formatosPermitidos);
+    const valido = validarArchivo(datos.archivo, permitidos, TAMANO_MAXIMO_DOCUMENTO, `el tipo «${tipo.nombre}»`);
+    const contenido = datos.archivo!.buffer;
+    const hash = createHash('sha256').update(contenido).digest('hex');
+    const ruta = await this.almacen.guardar('expedientes', datos.funcionarioId, contenido);
+    const esPropio = datos.funcionarioId === datos.quienActua.funcionarioId;
+    const nombreDuenio = esPropio ? '' : await this.nombreDelDuenio(datos.funcionarioId);
+    try {
+      return await this.prisma.$transaction(async (tx) => {
+        const fila = await tx.documento.create({
+          data: {
+            funcionarioId: datos.funcionarioId,
+            tipoDocumentoId: tipo.id,
+            titulo: datos.titulo.slice(0, 180),
+            nombreArchivo: valido.nombreOriginal,
+            rutaArchivo: ruta,
+            tipoMime: valido.mime,
+            tamanoBytes: contenido.length,
+            hashContenido: hash,
+            generadoPorSistema: false,
+            fechaDocumento: datos.fechaDocumento ?? hoyEnCostaRica(),
+            usuarioRegistroId: datos.quienActua.id,
+          },
+          select: { id: true },
+        });
+        await this.bitacora.registrar(
+          {
+            usuarioId: datos.quienActua.id,
+            entidad: 'documento',
+            registroAfectadoId: fila.id,
+            funcionarioAfectadoId: datos.funcionarioId,
+            accion: 'crear',
+            direccionIp: datos.direccionIp,
+            datosNuevos: { titulo: datos.titulo, tipo: tipo.nombre, nombreArchivo: valido.nombreOriginal, tamanoBytes: contenido.length },
+            descripcion: esPropio
+              ? `Adjuntó «${datos.titulo}» (${tipo.nombre}) a su expediente.`
+              : `Adjuntó «${datos.titulo}» (${tipo.nombre}) al expediente de ${nombreDuenio}.`,
+          },
+          tx,
+        );
+        return fila;
+      });
+    } catch (error) {
+      await this.almacen.descartarRecienGuardado(ruta);
+      throw error;
+    }
+  }
+
+  /**
+   * Abre el adjunto de un tramite para quien ya puede ver ese tramite (por
+   * ejemplo, la jefatura que revisa una licencia con su justificante). Quien
+   * llama decide el permiso; aqui se valida la integridad y se anota en la
+   * bitacora, igual que al abrirlo desde el expediente.
+   */
+  async abrirAdjunto(documentoId: string, quienActua: UsuarioAutenticado, direccionIp?: string): Promise<ArchivoAbierto> {
+    const doc = await this.prisma.documento.findUnique({
+      where: { id: documentoId },
+      select: { id: true, titulo: true, funcionarioId: true, vigente: true, tipoMime: true, nombreArchivo: true, rutaArchivo: true, hashContenido: true },
+    });
+    if (!doc || !doc.vigente) throw this.noEncontrado();
+    const contenido = await this.almacen.leer(doc.rutaArchivo);
+    if (doc.hashContenido && createHash('sha256').update(contenido).digest('hex') !== doc.hashContenido) {
+      this.registro.error(`El documento ${doc.id} no coincide con su hash: el archivo fue alterado o reemplazado.`);
+      throw new InternalServerErrorException({ codigo: 'ARCHIVO_NO_DISPONIBLE', message: 'No se pudo abrir el archivo. Avise al Departamento de TI.' });
+    }
+    const esPropio = doc.funcionarioId === quienActua.funcionarioId;
+    const nombre = esPropio ? '' : await this.nombreDelDuenio(doc.funcionarioId);
+    await this.bitacora.registrar({
+      usuarioId: quienActua.id,
+      entidad: 'documento',
+      registroAfectadoId: doc.id,
+      funcionarioAfectadoId: doc.funcionarioId,
+      accion: 'consultar',
+      direccionIp,
+      descripcion: `Abrió el adjunto «${doc.titulo}» ${esPropio ? 'de su expediente' : `de ${nombre}`} desde su trámite.`,
+    });
+    return { contenido, mime: doc.tipoMime, nombre: doc.nombreArchivo, modo: 'ver' };
+  }
+
+  /** Si el tramite no se pudo guardar despues de adjuntar, el adjunto queda dado de baja (nunca se borra). */
+  async descartarAdjunto(documentoId: string, quienActua: UsuarioAutenticado): Promise<void> {
+    await this.prisma.documento.updateMany({
+      where: { id: documentoId, vigente: true },
+      data: { vigente: false, fechaBaja: new Date(), usuarioBajaId: quienActua.id, motivoBaja: 'El trámite no se completó.' },
+    });
+  }
+
   /* ================================================================ */
   /* Editar, dar de baja, restaurar                                    */
   /* ================================================================ */
@@ -683,6 +796,12 @@ export class DocumentosService {
       throw new BadRequestException({
         codigo: 'TIPO_GENERADO_POR_SISTEMA',
         message: `El tipo «${tipo.nombre}» lo genera SINERGIA automáticamente: no se sube a mano.`,
+      });
+    }
+    if (esDeTramite(tipo.nombre)) {
+      throw new BadRequestException({
+        codigo: 'TIPO_DE_TRAMITE',
+        message: `El tipo «${tipo.nombre}» se adjunta desde su trámite (solicitud, incapacidad o capacitación), no desde aquí.`,
       });
     }
     if (!tipo.activo) {

@@ -100,16 +100,16 @@ export function ModalFoto({
       confirmarDesactivado={!archivo}
       pie={
         <>
-          <button className="btn btn-secundario" type="button" onClick={alCerrar} disabled={ocupado}>
+          <button className="btn btn-secundario" type="button" onClick={alCerrar} disabled={ocupado} data-ayuda="Cerrar sin cambiar la fotografía">
             Cancelar
           </button>
           {tieneFoto && (
             <button
               className="btn btn-secundario"
               type="button"
+              data-ayuda="Quitar la fotografía: se vuelven a mostrar las iniciales"
               onClick={() => void quitar()}
               disabled={ocupado}
-              data-ayuda="Quitar la fotografía: se vuelven a mostrar las iniciales"
             >
               Quitar fotografía
             </button>

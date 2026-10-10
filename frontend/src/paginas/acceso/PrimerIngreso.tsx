@@ -65,7 +65,7 @@ export function PrimerIngreso() {
     <PantallaDeAcceso subtitulo="Primer ingreso">
       <form className="card" onSubmit={alEnviar} noValidate>
         {/* "Volver" cierra la sesion: no se puede quedar adentro con la temporal. */}
-        <button className="volver" type="button" onClick={() => void salir()}>
+        <button className="volver" type="button" data-ayuda="Cerrar la sesión y volver a la pantalla de ingreso" onClick={() => void salir()}>
           <Icono nombre="volver" tamano={17} />
           Volver al inicio de sesión
         </button>
@@ -98,7 +98,7 @@ export function PrimerIngreso() {
           alCambiar={setRepetida}
           autocompletar="new-password"
         />
-        <button className="btn btn-primario btn-bloque" type="submit" disabled={enviando} aria-busy={enviando}>
+        <button className="btn btn-primario btn-bloque" type="submit" disabled={enviando} aria-busy={enviando} data-ayuda="Guardar la contraseña nueva y entrar al sistema">
           {enviando ? 'Guardando…' : 'Guardar y continuar'}
         </button>
       </form>

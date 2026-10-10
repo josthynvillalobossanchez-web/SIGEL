@@ -215,7 +215,7 @@ export function ModalPermisosIndividuales({
       ancho
       pie={
         <>
-          <button className="btn btn-secundario" type="button" onClick={alCerrar} disabled={ocupado}>
+          <button className="btn btn-secundario" type="button" onClick={alCerrar} disabled={ocupado} data-ayuda="Cerrar los permisos individuales de esta cuenta">
             Cerrar
           </button>
           <BotonConAyuda
@@ -259,10 +259,10 @@ export function ModalPermisosIndividuales({
                 {porEliminar === p.id ? (
                   <span className="confirmar-en-linea" role="group" aria-label={`Confirmar eliminar ${p.clave}`}>
                     ¿Eliminar?
-                    <button className="btn btn-peligro btn-chico" type="button" onClick={() => void eliminar(p)} disabled={ocupado}>
+                    <button className="btn btn-peligro btn-chico" type="button" data-ayuda={`Eliminar definitivamente la excepción de ${p.clave}`} onClick={() => void eliminar(p)} disabled={ocupado}>
                       Sí, eliminar
                     </button>
-                    <button className="btn btn-secundario btn-chico" type="button" onClick={() => setPorEliminar(null)}>
+                    <button className="btn btn-secundario btn-chico" type="button" data-ayuda={`Conservar la excepción de ${p.clave}`} onClick={() => setPorEliminar(null)}>
                       No
                     </button>
                   </span>

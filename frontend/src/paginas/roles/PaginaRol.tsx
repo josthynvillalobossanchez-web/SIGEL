@@ -84,7 +84,7 @@ export function PaginaRol() {
         {noExiste && <Mensaje tipo="error">No se encontró el rol indicado.</Mensaje>}
         {bloqueo && <Mensaje tipo="info">No puede editar este rol: {bloqueo}</Mensaje>}
         {(error || noExiste || bloqueo) && (
-          <button className="volver" type="button" onClick={() => navegar(LISTA)}>
+          <button className="volver" type="button" data-ayuda="Volver a la lista de roles y permisos" onClick={() => navegar(LISTA)}>
             <Icono nombre="volver" tamano={17} /> Volver a roles y permisos
           </button>
         )}

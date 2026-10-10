@@ -107,7 +107,7 @@ export function ModalVerUsuario({
       }
       pie={
         <>
-          <button className="btn btn-secundario" type="button" onClick={alCerrar}>
+          <button className="btn btn-secundario" type="button" onClick={alCerrar} data-ayuda="Cerrar el detalle del usuario">
             Cerrar
           </button>
           {cuenta && (

@@ -8,10 +8,11 @@
  * documentos solo las ve quien puede restaurar (Recursos Humanos).
  *
  * Se piden 20 por vez; "Ver movimientos anteriores" trae los siguientes.
+ * Filtros (10/10): tipo de movimiento, rango de fechas y texto libre.
  */
 import { useEffect, useState } from 'react';
 import { textoDelError } from '../../api/cliente';
-import { consultarHistorial, type MovimientoDelHistorial } from '../../api/expedientes';
+import { consultarHistorial, type FiltrosDeHistorial, type MovimientoDelHistorial, type TipoDeFiltroDeHistorial } from '../../api/expedientes';
 import { BotonConAyuda } from '../../componentes/Botones';
 import { Icono, type NombreDeIcono } from '../../componentes/Icono';
 import { Mensaje } from '../../componentes/Mensaje';
@@ -27,7 +28,24 @@ const ICONOS: Record<MovimientoDelHistorial['tipo'], NombreDeIcono> = {
   documentoRestaurado: 'reactivar',
 };
 
+const TIPOS: { valor: TipoDeFiltroDeHistorial; texto: string }[] = [
+  { valor: '', texto: 'Todos los movimientos' },
+  { valor: 'ingreso', texto: 'Ingreso' },
+  { valor: 'cambio', texto: 'Cambios laborales' },
+  { valor: 'salida', texto: 'Salida' },
+  { valor: 'reingreso', texto: 'Reingreso' },
+  { valor: 'documentos', texto: 'Documentos' },
+];
+
 export function HistorialLaboral({ funcionarioId }: { funcionarioId: string }) {
+  const [texto, setTexto] = useState('');
+  const [filtros, setFiltros] = useState<FiltrosDeHistorial>({});
+  const hayFiltros = Boolean(filtros.tipo || filtros.desde || filtros.hasta || filtros.busqueda);
+  // La busqueda espera a que se deje de escribir.
+  useEffect(() => {
+    const espera = window.setTimeout(() => setFiltros((f) => (f.busqueda === (texto.trim() || undefined) ? f : { ...f, busqueda: texto.trim() || undefined })), 350);
+    return () => window.clearTimeout(espera);
+  }, [texto]);
   const [movimientos, setMovimientos] = useState<MovimientoDelHistorial[]>([]);
   const [pagina, setPagina] = useState(0);
   const [totalPaginas, setTotalPaginas] = useState(1);
@@ -39,7 +57,7 @@ export function HistorialLaboral({ funcionarioId }: { funcionarioId: string }) {
     setCargando(true);
     setError(null);
     try {
-      const r = await consultarHistorial(funcionarioId, siguiente);
+      const r = await consultarHistorial(funcionarioId, siguiente, filtros);
       setMovimientos((antes) => (siguiente === 1 ? r.datos : [...antes, ...r.datos]));
       setPagina(r.pagina);
       setTotalPaginas(r.totalPaginas);
@@ -53,24 +71,62 @@ export function HistorialLaboral({ funcionarioId }: { funcionarioId: string }) {
 
   useEffect(() => {
     void cargar(1);
-  }, [funcionarioId]);
+    // Se vuelve a pedir desde la primera pagina al cambiar de persona o de filtros.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [funcionarioId, filtros]);
 
-  if (error && movimientos.length === 0) return <Mensaje tipo="error">{error}</Mensaje>;
-  if (cargando && movimientos.length === 0) return <p style={{ color: 'var(--texto-sec)' }}>Cargando el historial…</p>;
+  const barra = (
+    <div className="herramientas filtros-historial">
+      <div className="buscador">
+        <Icono nombre="buscar" />
+        <input type="search" value={texto} onChange={(e) => setTexto(e.target.value)} placeholder="Buscar (puesto, departamento, documento, quién…)" aria-label="Buscar en el historial" />
+      </div>
+      <label className="filtro-select">
+        <span className="sr">Tipo de movimiento</span>
+        <select value={filtros.tipo ?? ''} onChange={(e) => setFiltros((f) => ({ ...f, tipo: (e.target.value || undefined) as TipoDeFiltroDeHistorial | undefined }))}>
+          {TIPOS.map((t) => (
+            <option key={t.valor} value={t.valor}>
+              {t.texto}
+            </option>
+          ))}
+        </select>
+      </label>
+      <label className="filtro-select filtro-fecha">
+        <span>Desde</span>
+        <input type="date" value={filtros.desde ?? ''} onChange={(e) => setFiltros((f) => ({ ...f, desde: e.target.value || undefined }))} aria-label="Movimientos desde esta fecha" />
+      </label>
+      <label className="filtro-select filtro-fecha">
+        <span>Hasta</span>
+        <input type="date" value={filtros.hasta ?? ''} min={filtros.desde} onChange={(e) => setFiltros((f) => ({ ...f, hasta: e.target.value || undefined }))} aria-label="Movimientos hasta esta fecha" />
+      </label>
+      {hayFiltros && (
+        <button type="button" className="btn-texto" onClick={() => { setTexto(''); setFiltros({}); }} data-ayuda="Quitar todos los filtros">
+          Limpiar filtros
+        </button>
+      )}
+    </div>
+  );
+
+  if (error && movimientos.length === 0) return <>{barra}<Mensaje tipo="error">{error}</Mensaje></>;
+  if (cargando && movimientos.length === 0) return <>{barra}<p style={{ color: 'var(--texto-sec)' }}>Cargando el historial…</p></>;
   if (movimientos.length === 0) {
     return (
-      <div className="vacio">
-        <Icono nombre="reloj" tamano={36} />
-        <h3>Todavía no hay movimientos</h3>
-        <p>Aquí aparecerán el ingreso, los cambios de puesto, departamento, jefatura o nombramiento, la salida y el reingreso.</p>
-      </div>
+      <>
+        {hayFiltros && barra}
+        <div className="vacio">
+          <Icono nombre="reloj" tamano={36} />
+          <h3>{hayFiltros ? 'Ningún movimiento coincide con esos filtros' : 'Todavía no hay movimientos'}</h3>
+          <p>{hayFiltros ? 'Pruebe con otro filtro o quítelos.' : 'Aquí aparecerán el ingreso, los cambios de puesto, departamento, jefatura o nombramiento, la salida y el reingreso.'}</p>
+        </div>
+      </>
     );
   }
 
   return (
     <>
+      {barra}
       <p className="nota-pagina">
-        {total} movimiento{total === 1 ? '' : 's'}, del más reciente al más antiguo. Es de solo lectura: sale de la bitácora
+        {total} movimiento{total === 1 ? '' : 's'}{hayFiltros ? ' con esos filtros' : ''}, del más reciente al más antiguo. Es de solo lectura: sale de la bitácora
         del sistema.
       </p>
       <ol className="linea-tiempo" aria-label="Historial laboral">

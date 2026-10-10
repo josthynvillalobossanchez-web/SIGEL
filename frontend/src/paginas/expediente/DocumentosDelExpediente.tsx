@@ -168,7 +168,16 @@ export function DocumentosDelExpediente({ funcionarioId, propio }: { funcionario
             </thead>
             <tbody>
               {lista.datos.map((d) => (
-                <tr key={d.id} className={d.vigente ? undefined : 'fila-baja'}>
+                // Toda la fila abre el documento (clic o Enter), igual que el ojo (pedido 10/10).
+                <tr
+                  key={d.id}
+                  className={d.vigente ? undefined : 'fila-baja'}
+                  data-abrible={puedeAbrir ? true : undefined}
+                  tabIndex={puedeAbrir ? 0 : undefined}
+                  onClick={puedeAbrir ? () => setVentana({ tipo: 'ver', documento: d }) : undefined}
+                  onKeyDown={puedeAbrir ? (e) => e.key === 'Enter' && e.target === e.currentTarget && setVentana({ tipo: 'ver', documento: d }) : undefined}
+                  aria-label={puedeAbrir ? `${d.titulo}, ${d.tipo.nombre}. Presione Enter para verlo.` : undefined}
+                >
                   <td data-etiqueta="Documento">
                     <b>{d.titulo}</b>
                     {!d.vigente && (

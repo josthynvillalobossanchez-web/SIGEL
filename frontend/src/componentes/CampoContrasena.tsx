@@ -49,9 +49,9 @@ export function CampoContrasena({
         <button
           className="ver-pass"
           type="button"
+          data-ayuda={textoDelBoton}
           onClick={() => setVisible((v) => !v)}
           aria-label={textoDelBoton}
-          data-ayuda={textoDelBoton}
           aria-pressed={visible}
         >
           <Icono nombre={visible ? 'ojoTachado' : 'ojo'} />

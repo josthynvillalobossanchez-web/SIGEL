@@ -218,7 +218,7 @@ contraseña temporal.
 | `POST /api/catalogos/:tipo` | `catalogos.editar` | Crea (nombre único sin importar mayúsculas ni tildes) |
 | `PATCH /api/catalogos/:tipo/:id` | `catalogos.editar` | Nombre y/o descripción |
 | `PATCH /api/catalogos/:tipo/:id/estado` | `catalogos.editar` | Inactiva o reactiva (se puede aunque esté en uso) |
-| `GET /api/funcionarios` | `funcionarios.ver` | Lista paginada; busca por cédula, nombre o correo (varias palabras), filtra por estado y departamento |
+| `GET /api/funcionarios` | `funcionarios.ver` | Lista paginada; busca por cédula, nombre o correo (varias palabras), filtra por estado y departamento. Sin `funcionarios.verTodos`, solo el personal a cargo (01/10) |
 | `GET /api/funcionarios/opciones` | `funcionarios.ver` | Listas activas para los formularios (catálogos, regímenes, jefaturas, nombramientos) |
 | `GET /api/funcionarios/:id` | `funcionarios.ver` | Ficha completa (no se audita; el expediente sí) |
 | `POST /api/funcionarios` | `funcionarios.crear` | Registra; con `cuenta` crea también la cuenta (pide `usuarios.crear`), todo junto |
@@ -237,7 +237,7 @@ contraseña temporal.
 | `GET/PUT/DELETE /api/funcionarios/:id/foto` | ella misma o RRHH | Fotografía de perfil (JPG o PNG, máximo 5 MB, cifrada) |
 | `GET /api/salud` | público | Comprobación del servicio |
 
-**Falta en backend:** los documentos que generará el sistema de verdad (constancia de vacaciones en el Sprint 2, curriculum en el Sprint 3); la pieza que los guarda (`DocumentosService.registrarGenerado`) ya está probada.
+**Documentos que genera el sistema:** la constancia de vacaciones en PDF (Sprint 2, 09/10, `ausencias/constancia-pdf.ts` con `pdf-lib`). Falta el curriculum del Talent Pool (Sprint 3).
 
 ### Estado del frontend (desde el 25/09)
 
@@ -342,7 +342,7 @@ Decisiones de funcionarios (27/09; se pueden revertir):
 
 Expediente (28/09): página `/funcionarios/:id/expediente` y `/mi-expediente` como `pgExpediente` (perfil, aviso de información
 sensible, pestañas Información personal · Información laboral · Documentos · Capacitaciones · Historial laboral).
-Capacitaciones muestra su explicación hasta el Sprint 2; Documentos se completó en la épica 3.
+Capacitaciones lista los cursos con su certificado (Sprint 2, 09/10); Documentos se completó en la épica 3.
 
 **Decisiones de la gestión documental (épica 3, 30/09):**
 - **Cifrado**: todo archivo se guarda cifrado con **AES-256-GCM** en `backend/archivos/` (`expedientes/<funcionario>/<uuid>.enc`, `fotos/...`); la base solo tiene la ruta relativa, el hash SHA-256 y los datos. La llave maestra va en el `.env` (`ARCHIVOS_LLAVE`, 32 bytes en base64; el backend no arranca sin ella) y se amarra a la ruta de cada archivo (copiarlo a otra ruta lo vuelve ilegible). Joseph / TI guardan una **copia aparte**: perder la llave es perder todos los documentos (GUIA §10.6). Hay versión de llave para rotarla; la herramienta `npm run archivos:recifrar` recifra lo viejo con la llave nueva (GUIA §10.6).
@@ -716,7 +716,7 @@ Estas ya están validadas. **Trátelas como verdad** salvo que Josthyn diga lo c
 - **Todo usuario puede hacer solicitudes** (`solicitudes.crear`, en el autoservicio de
   Solicitante; por lo tanto también en Aprobador y Administrador): vacaciones, permisos,
   incapacidades con comprobante, capacitaciones que chocan con el horario. Es la razón principal
-  del sistema. Las pantallas llegan en el Sprint 2.
+  del sistema. Las pantallas se hicieron en el Sprint 2.
 - **El Aprobador incluye todo lo del Solicitante** (es jefatura y también pide sus vacaciones).
 - **Nombres realistas**: nombre hasta 50 caracteres y 5 palabras; cada apellido hasta 40 y 4
   palabras; solo letras, espacios, apóstrofo, guion y punto; no se acepta la misma letra 3 veces
@@ -727,7 +727,8 @@ Estas ya están validadas. **Trátelas como verdad** salvo que Josthyn diga lo c
   **datos laborales** y acceso. Pestañas centradas. (Quién edita qué: ver decisiones del 28/09.)
 - **Menú**: las subsecciones fijas (Crear usuario, Crear rol…) se ven solo en la sección actual
   o si se despliegan con la flecha; al cambiar de sección se pliegan las otras. Las de contexto
-  (Editar …) siguen apareciendo solo en su página. Las secciones nunca se ocultan.
+  (Editar …) siguen apareciendo solo en su página. ~~Las secciones nunca se ocultan~~: desde el
+  01/10 los grupos del menú se pliegan (abierto solo el de la página actual).
 
 ### Decisiones del 28/09/2026 (Josthyn)
 
@@ -812,6 +813,63 @@ No volver a preguntarlas. El detalle de cómo se despliega está en `GUIA_DESARR
   lo que tenga. Para la trazabilidad (Sprint 3): al arrancar, si el texto del archivo cambió, se
   guarda como versión nueva en la tabla `consentimiento`, y cada candidato queda ligado a la
   versión exacta que aceptó.
+
+### Decisiones del 01/10/2026 (Josthyn, revisando las pantallas de vacaciones)
+
+- **Alcance de Funcionarios**: la jefatura administra a su personal a cargo y RRHH a todos. Nuevo
+  permiso `funcionarios.verTodos` (Administrador, Consulta, SA). Sin él, `funcionarios.ver` alcanza
+  solo al personal a cargo (lista, ficha y foto; `FUNCIONARIO_FUERA_DE_ALCANCE`). Menú: «Mi personal».
+- **A nombre de otra persona**: RRHH de cualquiera; la jefatura de su personal a cargo, y si la registra
+  ella queda **aprobada** al momento. Sección propia del menú («Solicitud para otra persona»), por pasos y
+  empezando por elegir a la persona.
+- **Pedir no resta**: se muestra el saldo **disponible**; lo pendiente aparte. Los días se descuentan
+  solo al aprobarse. Permisos y capacitaciones nunca descuentan (los textos lo dicen así).
+- **Cancelar una aprobada**: solo quien se la aprobó a sí mismo (tope de la jerarquía), antes de que
+  empiece, con doble confirmación. Devuelve los días con un movimiento (no se borra nada).
+- **Bandeja**: marca coincidencias con otras personas del equipo y tiene «Ver en calendario». «Mi equipo»
+  incluye a la propia jefatura.
+- **Formas de ver**: Tarjetas o Lista (bandeja y RRHH) y Mes / Por persona / Lista (calendario), con filtros.
+- **Formularios por pasos sin bajar**, también la nueva solicitud y Mis vacaciones (pestañas). Errores al
+  intentar avanzar o enviar: ventana con la lista y botón «Corregir».
+- **Accesibilidad**: todo botón con `data-ayuda`; los de solo icono con `aria-label`.
+- **Logo de SINERGIA** (pedido de Joseph) en la barra, el acceso y la pestaña; el de la Municipalidad,
+  más pequeño a un lado.
+- **Privacidad del calendario**: los compañeros no ven los días de los demás. La vista de compañeros
+  queda descartada por ahora (Josthyn, 01/10).
+
+- **Feriados como catálogo (01/10, segunda revisión)**: se digitan una vez y se repiten solos (cada año el
+  mismo día; Jueves y Viernes Santo calculados con la Pascua; o solo una vez). «Cargar feriados de ley» agrega
+  los 12 de Costa Rica. Reemplaza a «Proponer el año».
+- **RRHH y SA ven a todos**: `funcionarios.verTodos` (lo agrega la migración `20261004…`) o `funcionarios.crear`/
+  `editar`. Solo la jefatura queda limitada a su personal.
+- **Los días se ganan al cumplir cada año de servicio**, nunca al registrarse (solo cuenta el saldo inicial que
+  cargue RRHH): 15 días por año los primeros 6 años y 20 después (régimen general) o 30 (anterior).
+
+### Decisiones del 09/10/2026 (cierre del Sprint 2)
+
+- **Confirmado con pruebas:** registrar a alguien con años de servicio no le da días por esos años (solo
+  el saldo inicial que carga RRHH); y nadie acumula más de **dos periodos** (lo que exceda vence).
+- **Constancia de vacaciones en PDF** al aprobar; se da de baja si se cancela; si falla, RRHH la genera de nuevo.
+- **Incapacidades**: sin aprobación, boleta obligatoria, días naturales, no descuentan. La jefatura solo ve
+  las fechas (privacidad de datos médicos). Bloquean vacaciones esos días. RRHH anula con motivo. Tipos en
+  «Catálogos de personal».
+- **Licencias con justificante** en la misma nueva solicitud (paso «Justificante»).
+- **Capacitaciones** en el expediente con certificado; si chocan con el horario, solicitud CAP a la jefatura.
+- **Horas extra**: registro de RRHH con totales por persona y mes; se anulan con motivo.
+- Tipos de documento de trámite (justificante, boleta, certificado): solo desde su trámite.
+- **Revisión de la noche (09/10):** horas extra en **minutos** (se muestran «2 h 40 min») y con fecha hasta un
+  año atrás o adelante; «Mis vacaciones» se llama **«Mis ausencias»**; una incapacidad no la aprueba, rechaza ni
+  anula nadie más que **quien la registró**; la misma boleta no se registra dos veces; la cuenta del Super
+  Administrador queda ligada a Joseph con un script que lee sus datos de un JSON fuera de Git.
+- **10/10:** la **licencia es un derecho**: comprobante obligatorio, queda aprobada al registrarla, nadie la
+  rechaza ni se cancela. La **incapacidad** tampoco se aprueba, rechaza ni anula (ni quien la registró). Las
+  **solicitudes son de hoy en adelante para todos** (la incapacidad acepta fechas pasadas). En el detalle,
+  «Ver mi saldo» solo para la persona y la constancia para la persona y RRHH. Tocar la fila de un documento lo
+  abre.
+- **Cierre del Sprint 2 (10/10):** constancia en PDF también para permisos y licencias; pantalla «Reglas de
+  vacaciones» (tramos, tope y aviso por régimen, sin tocar código); filtros en Capacitaciones e Historial laboral.
+  Las decisiones que se apartan de las HU están en ENTREGABLE_2 §8. **Sigue el Sprint 3** (notificaciones y
+  auditoría primero; el Talent Pool al final).
 
 ### Convenciones de la base de datos
 

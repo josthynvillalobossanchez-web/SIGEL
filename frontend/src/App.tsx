@@ -19,6 +19,11 @@
  *     /mi-expediente/documentos/nuevo            Subir documento a mi expediente
  *     /catalogos                                 departamentos, puestos, profesiones (ventanas cortas)
  *     /tipos-documento                           tipos de documento y sus formatos (ventanas cortas)
+ *     /calendario                                calendario inteligente (propio, equipo o todos, segun permisos)
+ *     /mis-ausencias, /mis-ausencias/nueva       saldo, solicitudes e incapacidades propias; pedir (antes /mis-vacaciones: redirige)
+ *     /bandeja                                   solicitudes que le toca resolver a la jefatura
+ *     /solicitudes, /solicitudes/nueva           todas las solicitudes y registrar una a nombre de otra persona (RRHH)
+ *     /feriados                                  feriados y dias no laborables (RRHH)
  *
  * Regla (26/09): consultar = ventana; crear o editar = pagina aparte por
  * pasos, con su subseccion en el menu (diseno/menu.ts). El expediente es la
@@ -31,7 +36,7 @@
  * (con <ConPermisos> si pide permisos) y agregarla a src/diseno/menu.ts con
  * los MISMOS permisos.
  */
-import { BrowserRouter, Navigate, Route, Routes, useParams } from 'react-router';
+import { BrowserRouter, Navigate, Route, Routes, useLocation, useParams } from 'react-router';
 import { SesionProveedor } from './sesion/SesionProveedor';
 import { ConPermisos, RutaDePrimerIngreso, RutaProtegida, RutaSinSesion } from './sesion/Guardias';
 import { IniciarSesion } from './paginas/acceso/IniciarSesion';
@@ -51,6 +56,15 @@ import { MiCuenta } from './paginas/cuenta/MiCuenta';
 import { Catalogos } from './paginas/catalogos/Catalogos';
 import { ListaDeFuncionarios } from './paginas/funcionarios/ListaDeFuncionarios';
 import { PaginaEditarFuncionario, PaginaRegistrarFuncionario } from './paginas/funcionarios/PaginaFuncionario';
+import { Calendario } from './paginas/calendario/Calendario';
+import { MisVacaciones } from './paginas/vacaciones/MisVacaciones';
+import { NuevaSolicitud } from './paginas/vacaciones/NuevaSolicitud';
+import { BandejaDeJefatura } from './paginas/vacaciones/BandejaDeJefatura';
+import { TodasLasSolicitudes } from './paginas/vacaciones/TodasLasSolicitudes';
+import { IncapacidadesDelPersonal } from './paginas/ausencias/IncapacidadesDelPersonal';
+import { HorasExtra } from './paginas/ausencias/HorasExtra';
+import { ReglasDeVacaciones } from './paginas/vacaciones/ReglasDeVacaciones';
+import { Feriados } from './paginas/vacaciones/Feriados';
 import { PaginaNoEncontrada } from './paginas/SinPermiso';
 import { GestorDeAyudas } from './componentes/Ayudas';
 
@@ -218,6 +232,78 @@ export function App() {
                   </ConPermisos>
                 }
               />
+              <Route path="/calendario" element={<Calendario />} />
+              <Route path="/mis-ausencias" element={<MisVacaciones />} />
+              <Route
+                path="/mis-ausencias/nueva"
+                element={
+                  <ConPermisos permisos={['solicitudes.crear']}>
+                    <NuevaSolicitud />
+                  </ConPermisos>
+                }
+              />
+              <Route
+                path="/bandeja"
+                element={
+                  <ConPermisos permisos={['solicitudes.aprobar']}>
+                    <BandejaDeJefatura />
+                  </ConPermisos>
+                }
+              />
+              <Route
+                path="/solicitudes"
+                element={
+                  <ConPermisos permisos={['solicitudes.administrar']}>
+                    <TodasLasSolicitudes />
+                  </ConPermisos>
+                }
+              />
+              <Route
+                path="/incapacidades"
+                element={
+                  <ConPermisos permisos={['solicitudes.administrar']}>
+                    <IncapacidadesDelPersonal />
+                  </ConPermisos>
+                }
+              />
+              <Route
+                path="/reglas-vacaciones"
+                element={
+                  <ConPermisos permisos={['catalogos.editar']}>
+                    <ReglasDeVacaciones />
+                  </ConPermisos>
+                }
+              />
+              <Route
+                path="/horas-extra"
+                element={
+                  <ConPermisos permisos={['horasExtra.registrar']}>
+                    <HorasExtra />
+                  </ConPermisos>
+                }
+              />
+              <Route
+                path="/registrar-solicitud"
+                element={
+                  <ConPermisos algunoDe={['solicitudes.administrar', 'solicitudes.aprobar']}>
+                    <NuevaSolicitud paraOtraPersona />
+                  </ConPermisos>
+                }
+              />
+              {/* Direcciones anteriores (01/10): se movieron. */}
+              <Route path="/solicitudes/nueva" element={<Navigate to="/registrar-solicitud" replace />} />
+              <Route path="/feriados" element={<Navigate to="/calendario/feriados" replace />} />
+              {/* "Mis vacaciones" paso a llamarse "Mis ausencias" (09/10): las direcciones viejas siguen sirviendo. */}
+              <Route path="/mis-vacaciones" element={<RedirigirConParametros a="/mis-ausencias" />} />
+              <Route path="/mis-vacaciones/nueva" element={<RedirigirConParametros a="/mis-ausencias/nueva" />} />
+              <Route
+                path="/calendario/feriados"
+                element={
+                  <ConPermisos permisos={['catalogos.editar']}>
+                    <Feriados />
+                  </ConPermisos>
+                }
+              />
               <Route path="*" element={<PaginaNoEncontrada />} />
             </Route>
           </Route>
@@ -225,4 +311,10 @@ export function App() {
       </SesionProveedor>
     </BrowserRouter>
   );
+}
+
+/** Lleva a otra direccion conservando los parametros (?pestana=..., ?tipo=...). */
+function RedirigirConParametros({ a }: { a: string }) {
+  const { search } = useLocation();
+  return <Navigate to={a + search} replace />;
 }

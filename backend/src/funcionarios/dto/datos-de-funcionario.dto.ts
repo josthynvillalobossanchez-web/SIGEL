@@ -5,13 +5,16 @@ import {
   IsArray,
   IsEmail,
   IsIn,
+  IsInt,
   IsNotEmpty,
   IsOptional,
   IsString,
   IsUUID,
   Length,
   Matches,
+  Max,
   MaxLength,
+  Min,
   ValidateIf,
   ValidateNested,
 } from 'class-validator';
@@ -140,6 +143,18 @@ export class RegistrarFuncionarioDto {
   @IsString({ message: 'La fecha de ingreso es obligatoria.' })
   @Matches(FECHA, { message: 'La fecha de ingreso debe venir como AAAA-MM-DD.' })
   fechaIngreso!: string;
+
+  /**
+   * Dias de vacaciones que la persona ya trae acumulados al incorporarse al
+   * sistema. Es el punto de partida del saldo; despues solo se corrige con un
+   * ajuste (Editar funcionario). Si no viene, es 0.
+   */
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt({ message: 'El saldo inicial de vacaciones debe ser un número entero de días.' })
+  @Min(0, { message: 'El saldo inicial de vacaciones no puede ser negativo.' })
+  @Max(365, { message: 'El saldo inicial de vacaciones no puede pasar de 365 días.' })
+  saldoInicialVacaciones?: number;
 
   // ----- Cuenta de acceso (opcional) -----
   @IsOptional()

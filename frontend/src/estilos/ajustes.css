@@ -554,3 +554,83 @@ tr.fila-baja td:not(.acciones) { opacity: .75; }
 .grupo-formatos .check { padding: 6px 8px; border-radius: var(--radio-md); }
 .grupo-formatos .check .txt span { display: block; font-size: 13px; color: var(--texto-sec); font-weight: 400; }
 .grupo-formatos:disabled .check { cursor: not-allowed; opacity: .7; }
+
+/* ============================================================
+   Menu lateral con grupos plegables (01/10)
+   ============================================================ */
+.lateral { gap: 6px; }
+.nav-grupo + .nav-grupo { border-top: 1px solid var(--borde); padding-top: 6px; }
+button.nav-titulo {
+  display: flex; align-items: center; justify-content: space-between; gap: 8px; width: 100%;
+  padding: 9px 12px; margin: 0; border: 0; background: transparent; border-radius: var(--radio-md);
+  font: inherit; font-size: 11.5px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase;
+  color: var(--texto-sec); cursor: pointer; text-align: left;
+}
+button.nav-titulo:hover { background: var(--neutro-bg); color: var(--texto); }
+button.nav-titulo[data-actual="si"] { color: var(--accion-sobre-claro); }
+button.nav-titulo svg { flex: none; transition: transform .15s ease; transform: rotate(-90deg); }
+button.nav-titulo[aria-expanded="true"] svg { transform: none; }
+.nav-opciones { display: flex; flex-direction: column; gap: 2px; padding-bottom: 4px; }
+@media (prefers-reduced-motion: reduce) { button.nav-titulo svg { transition: none; } }
+
+/* Marca: simbolo de SINERGIA en una placa clara (sus azules no se leen sobre la barra
+   oscura), el nombre y, a un lado y mas pequeno, el logo de la Municipalidad. */
+.marca-simbolo { width: 38px; height: 38px; border-radius: 10px; background: #fff; display: grid; place-items: center;
+  flex: none; box-shadow: 0 1px 2px rgba(0,0,0,.25); }
+.marca .marca-simbolo img { width: 32px; height: 32px; }
+.marca .marca-muni { height: 26px; width: auto; margin-left: 6px; padding-left: 12px; border-left: 1px solid rgba(255,255,255,.2); opacity: .92; }
+@media (max-width: 719px) {
+  .marca .marca-muni { display: none; }
+  .marca-simbolo { width: 32px; height: 32px; border-radius: 8px; }
+  .marca .marca-simbolo img { width: 27px; height: 27px; }
+}
+
+/* Pantallas de acceso: logo completo de SINERGIA; el de la Municipalidad, pequeno debajo. */
+.acceso-marca .acceso-simbolo { width: 96px; height: 96px; border-radius: 24px; background: #fff; display: grid; place-items: center;
+  box-shadow: 0 4px 18px rgba(16, 42, 67, .14); }
+.acceso-marca .acceso-simbolo img { width: 80px; height: 80px; }
+.acceso-marca .nom small { display: block; max-width: 330px; margin: 6px auto 0; font-size: 12px; line-height: 1.4; color: var(--texto-sec); }
+.acceso-muni { display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 18px; font-size: 12px; color: var(--texto-sec); }
+.acceso-muni img { height: 28px; width: auto; }
+.acceso-muni img.logo-oscuro { display: none; }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .acceso-muni img.logo-claro { display: none; }
+  :root:not([data-theme="light"]) .acceso-muni img.logo-oscuro { display: block; }
+}
+:root[data-theme="dark"] .acceso-muni img.logo-claro { display: none; }
+:root[data-theme="dark"] .acceso-muni img.logo-oscuro { display: block; }
+
+/* Zona de archivo con un archivo ya elegido (09/10): tarjeta que se reconoce de un vistazo. */
+.zona-archivo.con-archivo { border-style: solid; border-width: 1.5px; border-color: var(--exito-fg); background: var(--exito-bg);
+  align-items: stretch; text-align: left; padding: 12px 14px; }
+.zona-archivo.con-archivo:hover { border-color: var(--exito-fg); background: var(--exito-bg); box-shadow: 0 4px 14px rgba(0, 0, 0, .08); }
+.zona-archivo.con-archivo.invalida { border-color: var(--error-fg); background: var(--error-bg); }
+.zarch-elegido { display: flex; align-items: center; gap: 14px; min-width: 0; animation: zarch-aparece .28s ease-out; }
+@keyframes zarch-aparece { from { opacity: 0; transform: translateY(4px) scale(.98); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .zarch-elegido { animation: none; } }
+/* La "hoja": miniatura de la imagen o una hoja con la esquina doblada y el formato. */
+.zarch-hoja { position: relative; flex: none; width: 46px; height: 56px; border-radius: 6px; display: grid; place-items: center;
+  background: var(--card); border: 1px solid var(--borde); box-shadow: 0 1px 3px rgba(0, 0, 0, .08); overflow: visible; }
+.zarch-hoja::after { content: ''; position: absolute; top: -1px; right: -1px; width: 12px; height: 12px; background: linear-gradient(225deg, var(--exito-bg) 50%, var(--borde) 50%);
+  border-bottom-left-radius: 3px; }
+.zarch-hoja img { width: 100%; height: 100%; object-fit: cover; border-radius: 5px; }
+.zarch-hoja:has(img)::after { display: none; }
+.hoja-formato { font-size: 11px; font-weight: 800; letter-spacing: .04em; padding: 2px 6px; border-radius: 4px; margin-top: 8px; }
+.hoja-pdf .hoja-formato { background: var(--error-bg); color: var(--error-fg); }
+.hoja-jpg .hoja-formato { background: var(--info-bg); color: var(--info-fg); }
+.hoja-png .hoja-formato { background: var(--exito-bg); color: var(--exito-fg); }
+.zarch-listo { position: absolute; right: -7px; bottom: -7px; width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center;
+  background: var(--exito-fg); color: var(--card); border: 2px solid var(--exito-bg); }
+.zarch-listo svg { stroke-width: 3; }
+.zarch-datos { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.zarch-nombre { font-size: 14.5px; color: var(--texto); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.zarch-meta { font-size: 12.5px; color: var(--texto-sec); }
+.zarch-estado { color: var(--exito-fg); font-weight: 700; }
+.zarch-acciones { flex: none; display: flex; align-items: center; gap: 6px; }
+.zarch-cambiar { font-size: 13px; font-weight: 700; color: var(--accion-sobre-claro); text-decoration: underline; padding: 6px 4px; }
+/* Quitar queda ENCIMA del <input> transparente (que cubre todo el recuadro). */
+.zarch-quitar { position: relative; z-index: 2; width: 32px; height: 32px; border-radius: 50%; border: 1px solid var(--borde); background: var(--card);
+  color: var(--texto-sec); display: grid; place-items: center; cursor: pointer; }
+.zarch-quitar:hover { color: var(--error-fg); border-color: var(--error-fg); }
+.zarch-quitar:focus-visible { outline: 3px solid var(--foco); outline-offset: 2px; }
+@media (max-width: 480px) { .zarch-cambiar { display: none; } }

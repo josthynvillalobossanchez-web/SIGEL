@@ -57,7 +57,7 @@ export function ProveedorDeCambiosSinGuardar({ children }: { children: ReactNode
           alCerrar={() => setPreguntar(null)}
           pie={
             <>
-              <button className="btn btn-secundario" type="button" onClick={() => setPreguntar(null)} data-ayuda="Volver a la página sin perder nada">
+              <button className="btn btn-secundario" type="button" data-ayuda="Volver a la página sin perder nada" onClick={() => setPreguntar(null)}>
                 Seguir editando
               </button>
               <button

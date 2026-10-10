@@ -42,7 +42,26 @@ export const TIPOS_DE_CATALOGO = {
     llamado: 'llamada',
     largoMaximo: 150,
   },
+  // Sprint 2 (09/10): los tipos de incapacidad los administra RRHH aqui mismo.
+  // Lo que se cuenta no son funcionarios sino incapacidades vigentes.
+  tiposIncapacidad: {
+    modelo: 'tipoIncapacidad',
+    singular: 'tipo de incapacidad',
+    el: 'el',
+    del: 'del',
+    un: 'un',
+    o: 'o',
+    llamado: 'llamado',
+    largoMaximo: 120,
+  },
 } as const;
+
+/** Que relacion se cuenta en "cantidadFuncionarios" (cuantos lo usan) para cada catalogo. */
+export function conteoDe(tipo: TipoDeCatalogo) {
+  return tipo === 'tiposIncapacidad'
+    ? ({ relacion: 'incapacidades', select: { incapacidades: { where: { vigente: true } } } } as const)
+    : ({ relacion: 'funcionarios', select: { funcionarios: { where: { estado: 'activo' } } } } as const);
+}
 
 export type TipoDeCatalogo = keyof typeof TIPOS_DE_CATALOGO;
 export type DatosDelTipo = (typeof TIPOS_DE_CATALOGO)[TipoDeCatalogo];
@@ -58,7 +77,7 @@ export class TipoDeCatalogoValido implements PipeTransform<string, TipoDeCatalog
     if (!Object.hasOwn(TIPOS_DE_CATALOGO, valor)) {
       throw new NotFoundException({
         codigo: 'CATALOGO_NO_EXISTE',
-        message: 'Ese catálogo no existe. Los catálogos son: departamentos, puestos y profesiones.',
+        message: 'Ese catálogo no existe. Los catálogos son: departamentos, puestos, profesiones y tipos de incapacidad.',
       });
     }
     return valor as TipoDeCatalogo;

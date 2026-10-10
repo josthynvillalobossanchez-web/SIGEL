@@ -176,6 +176,56 @@ const TRAZOS = {
       <path d="M3 3v5h5" />
     </>
   ),
+  // Vacaciones y calendario.
+  calendario: (
+    <>
+      <rect x="3" y="4.5" width="18" height="16.5" rx="2.5" />
+      <path d="M3 9.5h18M8 2.5v4M16 2.5v4" />
+    </>
+  ),
+  bandeja: (
+    <>
+      <path d="M22 12h-6l-2 3h-4l-2-3H2" />
+      <path d="M5.5 5.1 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.5-6.9A2 2 0 0 0 16.7 4H7.3a2 2 0 0 0-1.8 1.1z" />
+    </>
+  ),
+  siguiente: <path d="m9 18 6-6-6-6" />,
+  bandera: (
+    <>
+      <path d="M5 21V4" />
+      <path d="M5 4h11l-2 4 2 4H5" />
+    </>
+  ),
+  equis: <path d="M18 6 6 18M6 6l12 12" />,
+  sombrilla: (
+    <>
+      <path d="M12 12v8a2 2 0 0 0 4 0" />
+      <path d="M3 12a9 9 0 0 1 18 0z" />
+    </>
+  ),
+  personaMas: (
+    <>
+      <path d="M15 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+      <circle cx="8.5" cy="7" r="4" />
+      <path d="M19 8v6M16 11h6" />
+    </>
+  ),
+  lista: <path d="M8 6h13M8 12h13M8 18h13M3.5 6h.01M3.5 12h.01M3.5 18h.01" />,
+  tarjetas: (
+    <>
+      <rect x="3" y="3" width="7.5" height="7.5" rx="1.5" />
+      <rect x="13.5" y="3" width="7.5" height="7.5" rx="1.5" />
+      <rect x="3" y="13.5" width="7.5" height="7.5" rx="1.5" />
+      <rect x="13.5" y="13.5" width="7.5" height="7.5" rx="1.5" />
+    </>
+  ),
+  filtro: <path d="M3 4h18l-7 8.5V19l-4 2v-8.5z" />,
+  alerta: (
+    <>
+      <path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z" />
+      <path d="M12 9v4M12 17h.01" />
+    </>
+  ),
 } satisfies Record<string, ReactNode>;
 
 export type NombreDeIcono = keyof typeof TRAZOS;

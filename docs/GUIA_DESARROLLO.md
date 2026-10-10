@@ -136,8 +136,12 @@ Qué hace cada uno:
 3. **`prisma:migrate`** compara el esquema con la base de datos, escribe el SQL de los
    cambios en `prisma/migrations` y lo aplica. Ese historial de migraciones es lo que
    permite que cualquier persona levante la base idéntica.
-4. **`db:seed`** carga los datos base: los 19 permisos, los cinco roles de sistema, los
-   regímenes de vacaciones, los tipos de documento y la cuenta del Súper Administrador.
+4. **`db:seed`** carga los datos base: los permisos, los cinco roles de sistema, los
+   regímenes de vacaciones, los tipos de documento y de incapacidad, y la cuenta del Súper Administrador.
+5. **`db:perfil-super-administrador -- <archivo.json>`** (una sola vez por base, después del seed) liga la
+   cuenta del Súper Administrador a la persona que la usa. Los datos personales vienen de un JSON **fuera de
+   Git** (en desarrollo: `npm run db:perfil-super-administrador -- ..\docs\_trabajo\perfil-super-administrador.json`).
+   Si ya está ligada, no hace nada.
 
 > **Si `npm install` avisa que bloqueó scripts de instalación.** npm ya no ejecuta los
 > scripts de los paquetes sin permiso, y `argon2`, `prisma`, `@prisma/engines` y `esbuild`
@@ -353,23 +357,23 @@ aparece marcado como público, exige sesión.
 | `POST /catalogos/:tipo` | `catalogos.editar` | `{ nombre, descripcion? }` |
 | `PATCH /catalogos/:tipo/:id` | `catalogos.editar` | `{ nombre?, descripcion? }` ("" quita la descripción) |
 | `PATCH /catalogos/:tipo/:id/estado` | `catalogos.editar` | `{ activo }` |
-| `GET /funcionarios` | `funcionarios.ver` | `?busqueda=&estado=activo&departamentoId=&pagina=&tamano=` |
+| `GET /funcionarios` | `funcionarios.ver` | `?busqueda=&estado=activo&departamentoId=&pagina=&tamano=`. Sin `funcionarios.verTodos` ni `funcionarios.crear`/`editar` (la jefatura) trae solo su personal a cargo |
 | `GET /funcionarios/opciones` | `funcionarios.ver` | Listas activas para los formularios; `jefaturas` = solo quienes tienen el rol Aprobador permanente |
-| `GET /funcionarios/:id` | `funcionarios.ver` | Ficha completa; fechas como `AAAA-MM-DD` |
+| `GET /funcionarios/:id` | `funcionarios.ver` | Ficha completa; fechas como `AAAA-MM-DD`. Sin `funcionarios.verTodos`, solo la propia y la del personal a cargo (`FUNCIONARIO_FUERA_DE_ALCANCE`) |
 | `POST /funcionarios` | `funcionarios.crear` | Datos personales, contacto y laborales; `cuenta?: { roles }` crea la cuenta en la misma transacción |
 | `PATCH /funcionarios/:id` | `funcionarios.editar` | Solo lo que cambia (no `cedula` ni `estado`) |
 | `POST /funcionarios/:id/salida` | `funcionarios.editar` | `{ fechaSalida, motivoSalida }` |
 | `POST /funcionarios/:id/reingreso` | `funcionarios.editar` | `{ fechaIngreso }` |
 | `GET /expedientes/propio` | `expediente.ver` | Expediente propio `{ funcionario, esPropio, tieneFoto }`; se anota en la bitácora |
 | `GET /expedientes/:funcionarioId` | `expediente.ver` (+ `expediente.verTodos` si es de otra persona) | Abre un expediente; se anota en la bitácora |
-| `GET /expedientes/:funcionarioId/historial` | igual | `?pagina=&tamano=`; movimientos `{ tipo, titulo, fechaEfectiva, cambios[{campo, antes, despues}], detalle, quien }` |
+| `GET /expedientes/:funcionarioId/historial` | igual | `?pagina=&tamano=&tipo=ingreso\|cambio\|salida\|reingreso\|documentos&desde=&hasta=&busqueda=`; movimientos `{ tipo, titulo, fechaEfectiva, cambios[{campo, antes, despues}], detalle, quien }` |
 | `GET /expedientes/:funcionarioId/documentos` | `expediente.ver` (+ `expediente.verTodos` si es de otra persona) | `?pagina=&tamano=&busqueda=&tipoDocumentoId=&estado=vigentes\|bajas\|todos`. Cada documento trae `acciones` (qué puede hacer quien consulta y por qué no). `bajas`/`todos` solo con `documentos.restaurar`; para los demás se ignoran |
 | `POST /expedientes/:funcionarioId/documentos` | `documentos.crear` | Subir (multipart: campo `archivo` + `tipoDocumentoId`, `titulo`, `descripcion?`, `fechaDocumento?`). Máximo 25 MB; PDF, JPG o PNG según el tipo |
 | `GET /documentos/:id/archivo?modo=ver\|descargar` | `documentos.descargar` | Entrega el archivo ya descifrado (se anota `consultar` o `descargar` en la bitácora) |
 | `PATCH /documentos/:id` | sesión (decide el servicio) | `{ titulo?, tipoDocumentoId?, descripcion?, fechaDocumento? }`; el archivo no se reemplaza. La persona edita lo que ella subió (`documentos.editarPropio`); RRHH cualquier documento manual (`documentos.editar`); los generados por SINERGIA solo se ven |
 | `POST /documentos/:id/baja` | sesión (decide el servicio) | `{ motivo? }`. Baja lógica: `documentos.darDeBajaPropio` (lo que subió ella) o `documentos.darDeBaja` |
 | `POST /documentos/:id/restauracion` | `documentos.restaurar` | Devuelve un documento dado de baja a vigente |
-| `GET /funcionarios/:id/foto` | ella misma, `funcionarios.ver` o `usuarios.ver` | La fotografía (JPG o PNG); 404 `SIN_FOTOGRAFIA` si no tiene. Sin límite de peticiones por minuto (las listas piden una por fila). Las listas y fichas de funcionarios y de usuarios traen `tieneFoto`, nunca la ruta |
+| `GET /funcionarios/:id/foto` | ella misma, `usuarios.ver`, o `funcionarios.ver` (sin `verTodos`, solo su personal a cargo) | La fotografía (JPG o PNG); 404 `SIN_FOTOGRAFIA` si no tiene. Sin límite de peticiones por minuto (las listas piden una por fila). Las listas y fichas de funcionarios y de usuarios traen `tieneFoto`, nunca la ruta |
 | `PUT /funcionarios/:id/foto` | ella misma (`perfilPropio.editar`) o `funcionarios.editar` | Multipart, campo `archivo`; JPG o PNG, máximo 5 MB. No se cambia la de una cuenta con más acceso |
 | `DELETE /funcionarios/:id/foto` | igual | Quita la fotografía (el archivo anterior queda guardado en el servidor) |
 | `GET /tipos-documento` | con sesión | `?soloActivos=&paraSubir=`; cada tipo trae `formatos[]`, `generadoPorSistema` y `cantidadDocumentos` |
@@ -377,6 +381,30 @@ aparece marcado como público, exige sesión.
 | `PATCH /tipos-documento/:id` | `tiposDocumento.editar` | Nombre, descripción y formatos; los tipos que genera SINERGIA solo cambian de nombre |
 | `PATCH /tipos-documento/:id/estado` | `tiposDocumento.editar` | `{ activo }`; los tipos de SINERGIA no se inactivan |
 | `GET /usuarios/funcionarios-disponibles?busqueda=` | `usuarios.crear` | Funcionarios activos sin cuenta, máximo 20 |
+| `GET /vacaciones/mi-saldo` | `solicitudes.crear` | Saldo propio: `disponible` (lo que se muestra), `reservado` (pendientes), `libre`, régimen y próximo periodo |
+| `GET /vacaciones/saldo/:funcionarioId` | `solicitudes.crear` | La persona, su jefatura inmediata o RRHH (`SALDO_AJENO`) |
+| `GET /vacaciones/saldo/:funcionarioId/movimientos` | `solicitudes.crear` | Historial (saldo inicial, ganados, disfrutados, devoluciones, vencidos, ajustes) |
+| `POST /vacaciones/saldo/:funcionarioId/ajuste` | `funcionarios.editar` | `{ dias, motivo }`; si no hay saldo cargado, lo carga |
+| `GET /solicitudes/tipos` | `solicitudes.crear` | Catálogo (color, `descuentaVacaciones`, `requiereJustificante`) |
+| `POST /solicitudes/calcular` | `solicitudes.crear` | Vista previa sin guardar: días hábiles, desglose, saldo, `autoaprobada`, `laApruebaSuJefatura`, `faltaJustificante` (no lo exige: se adjunta después), o `problema` |
+| `POST /solicitudes` | `solicitudes.crear` | `{ tipoSolicitudId, fechaInicio, fechaFin, motivo?, funcionarioId? }`. A nombre de otra persona: RRHH (`solicitudes.administrar`) de cualquiera; la jefatura (`solicitudes.aprobar`) de su personal a cargo, y queda aprobada |
+| `GET /solicitudes/mias` · `/bandeja` · `/todas` | `solicitudes.crear` · `solicitudes.aprobar` · `solicitudes.administrar` | `?estado=&tipoSolicitudId=&departamentoId=&busqueda=&desde=&hasta=&pagina=&tamano=` |
+| `GET /solicitudes/calendario` | `solicitudes.crear` | `?desde=&hasta=&alcance=propio\|equipo\|todos&departamentoId=`. "equipo" = personal a cargo + la propia jefatura |
+| `GET /solicitudes/:id` | `solicitudes.crear` | La persona, quien la hizo, quien aprueba o RRHH. Si la abre quien aprueba, queda leída |
+| `POST /solicitudes/:id/aprobar` · `/rechazar` | `solicitudes.aprobar` | Solo la jefatura a la que le llegó. Rechazar pide `{ motivo }` (5+ caracteres) |
+| `POST /solicitudes/:id/cancelar` | `solicitudes.crear` | Pendiente sin abrir; o aprobada por la propia persona (tope) antes de empezar: devuelve los días (`SOLICITUD_YA_INICIADA`) |
+| `GET /dias-no-laborables` · `GET /dias-no-laborables/fechas?anio=` | `solicitudes.crear` | Catálogo de feriados (`regla`: `fija` con `mes`/`dia`, `unica` con `fecha`, `juevesSanto`, `viernesSanto`; trae `proxima`) · fechas de un año ya calculadas |
+| `POST /dias-no-laborables` · `PATCH /:id` · `DELETE /:id` · `POST /dias-no-laborables/de-ley` | `catalogos.editar` | `{ nombre, regla, mes?, dia?, fecha? }` (`FECHA_YA_REGISTRADA`); `de-ley` agrega los feriados de ley de Costa Rica que falten |
+| `GET /reglas-vacaciones` · `PUT /reglas-vacaciones/:regimenId` | `catalogos.editar` | Regímenes con tramos, tope y aviso · `{ descripcion?, periodosMaximosAcumulables, diasAvisoAntesDeVencer, tramos: [{ aniosMinimos, aniosMaximos\|null, diasPorPeriodo }] }` (`REGLA_NO_VALIDA`, `SIN_CAMBIOS`) |
+| `POST /solicitudes/con-justificante` | `solicitudes.crear` | Multipart: campos de la solicitud + archivo `justificante`. Revisa todo antes de guardar el archivo |
+| `GET /solicitudes/:id/justificante` | `solicitudes.crear` | El archivo (quien puede ver la solicitud; `SIN_JUSTIFICANTE`) |
+| `POST /solicitudes/:id/constancia` | `solicitudes.crear` | Genera de nuevo una constancia fallida: RRHH o quien aprobó (`CONSTANCIA_NO_APLICA`) |
+| `GET /incapacidades/tipos` · `/mias` · `/:id` | `solicitudes.crear` | Tipos activos · las propias · detalle (la jefatura recibe `tipo`, `entidadEmisora`, `numeroBoleta` y `boletaId` en null) |
+| `GET /incapacidades` | `solicitudes.administrar` | Todas (`?busqueda=&tipoIncapacidadId=&departamentoId=&desde=&hasta=&estado=vigentes\|anuladas\|todas`) |
+| `POST /incapacidades` | `solicitudes.crear` | Multipart con archivo `boleta` (obligatorio). De otra persona solo RRHH (`INCAPACIDAD_AJENA`). Misma boleta (número + emisor) dos veces: `BOLETA_YA_REGISTRADA`. Responde `{ incapacidad, avisos }` |
+| `GET /capacitaciones?funcionarioId=` | `expediente.ver` | Las de esa persona (propias o con `expediente.verTodos`) |
+| `POST /capacitaciones` · `/:id/certificado` · `/:id/baja` | `solicitudes.crear` | Multipart con archivo `certificado` (opcional). `afectaJornada=true` + fechas crea la solicitud CAP. De otra persona, solo RRHH (`CAPACITACION_AJENA`) |
+| `GET /horas-extra` · `POST /horas-extra` · `POST /horas-extra/:id/anular` | `horasExtra.registrar` | `?mes=AAAA-MM&funcionarioId=&departamentoId=&busqueda=&incluirAnuladas=` → `totalMinutos`, `porPersona` (`minutos`) y registros (`cantidadMinutos`) · `{ funcionarioId, fecha, horaInicio, horaFin, motivo? }` (`HH:MM`; fecha hasta un año atrás o adelante) |
 
 `GET /usuarios/:id` trae además `permisosEfectivos` (lo que la cuenta puede hacer de verdad),
 `puedoModificar` y `motivoNoModificable` (`CUENTA_PROPIA` o `CUENTA_CON_MAYOR_ACCESO`) respecto
@@ -445,6 +473,13 @@ Códigos de error más frecuentes:
 | `BAJA_NO_PERMITIDA` | No puede dar de baja ese documento (lo subió otra persona, lo generó SINERGIA o ya está en baja) |
 | `TIPO_DOCUMENTO_INVALIDO` / `TIPO_DOCUMENTO_INACTIVO` / `TIPO_GENERADO_POR_SISTEMA` / `TIPO_NO_ACEPTA_EL_FORMATO` | Tipo inexistente / inactivo / lo genera SINERGIA y no se elige a mano / no acepta el formato del archivo |
 | `TIPO_DOCUMENTO_NO_ENCONTRADO` / `TIPO_DE_SISTEMA` | No existe ese tipo / se quiso cambiar o inactivar un tipo que genera SINERGIA |
+| `TIPO_DE_TRAMITE` | Justificante, boleta o certificado: se adjuntan desde su trámite; no se suben a mano, ni se renombran o inactivan |
+| `JUSTIFICANTE_REQUERIDO` / `SIN_JUSTIFICANTE` / `CONSTANCIA_NO_APLICA` | La licencia necesita su archivo / la solicitud no tiene justificante / no hay constancia que generar de nuevo |
+| `INCAPACIDAD_TRASLAPADA` / `INCAPACIDAD_AJENA` / `INCAPACIDAD_YA_ANULADA` / `TIPO_INCAPACIDAD_INVALIDO` | Coincide con una incapacidad vigente / solo RRHH registra por otra persona / ya estaba anulada / tipo inexistente o inactivo |
+| `CAPACITACION_AJENA` / `FECHAS_REQUERIDAS` | No la puede registrar o modificar / choca con el horario pero no trae fechas |
+| `FECHA_FUERA_DE_RANGO` / `HORAS_NO_VALIDAS` / `HORAS_TRASLAPADAS` | Horas extra: más de un año atrás o adelante / iguales o más de 16 h / se cruza con otro registro (también los del día anterior que pasan la medianoche) |
+| `BOLETA_YA_REGISTRADA` | La boleta (número + emisor) ya está registrada (una incapacidad no se anula ni se rechaza) |
+| `SOLICITUD_NO_CANCELABLE` / `FECHA_PASADA` | El tipo es un derecho (licencia): no se cancela / las solicitudes son de hoy en adelante, para todos |
 | `SIN_FOTOGRAFIA` / `CUENTA_CON_MAYOR_ACCESO` | La persona no tiene foto / no se cambia la foto de una cuenta con más acceso |
 | `CUENTA_SIN_FUNCIONARIO` / `CORREO_INSTITUCIONAL_EN_USO` | Mi cuenta: cuenta técnica sin datos personales / correo de otra persona |
 
@@ -560,6 +595,15 @@ Nada de páginas largas con scroll en PC.
 | `/funcionarios/:id/expediente/documentos/nuevo`, `/mi-expediente/documentos/nuevo` | `expediente.ver` + `documentos.crear` | Subir documento por pasos (Tipo y archivo · Datos · Revisar) |
 | `/tipos-documento` (`?estado=`) | `tiposDocumento.editar` | Tipos de documento y sus formatos; ventanas cortas de crear, editar e inactivar |
 | `/mi-cuenta` | con sesión | Perfil; pestañas Mis datos personales (editable), Datos laborales (editable solo con `funcionarios.editar`) y Acceso y seguridad |
+| `/calendario` (`?alcance=`, `?vista=mes\|persona\|lista`, `?mes=AAAA-MM`, `?estado=`, `?persona=`, `?departamento=`, `?resaltar=<id>`) | con sesión | Calendario inteligente: Mi calendario / Mi equipo / Todo el personal según el acceso |
+| `/calendario/feriados` | `catalogos.editar` | Catálogo de feriados que se repiten solos (cada año, Semana Santa, una vez) y «Cargar feriados de ley» (subsección de Calendario; `/feriados` redirige) |
+| `/mis-ausencias` (antes `/mis-vacaciones`, que redirige; `?pestana=solicitudes\|incapacidades\|historial`) | `solicitudes.crear` | «Mis ausencias»: pestañas Mi saldo, Mis solicitudes, Incapacidades e Historial del saldo |
+| `/mis-ausencias/nueva` (`?tipo=incapacidad`) | `solicitudes.crear` | Nueva solicitud por pasos (Qué · Cuándo · [Detalles] · Revisar). «Detalles» aparece para la licencia (justificante), la incapacidad (boleta) y la capacitación (datos del curso) |
+| `/registrar-solicitud` | `solicitudes.administrar` o `solicitudes.aprobar` | Solicitud para otra persona (Quién · Qué · Cuándo · Revisar); `/solicitudes/nueva` redirige |
+| `/bandeja` (`?estado=`) | `solicitudes.aprobar` | Bandeja de la jefatura: tarjetas o lista, choques marcados, detalle con Aprobar/Rechazar y Ver en calendario |
+| `/solicitudes` (`?estado=&tipo=&departamento=&busqueda=&desde=&hasta=`) | `solicitudes.administrar` | Todas las solicitudes (RRHH), lista compacta o tarjetas |
+| `/incapacidades` | `solicitudes.administrar` | Incapacidades del personal: filtros, búsqueda por boleta, detalle con boleta y Anular |
+| `/horas-extra` (`?mes=&persona=&departamento=&anuladas=si`) | `horasExtra.registrar` | Horas extra: mes, totales, por persona y registros; Registrar (persona → día y horas) y Anular |
 
 `/usuarios/:id` y `/roles/:id` (sin "editar") abren la ventana de consulta.
 
@@ -577,7 +621,8 @@ Nada de páginas largas con scroll en PC.
 | `Pestanas` + `PanelDePestana` | Pestañas accesibles (flechas, Inicio, Fin) |
 | `BotonIcono`, `BotonConAyuda` | Botones con ayuda y **bloqueo explicado** (`bloqueadoPor="motivo"`) |
 | `ModalExito` | "Se hizo con éxito" + Aceptar (y la página vuelve a la lista) |
-| `GestorDeAyudas` | Muestra el globo de cualquier elemento con `data-ayuda="texto"` |
+| `VisorDeArchivo` | Ver un archivo que llega como Blob (constancia, boleta, certificado, justificante) con Descargar |
+| `GestorDeAyudas` | Muestra el globo de cualquier elemento con `data-ayuda="texto"` (o, si falta, el `aria-label` del botón). **Todo botón lleva `data-ayuda`**; los de solo icono, además `aria-label` |
 | `TarjetaDePerfil` | Tarjeta con degradado (foto/iniciales, nombre, chips, acciones, datos rápidos): Mi cuenta y expediente |
 | `Paginacion` | "Mostrando 1–20 de 57 …" y Anterior/Siguiente de las listas |
 | `PieDeGuardado` | Pie Descartar / Guardar cambios de un formulario de edición en pestaña |
@@ -591,6 +636,12 @@ Nada de páginas largas con scroll en PC.
 | `useFormularioDeCambios(original, { revisar, enviar, alGuardar })` | Formulario que edita y guarda solo lo que cambió (Mi cuenta) |
 | `useBusquedaDiferida(busquedaEnUrl, alBuscar)` | Buscador que espera a que se deje de escribir y pasa el texto a la URL |
 | `useParametrosEnUrl()` | Filtros en la URL sin perder cambios rápidos |
+| `usePreferencia(clave, permitidos, porOmision)` | Preferencia de pantalla en este navegador (p. ej. Tarjetas o Lista); si el navegador no guarda, usa la de por omisión |
+| `useEsMovil()` | `true` en pantallas de 719 px o menos (el calendario dibuja puntos en vez de barras) |
+
+**Menú (`diseno/menu.ts`)**: grupos plegables (abierto el de la página actual). Cada opción puede llevar
+`algunoDe` (basta uno de esos permisos), `tambienEn` (otras rutas que cuentan como esa sección) y
+`textoSinPermiso` (p. ej. «Mi personal» para quien no tiene `funcionarios.verTodos`).
 
 **Reglas de datos**: `utilidades/validaciones.ts` (nombres, teléfono, correos, cédula, edad mínima,
 fechas de ingreso). Si una regla cambia, se cambia ahí y en el backend, nunca en la pantalla.
@@ -598,7 +649,7 @@ fechas de ingreso). Si una regla cambia, se cambia ahí y en el backend, nunca e
 **Para hacer una página de edición nueva** (p. ej. "Registrar funcionario"):
 1. Página con `FormularioPorPasos` (mirar `paginas/roles/PaginaRol.tsx`, es la más corta).
 2. `useCambiosSinGuardar(hayCambios && !terminado)`.
-3. Ruta en `App.tsx` con `<ConPermisos>` y subsección en `diseno/menu.ts` (`ruta` si es fija,
+3. Ruta en `App.tsx` con `<ConPermisos>` (`permisos` = todos; `algunoDe` = al menos uno) y subsección en `diseno/menu.ts` (`ruta` si es fija,
    `patron` si depende de un id).
 4. Al guardar, `ModalExito` y Aceptar vuelve a la lista.
 
@@ -742,6 +793,7 @@ npm ci
 npx prisma generate
 npx prisma migrate deploy        # aplica las migraciones sin borrar datos
 npm run db:seed                  # solo la primera vez y cuando cambian permisos
+npm run db:perfil-super-administrador -- C:\ruta\fuera-del-repo\perfil-super-administrador.json   # solo la primera vez
 npm run build
 cd ..\frontend
 npm ci

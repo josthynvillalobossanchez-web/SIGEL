@@ -1,7 +1,8 @@
 import { BadRequestException, ForbiddenException, Injectable } from '@nestjs/common';
 import type { UsuarioAutenticado } from '../autenticacion/tipos.js';
 import { BitacoraService } from '../bitacora/bitacora.service.js';
-import { armarPagina, type PaginacionDto, type PaginaDeResultados } from '../comun/dto/paginacion.dto.js';
+import { armarPagina, type PaginaDeResultados } from '../comun/dto/paginacion.dto.js';
+import type { ConsultarHistorialDto } from './dto/consultar-historial.dto.js';
 import { ETIQUETAS, FuncionariosService, type DetalleDeFuncionario } from '../funcionarios/funcionarios.service.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 
@@ -105,7 +106,7 @@ export class ExpedientesService {
 
   async historial(
     funcionarioId: string,
-    paginacion: PaginacionDto,
+    paginacion: ConsultarHistorialDto,
     quienActua: UsuarioAutenticado,
   ): Promise<PaginaDeResultados<MovimientoDelHistorial>> {
     this.revisarAcceso(funcionarioId, quienActua);
@@ -129,7 +130,8 @@ export class ExpedientesService {
     // Se filtra aqui (no en SQL) porque hay que mirar DENTRO del JSON si el
     // cambio toco algun dato laboral. Por funcionario son pocos movimientos.
     const verBajas = quienActua.permisos.includes('documentos.restaurar');
-    const movimientos = filas.map((fila) => this.aMovimiento(fila, verBajas)).filter((m): m is MovimientoDelHistorial => m !== null);
+    const todos = filas.map((fila) => this.aMovimiento(fila, verBajas)).filter((m): m is MovimientoDelHistorial => m !== null);
+    const movimientos = todos.filter((m) => cumpleFiltros(m, paginacion));
     return armarPagina(movimientos.slice((pagina - 1) * tamano, pagina * tamano), movimientos.length, pagina, tamano);
   }
 
@@ -258,4 +260,24 @@ function texto(v: unknown): string | null {
 function formatear(fecha: string): string {
   const partes = /^(\d{4})-(\d{2})-(\d{2})$/.exec(fecha);
   return partes ? `${partes[3]}/${partes[2]}/${partes[1]}` : fecha;
+}
+
+/**
+ * Filtros del historial (10/10): tipo de movimiento, rango de fechas (la fecha
+ * en que ocurrio, o la de registro si no tiene) y texto libre.
+ */
+function cumpleFiltros(m: MovimientoDelHistorial, f: ConsultarHistorialDto): boolean {
+  if (f.tipo) {
+    const esDocumento = m.tipo.startsWith('documento');
+    if (f.tipo === 'documentos' ? !esDocumento : m.tipo !== f.tipo) return false;
+  }
+  const fecha = m.fechaEfectiva ?? m.fechaHora.slice(0, 10);
+  if (f.desde && fecha < f.desde) return false;
+  if (f.hasta && fecha > f.hasta) return false;
+  if (f.busqueda) {
+    const sinTildes = (t: string) => t.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    const texto = sinTildes([m.titulo, m.detalle ?? '', m.quien, ...m.cambios.flatMap((c) => [c.campo, c.antes ?? '', c.despues ?? ''])].join(' '));
+    if (!sinTildes(f.busqueda).split(/\s+/).filter(Boolean).every((p) => texto.includes(p))) return false;
+  }
+  return true;
 }

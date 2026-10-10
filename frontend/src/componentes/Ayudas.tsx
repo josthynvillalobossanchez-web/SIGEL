@@ -28,7 +28,11 @@ interface Globo {
   abajo: boolean;
 }
 
-const SELECTOR = '[data-ayuda]';
+/**
+ * Respaldo (01/10): un boton sin data-ayuda pero con aria-label tambien muestra
+ * su globo, asi ningun boton de solo icono queda sin explicacion.
+ */
+const SELECTOR = '[data-ayuda], button[aria-label], a[aria-label].btn';
 
 export function GestorDeAyudas() {
   const [globo, setGlobo] = useState<Globo | null>(null);
@@ -39,7 +43,7 @@ export function GestorDeAyudas() {
 
   useEffect(() => {
     function mostrar(el: Element) {
-      const texto = el.getAttribute('data-ayuda');
+      const texto = el.getAttribute('data-ayuda') || el.getAttribute('aria-label');
       if (!texto) return;
       const caja = el.getBoundingClientRect();
       const abajo = caja.top < 60;

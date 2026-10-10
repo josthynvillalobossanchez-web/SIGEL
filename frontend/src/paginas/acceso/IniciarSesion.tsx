@@ -134,12 +134,12 @@ export function IniciarSesion() {
           autocompletar="current-password"
         />
 
-        <button className="btn btn-primario btn-bloque" type="submit" disabled={enviando || bloqueado} aria-busy={enviando}>
+        <button className="btn btn-primario btn-bloque" type="submit" disabled={enviando || bloqueado} aria-busy={enviando} data-ayuda="Ingresar al sistema con su correo y contraseña">
           {enviando ? 'Ingresando…' : 'Ingresar'}
         </button>
 
         <p style={{ textAlign: 'center', marginTop: 14 }}>
-          <Link className="btn-texto" to="/recuperar-contrasena" state={{ correo: correo.trim() }}>
+          <Link className="btn-texto" to="/recuperar-contrasena" state={{ correo: correo.trim() }} data-ayuda="Recibir un código por correo para crear una contraseña nueva">
             ¿Olvidó su contraseña?
           </Link>
         </p>

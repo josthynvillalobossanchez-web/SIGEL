@@ -14,7 +14,7 @@
  *   Informacion personal · Informacion laboral · Documentos ·
  *   Capacitaciones · Historial laboral
  * Documentos es la gestion documental (DocumentosDelExpediente); Capacitaciones
- * llega en el Sprint 2 y por ahora muestra su explicacion.
+ * (Sprint 2) lista los cursos con su certificado (CapacitacionesDelExpediente).
  *
  * La fotografia de la tarjeta la cambia la propia persona (perfilPropio.editar)
  * o Recursos Humanos (funcionarios.editar).
@@ -40,6 +40,7 @@ import { DatosLaboralesVista, DatosPersonalesVista } from '../funcionarios/Datos
 import { motivoParaEditar } from '../funcionarios/motivos';
 import { DocumentosDelExpediente } from './DocumentosDelExpediente';
 import { HistorialLaboral } from './HistorialLaboral';
+import { CapacitacionesDelExpediente } from '../ausencias/CapacitacionesDelExpediente';
 
 const PESTANAS = [
   { id: 'personal', texto: 'Información personal' },
@@ -225,11 +226,7 @@ function VistaDeExpediente({ funcionarioId }: { funcionarioId?: string }) {
       </PanelDePestana>
 
       <PanelDePestana id="capacitaciones" actual={pestana} prefijo="exp">
-        <div className="vacio">
-          <Icono nombre="reloj" tamano={36} />
-          <h3>Sin capacitaciones registradas</h3>
-          <p>Las capacitaciones llegan en el Sprint 2. Aparecerán aquí, junto con su certificado si se adjunta al finalizar.</p>
-        </div>
+        {pestana === 'capacitaciones' && <CapacitacionesDelExpediente funcionarioId={f.id} propio={propio} />}
       </PanelDePestana>
 
       <PanelDePestana id="historial" actual={pestana} prefijo="exp">

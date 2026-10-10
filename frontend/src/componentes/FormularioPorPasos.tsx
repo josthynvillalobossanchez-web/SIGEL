@@ -187,9 +187,9 @@ export function FormularioPorPasos({
               <button
                 className="btn btn-secundario"
                 type="button"
+                data-ayuda={`Volver al paso ${actual}: ${pasos[actual - 1].titulo}`}
                 onClick={() => irA(actual - 1)}
                 disabled={ocupado}
-                data-ayuda={`Volver al paso ${actual}: ${pasos[actual - 1].titulo}`}
               >
                 Anterior
               </button>

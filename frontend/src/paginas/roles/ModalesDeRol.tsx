@@ -65,7 +65,7 @@ export function ModalVerRol({
       }
       pie={
         <>
-          <button className="btn btn-secundario" type="button" onClick={alCerrar}>
+          <button className="btn btn-secundario" type="button" onClick={alCerrar} data-ayuda="Cerrar el detalle del rol">
             Cerrar
           </button>
           {rol && (
