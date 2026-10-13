@@ -510,7 +510,7 @@ export class SolicitudesService {
         );
       });
       const cancelada = await this.detalleSinPermisos(id);
-      await this.avisar('cancelada', cancelada, quienActua);
+      await this.avisar('canceladaAprobada', cancelada, quienActua);
       return cancelada;
     }
 
@@ -556,15 +556,16 @@ export class SolicitudesService {
   }
 
   /**
-   * Avisos de las solicitudes (Sprint 3, decision de Josthyn 10/10):
-   *   - creada pendiente: a la jefatura que la resuelve y a RRHH;
+   * Avisos de las solicitudes (Sprint 3; regla de Joseph del 13/10: RRHH se
+   * entera cuando la ausencia queda en firme):
+   *   - creada pendiente: solo a la jefatura que la resuelve;
    *   - creada ya aprobada (tope, la registra la jefatura, licencia): a RRHH y a la jefatura;
-   *   - aprobada: a la persona y a RRHH; rechazada: a la persona;
-   *   - cancelada: a la jefatura y a RRHH.
+   *   - aprobada: a la persona y a RRHH; rechazada: solo a la persona;
+   *   - cancelada pendiente: a la jefatura; cancelada ya aprobada: a la jefatura y a RRHH.
    * Si la registro o cancelo otra persona (RRHH, la jefatura), tambien se le avisa a la persona.
    * Nunca a quien hizo la accion. No hace fallar la operacion.
    */
-  private async avisar(evento: 'creada' | 'aprobada' | 'rechazada' | 'cancelada', s: SolicitudDeLista, quienActua: UsuarioAutenticado): Promise<void> {
+  private async avisar(evento: 'creada' | 'aprobada' | 'rechazada' | 'cancelada' | 'canceladaAprobada', s: SolicitudDeLista, quienActua: UsuarioAutenticado): Promise<void> {
     const n = this.notificaciones;
     const op = { excepto: quienActua.id };
     const persona = s.funcionario.nombre;
@@ -578,8 +579,8 @@ export class SolicitudesService {
     const quienRegistro = s.solicitadaPor.nombre ?? 'Recursos Humanos';
 
     if (evento === 'creada' && s.estado === 'pendiente') {
+      // Pendiente: solo la jefatura. RRHH se entera cuando queda en firme (Joseph, 13/10).
       await n.avisarAUsuarios([s.aprobador?.id], { ...base, clave: 'solicitudPorAprobar', titulo: 'Solicitud por aprobar', mensaje: `${persona} pidió ${que}. Le corresponde aprobarla o rechazarla (${s.consecutivo}).`, enlace: `/bandeja?abrir=${s.id}` }, op);
-      await n.avisarARrhh({ ...base, clave: 'solicitudRegistrada', titulo: `Nueva solicitud de ${persona}`, mensaje: `${persona} pidió ${que} (${s.consecutivo}). Está pendiente de ${s.aprobador?.nombre ?? 'su jefatura'}.`, enlace: paraRrhh }, op);
       if (laHizoOtro) {
         await n.avisarAFuncionario(s.funcionario.id, { ...base, clave: 'solicitudANombreSuyo', titulo: 'Se registró una solicitud a su nombre', mensaje: `${quienRegistro} registró a su nombre ${que} (${s.consecutivo}). Queda pendiente de su jefatura.`, enlace: paraLaPersona }, op);
       }
@@ -604,9 +605,9 @@ export class SolicitudesService {
       await n.avisarAFuncionario(s.funcionario.id, { ...base, clave: 'solicitudRechazada', titulo: 'Solicitud rechazada', mensaje: `${s.aprobador?.nombre ?? 'Su jefatura'} rechazó su solicitud de ${que} (${s.consecutivo}). Motivo: ${s.motivoRechazo ?? 'sin indicar'}.`, enlace: paraLaPersona }, op);
       return;
     }
-    // cancelada
+    // Cancelada: la jefatura siempre; RRHH solo si ya estaba aprobada (si estaba pendiente, RRHH nunca se entero).
     await n.avisarAUsuarios([s.aprobador?.id], { ...base, clave: 'solicitudCancelada', titulo: 'Solicitud cancelada', mensaje: `Se canceló ${que} de ${persona} (${s.consecutivo}).`, enlace: paraLaJefatura }, op);
-    await n.avisarARrhh({ ...base, clave: 'solicitudCancelada', titulo: `Cancelada: ${s.tipo.nombre.toLowerCase()} de ${persona}`, mensaje: `Se canceló ${que} de ${persona} (${s.consecutivo}).`, enlace: paraRrhh }, op);
+    if (evento === 'canceladaAprobada') await n.avisarARrhh({ ...base, clave: 'solicitudCancelada', titulo: `Cancelada: ${s.tipo.nombre.toLowerCase()} de ${persona}`, mensaje: `Se canceló ${que} de ${persona} (${s.consecutivo}).`, enlace: paraRrhh }, op);
     if (laHizoOtro) {
       await n.avisarAFuncionario(s.funcionario.id, { ...base, clave: 'solicitudCancelada', titulo: 'Se canceló una solicitud suya', mensaje: `Se canceló su solicitud de ${que} (${s.consecutivo}).`, enlace: paraLaPersona }, op);
     }

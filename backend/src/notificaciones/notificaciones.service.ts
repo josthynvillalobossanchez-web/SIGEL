@@ -25,6 +25,7 @@ export type ClaveDeNotificacion =
   | 'cambioHechoPorFuncionario'
   | 'revisarJefatura'
   | 'vacacionesPorVencer'
+  | 'vacacionesSobreElTope'
   | 'constanciaFallida';
 
 export interface Aviso {

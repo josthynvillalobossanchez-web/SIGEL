@@ -1072,3 +1072,21 @@ son de revisión con Joseph**. Si pide otra semana, seguir ese mismo formato.
   jefatura por asignar y constancias fallidas → RRHH; vacaciones por vencer → la persona).
 - **Bitácora**: sin entradas ni salidas ni consultas generales (T-4 se mantiene). Página de consulta
   solo para el Súper Administrador, de solo lectura.
+
+### Decisiones del 13/10/2026 (Joseph, por medio de Josthyn)
+
+- **Tope de vacaciones configurable.** La ley permite acumular hasta 2 periodos, pero en la
+  Municipalidad hay personas con más (periodos que la institución les debe, traslados de otra
+  institución, casos especiales). Por omisión el tope **solo avisa**: los días se siguen acumulando y
+  no se pierde nada. RRHH puede cambiar a **«Vencen los días»** (y volver) en cualquier momento, por
+  régimen, en Reglas de vacaciones (`regimenVacaciones.alSuperarElTope`, migración
+  `20261013000000_tope_de_vacaciones`). El cambio rige desde el próximo aniversario de cada persona.
+- **Aviso del tope con un mes de anticipación** (30 días; mínimo 20, el tiempo de gastar los días).
+  Le llega a la persona, a su jefatura y a RRHH (`vacacionesSobreElTope`), una vez por aniversario.
+- **RRHH agrega o quita días** desde Editar funcionario → Datos laborales (sección a la vista, ya no
+  plegada), siempre con motivo; queda en la bitácora y se le avisa a la persona. Puede pasar el tope.
+- **RRHH se entera de una ausencia cuando queda en firme.** Vacaciones, permisos y capacitaciones:
+  la solicitud nueva solo le llega a la jefatura; la aprobación, a la persona y a RRHH; el rechazo,
+  solo a la persona; la cancelación de una pendiente, solo a la jefatura; la de una ya aprobada, a la
+  jefatura y a RRHH. Licencias e incapacidades (sin aprobación) siguen llegando a jefatura y RRHH al
+  registrarse. El Súper Administrador recibe lo de RRHH (Joseph lo aprobó).

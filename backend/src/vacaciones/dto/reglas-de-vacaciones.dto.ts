@@ -1,5 +1,5 @@
 import { Transform, Type } from 'class-transformer';
-import { ArrayMaxSize, ArrayMinSize, IsArray, IsInt, IsOptional, IsString, Length, Max, Min, ValidateNested } from 'class-validator';
+import { ArrayMaxSize, ArrayMinSize, IsArray, IsIn, IsInt, IsOptional, IsString, Length, Max, Min, ValidateNested } from 'class-validator';
 
 const recortar = ({ value }: { value: unknown }): unknown => (typeof value === 'string' ? value.trim() : value);
 
@@ -35,10 +35,16 @@ export class GuardarRegimenDto {
   @Max(5, { message: 'El tope no puede pasar de 5 periodos.' })
   periodosMaximosAcumulables!: number;
 
+  /** Minimo 20 dias: el tiempo para poder tomar las vacaciones antes de llegar al tope (13/10). */
   @IsInt({ message: 'Los días de aviso deben ser un número entero.' })
-  @Min(0, { message: 'Los días de aviso no pueden ser negativos.' })
+  @Min(20, { message: 'El aviso debe darse al menos 20 días antes, para que alcance el tiempo de tomar las vacaciones.' })
   @Max(365, { message: 'El aviso no puede ser de más de 365 días.' })
   diasAvisoAntesDeVencer!: number;
+
+  /** "avisar": se acumula igual y solo se avisa; "vencer": lo que pase del tope se pierde. Si no viene, se deja como estaba. */
+  @IsOptional()
+  @IsIn(['avisar', 'vencer'], { message: 'Indique si al superar el tope solo se avisa o si vencen los días.' })
+  alSuperarElTope?: 'avisar' | 'vencer';
 
   @IsArray()
   @ArrayMinSize(1, { message: 'Debe haber al menos un tramo.' })

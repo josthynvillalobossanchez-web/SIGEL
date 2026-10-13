@@ -24,7 +24,16 @@ export interface ResumenDeSaldo {
   funcionarioId: string;
   /** false = RRHH todavia no cargo el saldo inicial: no se acumula nada hasta que lo haga. */
   saldoCargado: boolean;
-  regimen: { nombre: string; diasPorPeriodo: number | null; periodosMaximos: number; topeEnDias: number | null };
+  regimen: {
+    nombre: string;
+    diasPorPeriodo: number | null;
+    periodosMaximos: number;
+    topeEnDias: number | null;
+    /** "avisar" (por omision): se acumula igual; "vencer": lo que pase del tope se pierde (13/10). */
+    alSuperarElTope: 'avisar' | 'vencer';
+  };
+  /** Dias que HOY pasan del tope (solo puede haber con "avisar", o por un saldo inicial o ajuste de RRHH). */
+  sobreElTope: number;
   aniosDeServicio: number;
   /** Lo cargado por RRHH al registrar (dias que ya traia). */
   inicial: number;
@@ -46,9 +55,12 @@ export interface ResumenDeSaldo {
     fecha: string;
     diasParaLlegar: number;
     diasQueSeGanan: number | null;
-    /** Dias que se perderian ese dia si no se usan antes. */
+    /**
+     * Dias que ese dia quedarian por encima del tope si no se usan antes.
+     * Con "vencer" se pierden; con "avisar" se conservan, pero se avisa.
+     */
     diasEnRiesgo: number;
-    /** true = estamos dentro del aviso previo y hay dias en riesgo. */
+    /** true = estamos dentro del aviso previo (diasAvisoAntesDeVencer) y habra dias sobre el tope. */
     avisar: boolean;
   };
 }
@@ -61,6 +73,7 @@ interface FuncionarioParaSaldo {
     nombre: string;
     periodosMaximosAcumulables: number;
     diasAvisoAntesDeVencer: number;
+    alSuperarElTope: 'avisar' | 'vencer';
     reglas: { aniosMinimos: number; aniosMaximos: number | null; diasPorPeriodo: Prisma.Decimal }[];
   };
 }
@@ -73,9 +86,12 @@ interface FuncionarioParaSaldo {
  * ajustes). Asi siempre se puede explicar de donde sale cada dia.
  *
  * Acumulacion: en cada aniversario de ingreso se suma un periodo completo
- * (los dias del tramo del regimen). Al sumarlo, lo que pase del tope
- * (periodos maximos x dias del periodo) se pierde y queda anotado como un
- * movimiento de vencimiento, no como un borrado.
+ * (los dias del tramo del regimen). Que pasa con lo que supere el tope
+ * (periodos maximos x dias del periodo) lo decide RRHH por regimen (13/10):
+ *   - "avisar" (por omision): se conserva; antes se avisa a la persona, a su
+ *     jefatura y a RRHH para que programen vacaciones;
+ *   - "vencer": se pierde y queda anotado como un movimiento de vencimiento,
+ *     no como un borrado.
  *
  * Desde cuando se acumula: RRHH carga el saldo inicial al crear al
  * funcionario. Esa fecha es el punto de partida: solo se acumulan los
@@ -172,7 +188,12 @@ export class VacacionesService {
           data: { funcionarioId, tipo: 'acumulacion', cantidadDias: dias, fechaMovimiento: fecha, periodo },
         });
 
-        const perdidos = excedenteDelTope(antes + dias, funcionario.regimenVacaciones.periodosMaximosAcumulables, dias);
+        // Con "avisar" (por omision, 13/10) lo que pase del tope se conserva: el aviso
+        // ya se dio antes (AvisosPeriodicosService). Con "vencer" se pierde.
+        const perdidos =
+          funcionario.regimenVacaciones.alSuperarElTope === 'vencer'
+            ? excedenteDelTope(antes + dias, funcionario.regimenVacaciones.periodosMaximosAcumulables, dias)
+            : 0;
         if (perdidos > 0) {
           await tx.movimientoVacaciones.create({
             data: {
@@ -245,7 +266,9 @@ export class VacacionesService {
         diasPorPeriodo: diasActuales,
         periodosMaximos,
         topeEnDias: diasActuales === null ? null : periodosMaximos * diasActuales,
+        alSuperarElTope: funcionario.regimenVacaciones.alSuperarElTope,
       },
+      sobreElTope: diasActuales === null || !ancla ? 0 : redondear(Math.max(0, disponible - periodosMaximos * diasActuales)),
       aniosDeServicio: anios,
       inicial: redondear(inicial),
       ganadosPorAniversario: redondear(acumulacion),
@@ -440,6 +463,7 @@ export class VacacionesService {
             nombre: true,
             periodosMaximosAcumulables: true,
             diasAvisoAntesDeVencer: true,
+            alSuperarElTope: true,
             reglas: {
               where: { activo: true },
               select: { aniosMinimos: true, aniosMaximos: true, diasPorPeriodo: true },
