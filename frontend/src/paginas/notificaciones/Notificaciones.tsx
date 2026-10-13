@@ -40,6 +40,7 @@ const PROCESO: Record<string, string> = {
   horasExtraRegistradas: 'Horas extra',
   saldoAjustado: 'Vacaciones',
   vacacionesPorVencer: 'Vacaciones',
+  vacacionesSobreElTope: 'Vacaciones',
   cambioEnSuExpediente: 'Expediente',
   cambioHechoPorFuncionario: 'Expediente',
   revisarJefatura: 'Funcionarios',

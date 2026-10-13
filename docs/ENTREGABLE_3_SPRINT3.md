@@ -46,7 +46,17 @@ recibe los avisos dirigidos a RRHH). Se quitaron del diseño las columnas de env
 | 9 | Inicio más visual (12/10), sin librerías ni consultas nuevas al backend: anillo del saldo y próximas 3 ausencias; «Fuera esta semana» (lunes a viernes, iniciales por tipo; jefatura: su equipo, RRHH: todos); barras de ausencias del mes por tipo (RRHH); accesos directos compactos agrupados como el menú. Como mucho 2 llamadas al calendario que ya existía | **Hecha** |
 | 10 | Talent Pool (HU 38–41) | Pendiente (al final del sprint) |
 
-## 4. Notas
+## 4. Cambios pedidos por Joseph (13/10/2026)
+
+| # | Cambio | Estado |
+|---|---|---|
+| 1 | **Tope de vacaciones configurable** por régimen en Reglas de vacaciones: «Solo avisar» (por omisión: se sigue acumulando) o «Vencen los días»; RRHH lo cambia cuando quiera. Migración `20261013000000_tope_de_vacaciones` | **Hecha** |
+| 2 | Aviso del tope **un mes antes** (30 días; mínimo 20) a la persona, a su jefatura y a RRHH | **Hecha** |
+| 3 | **Agregar o quitar días** desde Editar funcionario (sección a la vista), con motivo, bitácora y aviso a la persona | **Hecha** |
+| 4 | **RRHH se entera cuando la ausencia queda en firme**: la solicitud nueva solo a la jefatura; la aprobación a la persona y a RRHH; el rechazo solo a la persona; cancelar una pendiente, solo a la jefatura; una aprobada, también a RRHH | **Hecha** |
+| 5 | Pruebas: `pruebas-vacaciones` 190, `pruebas-ausencias` 142, `pruebas-notificaciones` 79; navegador `ui-vacaciones` 104, `ui-ausencias` 65; `preparar-ui-vacaciones.mjs` ya no falla cuando las fechas de octubre pasan | **Hecha** |
+
+## 5. Notas
 
 - El Súper Administrador tiene todos los permisos, así que también recibe los avisos de RRHH.
   Quitárselo rompería la regla de reparto de acceso (el SA tiene que tener todo); si Joseph no los

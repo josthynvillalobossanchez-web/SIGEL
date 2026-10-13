@@ -18,6 +18,8 @@ export interface RegimenDeVacaciones {
   descripcion: string | null;
   periodosMaximosAcumulables: number;
   diasAvisoAntesDeVencer: number;
+  /** "avisar" (por omision): se acumula igual y se avisa; "vencer": lo que pase del tope se pierde. */
+  alSuperarElTope: 'avisar' | 'vencer';
   activo: boolean;
   /** Funcionarios activos con este regimen. */
   funcionariosActivos: number;
@@ -35,7 +37,11 @@ function describir(tramos: TramoDeVacaciones[]): string {
  * Reglas de vacaciones (HU 27 CA04: "parametrizable sin modificar el codigo").
  * RRHH edita, por regimen, los tramos (cuantos dias por periodo segun los
  * anios de servicio cumplidos), el tope de periodos acumulables y con cuantos
- * dias de anticipacion se avisa que se perderian dias.
+ * dias de anticipacion se avisa que se llegara al tope, y que pasa al
+ * superarlo (13/10): por omision solo se avisa y el saldo sigue creciendo;
+ * RRHH puede cambiar a "vencer" (y volver) en cualquier momento. El cambio
+ * rige desde el proximo aniversario de cada persona: no devuelve ni quita
+ * dias que ya se movieron.
  *
  * Los tramos deben cubrir de 0 anios en adelante, seguidos y sin huecos, y el
  * ultimo queda abierto ("en adelante"). Solo dias completos.
@@ -60,6 +66,7 @@ export class ReglasDeVacacionesService {
         descripcion: true,
         periodosMaximosAcumulables: true,
         diasAvisoAntesDeVencer: true,
+        alSuperarElTope: true,
         activo: true,
         reglas: { where: { activo: true }, orderBy: { aniosMinimos: 'asc' }, select: { aniosMinimos: true, aniosMaximos: true, diasPorPeriodo: true } },
         _count: { select: { funcionarios: { where: { estado: 'activo' } } } },
@@ -71,6 +78,7 @@ export class ReglasDeVacacionesService {
       descripcion: f.descripcion,
       periodosMaximosAcumulables: f.periodosMaximosAcumulables,
       diasAvisoAntesDeVencer: f.diasAvisoAntesDeVencer,
+      alSuperarElTope: f.alSuperarElTope,
       activo: f.activo,
       funcionariosActivos: f._count.funcionarios,
       tramos: f.reglas.map((r) => ({ aniosMinimos: r.aniosMinimos, aniosMaximos: r.aniosMaximos, diasPorPeriodo: Number(r.diasPorPeriodo) })),
@@ -82,18 +90,20 @@ export class ReglasDeVacacionesService {
     if (!antes) throw new NotFoundException({ codigo: 'REGIMEN_NO_ENCONTRADO', message: 'No se encontró el régimen de vacaciones indicado.' });
     const tramos = validarTramos(datos.tramos);
     const descripcion = datos.descripcion === undefined ? antes.descripcion : datos.descripcion || null;
+    const alSuperarElTope = datos.alSuperarElTope ?? antes.alSuperarElTope;
 
     const mismos =
       descripcion === antes.descripcion &&
       datos.periodosMaximosAcumulables === antes.periodosMaximosAcumulables &&
       datos.diasAvisoAntesDeVencer === antes.diasAvisoAntesDeVencer &&
+      alSuperarElTope === antes.alSuperarElTope &&
       describir(tramos) === describir(antes.tramos);
     if (mismos) throw new BadRequestException({ codigo: 'SIN_CAMBIOS', message: 'No hay nada que cambiar: las reglas son las mismas.' });
 
     await this.prisma.$transaction(async (tx) => {
       await tx.regimenVacaciones.update({
         where: { id: regimenId },
-        data: { descripcion, periodosMaximosAcumulables: datos.periodosMaximosAcumulables, diasAvisoAntesDeVencer: datos.diasAvisoAntesDeVencer },
+        data: { descripcion, periodosMaximosAcumulables: datos.periodosMaximosAcumulables, diasAvisoAntesDeVencer: datos.diasAvisoAntesDeVencer, alSuperarElTope },
       });
       // Los tramos se reemplazan completos (el antes queda en la bitacora).
       await tx.reglaVacaciones.deleteMany({ where: { regimenVacacionesId: regimenId } });
@@ -107,9 +117,9 @@ export class ReglasDeVacacionesService {
           registroAfectadoId: regimenId,
           accion: 'modificar',
           direccionIp,
-          datosAnteriores: { periodosMaximos: antes.periodosMaximosAcumulables, diasAviso: antes.diasAvisoAntesDeVencer, tramos: antes.tramos, descripcion: antes.descripcion },
-          datosNuevos: { periodosMaximos: datos.periodosMaximosAcumulables, diasAviso: datos.diasAvisoAntesDeVencer, tramos, descripcion },
-          descripcion: `Cambió las reglas del régimen «${antes.nombre}»: ${describir(tramos)}; tope de ${datos.periodosMaximosAcumulables} periodo(s).`,
+          datosAnteriores: { periodosMaximos: antes.periodosMaximosAcumulables, diasAviso: antes.diasAvisoAntesDeVencer, alSuperarElTope: antes.alSuperarElTope, tramos: antes.tramos, descripcion: antes.descripcion },
+          datosNuevos: { periodosMaximos: datos.periodosMaximosAcumulables, diasAviso: datos.diasAvisoAntesDeVencer, alSuperarElTope, tramos, descripcion },
+          descripcion: `Cambió las reglas del régimen «${antes.nombre}»: ${describir(tramos)}; tope de ${datos.periodosMaximosAcumulables} periodo(s); al superarlo, ${alSuperarElTope === 'vencer' ? 'vencen los días' : 'solo se avisa'}.`,
         },
         tx,
       );

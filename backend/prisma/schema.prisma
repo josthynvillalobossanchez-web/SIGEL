@@ -290,12 +290,22 @@ model profesion {
 
 /// Regimen de vacaciones. Cada uno define su propio tope de acumulacion.
 /// Sus tramos (reglaVacaciones) se agregan en el Sprint 2.
+/// Que hace el sistema cuando el saldo supera el tope de periodos (13/10).
+enum accionAlTope {
+  avisar
+  vencer
+}
+
 model regimenVacaciones {
   id                         String  @id @default(uuid()) @db.Char(36)
   nombre                     String  @unique @db.VarChar(60)
   descripcion                String? @db.VarChar(255)
   periodosMaximosAcumulables Int     @default(2) @db.SmallInt
-  diasAvisoAntesDeVencer     Int     @default(60) @db.SmallInt
+  /// Dias de anticipacion del aviso de tope (13/10: un mes; minimo 20).
+  diasAvisoAntesDeVencer     Int     @default(30) @db.SmallInt
+  /// Que pasa con lo que supera el tope (13/10): "avisar" = se acumula igual y
+  /// se avisa (por omision); "vencer" = lo que pase del tope se pierde.
+  alSuperarElTope            accionAlTope @default(avisar)
   activo                     Boolean @default(true)
 
   funcionarios funcionario[]

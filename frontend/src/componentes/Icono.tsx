@@ -94,6 +94,7 @@ const TRAZOS = {
     </>
   ),
   mas: <path d="M12 5v14M5 12h14" />,
+  menos: <path d="M5 12h14" />,
   editar: (
     <>
       <path d="M11 4H4v16h16v-7" />
