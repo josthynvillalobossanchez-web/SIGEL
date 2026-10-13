@@ -3,10 +3,11 @@ import type { ArchivoSubido } from '../almacenamiento/validacion-de-archivos.js'
 import type { UsuarioAutenticado } from '../autenticacion/tipos.js';
 import { BitacoraService } from '../bitacora/bitacora.service.js';
 import { armarPagina, type PaginaDeResultados } from '../comun/dto/paginacion.dto.js';
-import { aFechaSola, hoyEnCostaRica, interpretarFechaSola } from '../comun/fechas.js';
+import { aFechaSola, hoyEnCostaRica, interpretarFechaSola, rangoEnPalabras } from '../comun/fechas.js';
 import { DocumentosService } from '../documentos/documentos.service.js';
 import type { Prisma } from '../generated/prisma/client.js';
 import { PrismaService } from '../prisma/prisma.service.js';
+import { NotificacionesService } from '../notificaciones/notificaciones.service.js';
 import { PERMISO_ADMINISTRAR } from '../vacaciones/vacaciones.service.js';
 import type { ConsultarIncapacidadesDto, RegistrarIncapacidadDto } from './dto.js';
 
@@ -81,7 +82,35 @@ export class IncapacidadesService {
     private readonly prisma: PrismaService,
     private readonly bitacora: BitacoraService,
     private readonly documentos: DocumentosService,
+    private readonly notificaciones: NotificacionesService,
   ) {}
+
+  /**
+   * Avisos (decision 10/10): a la jefatura (solo las fechas: el tipo es un dato medico)
+   * y a RRHH; si la registro RRHH, tambien a la persona. Nunca a quien la registro.
+   */
+  private async avisar(i: IncapacidadDeLista, quienActua: UsuarioAutenticado): Promise<void> {
+    const op = { excepto: quienActua.id };
+    const cuando = rangoEnPalabras(i.fechaInicio, i.fechaFin);
+    const dias = `${i.cantidadDias} ${i.cantidadDias === 1 ? 'día' : 'días'}`;
+    const base = { clave: 'incapacidadRegistrada' as const, entidad: 'incapacidad', registroId: i.id };
+    await this.notificaciones.avisarAJefaturaDe(
+      i.funcionario.id,
+      { ...base, titulo: `Incapacidad: ${i.funcionario.nombre}`, mensaje: `${i.funcionario.nombre} estará incapacitado ${cuando} (${dias}).`, enlace: `/calendario?alcance=equipo&mes=${i.fechaInicio.slice(0, 7)}&resaltar=${i.id}` },
+      op,
+    );
+    await this.notificaciones.avisarARrhh(
+      { ...base, titulo: `Incapacidad: ${i.funcionario.nombre}`, mensaje: `Se registró una incapacidad de ${i.funcionario.nombre}${i.tipo ? ` (${i.tipo.nombre})` : ''} ${cuando}, ${dias} (${i.consecutivo}).`, enlace: `/incapacidades?abrir=${i.id}` },
+      op,
+    );
+    if (i.funcionario.id !== quienActua.funcionarioId) {
+      await this.notificaciones.avisarAFuncionario(
+        i.funcionario.id,
+        { ...base, titulo: 'Se registró una incapacidad a su nombre', mensaje: `Recursos Humanos registró a su nombre una incapacidad ${cuando} (${dias}, ${i.consecutivo}).`, enlace: `/mis-ausencias?pestana=incapacidades&abrir=${i.id}` },
+        op,
+      );
+    }
+  }
 
   async tipos(): Promise<{ id: string; nombre: string; descripcion: string | null }[]> {
     return this.prisma.tipoIncapacidad.findMany({ where: { activo: true }, orderBy: { nombre: 'asc' }, select: { id: true, nombre: true, descripcion: true } });
@@ -197,7 +226,9 @@ export class IncapacidadesService {
             );
             return fila.id;
           });
-          return { incapacidad: await this.detalleSinPermisos(id, true), avisos };
+          const incapacidad = await this.detalleSinPermisos(id, true);
+          await this.avisar(incapacidad, quienActua);
+          return { incapacidad, avisos };
         } catch (error) {
           if ((error as { code?: string }).code === 'P2002' && intento < 5) continue;
           throw error;

@@ -4,6 +4,7 @@ import { APP_GUARD } from '@nestjs/core';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { AutenticacionModule } from './autenticacion/autenticacion.module.js';
 import { BitacoraModule } from './bitacora/bitacora.module.js';
+import { NotificacionesModule } from './notificaciones/notificaciones.module.js';
 import { CatalogosModule } from './catalogos/catalogos.module.js';
 import { CorreoModule } from './correo/correo.module.js';
 import { DocumentosModule } from './documentos/documentos.module.js';
@@ -31,6 +32,8 @@ import { SaludController } from './salud/salud.controller.js';
     PrismaModule,
     CorreoModule,
     BitacoraModule,
+    // Avisos dentro del sistema (Sprint 3). Global, como la bitacora.
+    NotificacionesModule,
     AutenticacionModule,
     PermisosModule,
     UsuariosModule,

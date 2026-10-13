@@ -1063,3 +1063,12 @@ Preferencias que Josthyn ya expresó y conviene mantener:
 Josthyn lleva una bitácora de horas de la práctica. Ya se le preparó el cronograma de la semana
 del **lunes 7 al viernes 11 de setiembre de 2026 (25 horas)**, con la nota de que **los martes
 son de revisión con Joseph**. Si pide otra semana, seguir ese mismo formato.
+
+### Decisiones del 10/10/2026 (Sprint 3, notificaciones y auditoría)
+
+- **Notificaciones solo dentro del sistema**; por correo, únicamente la cuenta nueva. Reglas de quién
+  recibe qué en `ENTREGABLE_3_SPRINT3.md` §1 (solicitudes a jefatura y RRHH, resultado al solicitante;
+  licencias e incapacidades a jefatura y RRHH; lo propio → RRHH; lo hecho por RRHH → la persona;
+  jefatura por asignar y constancias fallidas → RRHH; vacaciones por vencer → la persona).
+- **Bitácora**: sin entradas ni salidas ni consultas generales (T-4 se mantiene). Página de consulta
+  solo para el Súper Administrador, de solo lectura.

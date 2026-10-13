@@ -2,9 +2,10 @@ import { BadRequestException, ConflictException, Injectable, NotFoundException }
 import type { UsuarioAutenticado } from '../autenticacion/tipos.js';
 import { BitacoraService } from '../bitacora/bitacora.service.js';
 import { armarPagina, type PaginaDeResultados } from '../comun/dto/paginacion.dto.js';
-import { aFechaSola, hoyEnCostaRica, interpretarFechaSola } from '../comun/fechas.js';
+import { aFechaSola, hoyEnCostaRica, interpretarFechaSola, rangoEnPalabras } from '../comun/fechas.js';
 import type { Prisma } from '../generated/prisma/client.js';
 import { PrismaService } from '../prisma/prisma.service.js';
+import { NotificacionesService } from '../notificaciones/notificaciones.service.js';
 import type { AnularDto, ConsultarHorasExtraDto, RegistrarHoraExtraDto } from './dto.js';
 
 /** Un registro no puede pasar de 16 horas (jornada + extra razonable). */
@@ -93,6 +94,7 @@ export class HorasExtraService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly bitacora: BitacoraService,
+    private readonly notificaciones: NotificacionesService,
   ) {}
 
   async consultar(filtros: ConsultarHorasExtraDto): Promise<ResumenDeHorasExtra> {
@@ -227,7 +229,20 @@ export class HorasExtraService {
       );
       return fila;
     });
-    return aLista(await this.prisma.horaExtra.findUniqueOrThrow({ where: { id: creada.id }, select: SELECCION }));
+    const registrada = aLista(await this.prisma.horaExtra.findUniqueOrThrow({ where: { id: creada.id }, select: SELECCION }));
+    // RRHH registro algo de la persona: se le avisa (decision 10/10). La persona no tiene pantalla de horas extra.
+    await this.notificaciones.avisarAFuncionario(
+      datos.funcionarioId,
+      {
+        clave: 'horasExtraRegistradas',
+        titulo: 'Horas extra registradas',
+        mensaje: `Recursos Humanos registró ${textoDeMinutos(duracion)} de horas extra a su nombre ${rangoEnPalabras(datos.fecha, datos.fecha)} (${datos.horaInicio} a ${datos.horaFin}).`,
+        entidad: 'horaExtra',
+        registroId: creada.id,
+      },
+      { excepto: quienActua.id },
+    );
+    return registrada;
   }
 
   async anular(id: string, datos: AnularDto, quienActua: UsuarioAutenticado, direccionIp?: string): Promise<HoraExtraDeLista> {
@@ -250,6 +265,17 @@ export class HorasExtraService {
         tx,
       );
     });
+    await this.notificaciones.avisarAFuncionario(
+      fila.funcionarioId,
+      {
+        clave: 'horasExtraRegistradas',
+        titulo: 'Se anuló un registro de horas extra',
+        mensaje: `Recursos Humanos anuló ${textoDeMinutos(fila.cantidadMinutos)} de horas extra que tenía registradas ${rangoEnPalabras(aFechaSola(fila.fecha)!, aFechaSola(fila.fecha)!)}. Motivo: ${datos.motivo}`,
+        entidad: 'horaExtra',
+        registroId: id,
+      },
+      { excepto: quienActua.id },
+    );
     return aLista(await this.prisma.horaExtra.findUniqueOrThrow({ where: { id }, select: SELECCION }));
   }
 }

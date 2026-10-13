@@ -13,9 +13,12 @@ import { armarPagina, type PaginaDeResultados } from '../comun/dto/paginacion.dt
 import { aFechaSola, hoyEnCostaRica, interpretarFechaSola, sumarAnios } from '../comun/fechas.js';
 import type { Prisma } from '../generated/prisma/client.js';
 import { PrismaService } from '../prisma/prisma.service.js';
+import { NotificacionesService } from '../notificaciones/notificaciones.service.js';
 import { UsuariosService, type CuentaCreada } from '../usuarios/usuarios.service.js';
 import { VacacionesService } from '../vacaciones/vacaciones.service.js';
 import { normalizarCedula } from './cedula.js';
+import { PUEDE_SER_JEFATURA, ROL_DE_JEFATURA } from './reglas-de-jefatura.js';
+export { PUEDE_SER_JEFATURA, ROL_DE_JEFATURA };
 import type { ConsultarFuncionariosDto } from './dto/consultar-funcionarios.dto.js';
 import type {
   EditarFuncionarioDto,
@@ -32,32 +35,7 @@ import type {
 /** Edad minima para trabajar (Codigo de Trabajo de Costa Rica). */
 const EDAD_MINIMA = 15;
 
-/**
- * Rol que hace a alguien JEFATURA posible (decision de Josthyn, 28/09):
- * "quien tiene el rol Aprobador es jefatura". Se decide por el ROL y no por
- * el permiso solicitudes.aprobar, porque ese permiso tambien lo tiene RRHH
- * (para poder asignar el rol) y se puede dar suelto a alguien como caso
- * especial sin que sea jefatura. Solo cuenta el rol PERMANENTE: una
- * suplencia con fecha cubre un tiempo, no recibe personal a cargo fijo.
- * Es un rol de sistema: no se puede renombrar (ROL_DE_SISTEMA).
- */
-export const ROL_DE_JEFATURA = 'Aprobador';
-
-/**
- * Condicion de "puede ser jefatura": funcionario activo con cuenta no
- * inactiva (una cuenta bloqueada por intentos fallidos sigue contando) que
- * tiene el rol Aprobador sin fecha de vencimiento. Al quitar un rol, la
- * fila queda con fecha de hoy, asi que tampoco cuenta.
- */
-const PUEDE_SER_JEFATURA: Prisma.funcionarioWhereInput = {
-  estado: 'activo',
-  usuario: {
-    is: {
-      estado: { not: 'inactivo' },
-      roles: { some: { fechaVencimiento: null, rol: { nombre: ROL_DE_JEFATURA, activo: true } } },
-    },
-  },
-};
+// ROL_DE_JEFATURA y PUEDE_SER_JEFATURA viven en reglas-de-jefatura.ts (tambien los usan las notificaciones).
 
 /**
  * "Necesita nueva jefatura" (decision de Josthyn, 30/09): funcionario ACTIVO
@@ -275,6 +253,7 @@ export class FuncionariosService {
     private readonly bitacora: BitacoraService,
     private readonly usuarios: UsuariosService,
     private readonly vacaciones: VacacionesService,
+    private readonly notificaciones: NotificacionesService,
   ) {}
 
   /* ---------------------------------------------------------------- */
@@ -540,7 +519,7 @@ export class FuncionariosService {
       }
     }
 
-    await this.prisma.$transaction(async (tx) => {
+    const editado = await this.prisma.$transaction(async (tx) => {
       const actual = await this.cargar(tx, id);
       if (!modo.propio && (await this.conMasAcceso(tx, [id], quienActua)).has(id)) {
         throw new ForbiddenException({
@@ -665,8 +644,32 @@ export class FuncionariosService {
         },
         tx,
       );
+      return { lista, nombre: nombreCompleto(actual), jefaturaNueva: 'jefaturaId' in cambios ? (cambios.jefaturaId as string | null) : undefined };
     });
 
+    // Avisos (decision 10/10): si la persona cambio lo suyo, a RRHH; si lo cambio RRHH, a la persona.
+    await this.notificaciones.avisarCambioDeExpediente({
+      funcionarioId: id,
+      quienActua,
+      que: `actualizó sus datos: ${editado.lista.join(', ')}`,
+      entidad: 'funcionario',
+    });
+    // La jefatura nueva se entera de que tiene a alguien mas a cargo (y sus pendientes).
+    if (editado.jefaturaNueva) {
+      const cuenta = await this.prisma.usuario.findUnique({ where: { funcionarioId: editado.jefaturaNueva }, select: { id: true } });
+      await this.notificaciones.avisarAUsuarios(
+        [cuenta?.id],
+        {
+          clave: 'cambioEnSuExpediente',
+          titulo: 'Personal nuevo a su cargo',
+          mensaje: `${editado.nombre} quedó a su cargo: usted aprueba sus solicitudes desde ahora (las pendientes ya están en su bandeja).`,
+          entidad: 'funcionario',
+          registroId: id,
+          enlace: '/bandeja',
+        },
+        { excepto: quienActua.id },
+      );
+    }
     return this.consultarUno(id, quienActua);
   }
 
@@ -733,6 +736,8 @@ export class FuncionariosService {
       );
     });
 
+    // Si tenia personal a cargo, RRHH recibe el aviso "Asignar nueva jefatura".
+    await this.notificaciones.avisarJefaturasPorRevisar();
     return this.consultarUno(id, quienActua);
   }
 

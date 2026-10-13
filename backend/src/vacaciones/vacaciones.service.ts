@@ -5,6 +5,7 @@ import { armarPagina, type PaginaDeResultados } from '../comun/dto/paginacion.dt
 import { aFechaSola, hoyEnCostaRica } from '../comun/fechas.js';
 import type { Prisma } from '../generated/prisma/client.js';
 import { PrismaService } from '../prisma/prisma.service.js';
+import { NotificacionesService } from '../notificaciones/notificaciones.service.js';
 import {
   aniosCumplidos,
   aniversario,
@@ -90,6 +91,7 @@ export class VacacionesService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly bitacora: BitacoraService,
+    private readonly notificaciones: NotificacionesService,
   ) {}
 
   /* ---------------------------------------------------------------- */
@@ -403,7 +405,23 @@ export class VacacionesService {
       );
     });
 
-    return this.resumen(funcionarioId);
+    const resumen = await this.resumen(funcionarioId);
+    // RRHH toco el saldo de la persona: se le avisa (decision 10/10).
+    await this.notificaciones.avisarAFuncionario(
+      funcionarioId,
+      {
+        clave: 'saldoAjustado',
+        titulo: 'Cambio en su saldo de vacaciones',
+        mensaje: tieneAncla
+          ? `Recursos Humanos ajustó su saldo en ${datos.dias > 0 ? '+' : ''}${datos.dias} día(s). Motivo: ${datos.motivo.replace(/\.$/, "")}. Ahora tiene ${resumen.disponible} día(s) disponibles.`
+          : `Recursos Humanos cargó su saldo inicial de vacaciones: ${datos.dias} día(s).`,
+        entidad: 'movimientoVacaciones',
+        registroId: funcionarioId,
+        enlace: '/mis-ausencias?pestana=historial',
+      },
+      { excepto: quienActua.id },
+    );
+    return resumen;
   }
 
   /* ---------------------------------------------------------------- */

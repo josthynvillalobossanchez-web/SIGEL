@@ -140,6 +140,7 @@ model usuario {
   capacitacionesRegistradas capacitacion[]          @relation("capacitacionesRegistradasPorUsuario")
   horasExtraRegistradas horaExtra[]                 @relation("horasExtraRegistradasPorUsuario")
   movimientosBitacora  bitacoraCambio[]
+  notificaciones       notificacion[]
 
   @@index([estado])
 }
@@ -714,4 +715,30 @@ model horaExtra {
 
   @@index([funcionarioId, fecha], map: "idxHoraExtraFuncionario")
   @@index([fecha], map: "idxHoraExtraFecha")
+}
+
+/// Avisos dentro de SINERGIA (Sprint 3, HU 42-44). Solo dentro del sistema:
+/// el correo queda para la cuenta nueva (decision de Josthyn, 10/10). Cada
+/// persona ve solo las suyas. Servicio centralizado: NotificacionesService.
+model notificacion {
+  id               String   @id @default(uuid()) @db.Char(36)
+  usuarioDestinoId String   @db.Char(36)
+  /// Que la origino: solicitudPorAprobar, solicitudAprobada, incapacidadRegistrada...
+  clave            String   @db.VarChar(80)
+  titulo           String   @db.VarChar(200)
+  mensaje          String   @db.VarChar(1000)
+  /// Entidad y registro que la originaron (HU 43 CA05). No son llaves foraneas.
+  entidad          String?  @db.VarChar(60)
+  registroId       String?  @db.Char(36)
+  /// Para no repetir un aviso periodico (la fecha del aniversario, la jefatura vieja...).
+  referencia       String?  @db.VarChar(60)
+  /// Pantalla de SINERGIA que abre el aviso (ruta interna, empieza con "/").
+  enlace           String?  @db.VarChar(300)
+  leida            Boolean  @default(false)
+  fechaCreacion    DateTime @default(now())
+
+  usuarioDestino usuario @relation(fields: [usuarioDestinoId], references: [id])
+
+  @@index([usuarioDestinoId, leida, fechaCreacion], map: "idxNotificacionBandeja")
+  @@index([clave, registroId, referencia], map: "idxNotificacionEvento")
 }

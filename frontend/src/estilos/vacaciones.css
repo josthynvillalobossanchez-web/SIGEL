@@ -605,3 +605,5 @@
 .tramo input:focus-visible { outline: 3px solid var(--foco); outline-offset: 1px; }
 /* Un boton deshabilitado debe verse deshabilitado (no habia estilo general para :disabled). */
 .btn:disabled { opacity: .45; cursor: not-allowed; }
+/* En el celular el paso "Revisar" quedaba justo al limite de la pantalla: el motivo, mas bajo. */
+@media (max-width: 600px) { .paso-revisar .campo textarea { min-height: 60px; } }

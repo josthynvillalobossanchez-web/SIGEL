@@ -17,6 +17,7 @@ import { formatearFechaCostaRica, interpretarFechaDeVencimiento, validarFechaDeV
 import { CorreoService } from '../correo/correo.service.js';
 import type { Prisma } from '../generated/prisma/client.js';
 import { PrismaService } from '../prisma/prisma.service.js';
+import { NotificacionesService } from '../notificaciones/notificaciones.service.js';
 import type { CambiarEstadoUsuarioDto } from './dto/cambiar-estado-usuario.dto.js';
 import type { ConsultarUsuariosDto, EstadoDeUsuario } from './dto/consultar-usuarios.dto.js';
 import type { CrearUsuarioDto, RolAsignadoDto } from './dto/crear-usuario.dto.js';
@@ -102,6 +103,7 @@ export class UsuariosService {
     private readonly prisma: PrismaService,
     private readonly bitacora: BitacoraService,
     private readonly correo: CorreoService,
+    private readonly notificaciones: NotificacionesService,
   ) {}
 
   /**
@@ -637,7 +639,7 @@ export class UsuariosService {
       });
     }
 
-    return this.prisma.$transaction(async (tx) => {
+    const resultado = await this.prisma.$transaction(async (tx) => {
       const destino = await this.cargarCuentaConAcceso(tx, usuarioId);
 
       // Regla 3.
@@ -683,6 +685,9 @@ export class UsuariosService {
 
       return actualizada;
     });
+    // Si era jefatura y quedo inactiva, su personal queda "Asignar nueva jefatura" (aviso a RRHH).
+    await this.notificaciones.avisarJefaturasPorRevisar();
+    return resultado;
   }
 
   /**
@@ -768,6 +773,8 @@ export class UsuariosService {
     // Fuera de la transaccion: si el correo falla, el cambio ya esta hecho.
     if (resultado) await this.avisarCambioDeCorreo(resultado.anterior, resultado.nuevo);
 
+    // Si perdio el rol de jefatura, su personal queda "Asignar nueva jefatura" (aviso a RRHH).
+    await this.notificaciones.avisarJefaturasPorRevisar();
     return this.consultarUno(usuarioId, quienActua);
   }
 
@@ -1115,6 +1122,8 @@ export class UsuariosService {
       );
     });
 
+    // Si perdio el rol de jefatura, su personal queda "Asignar nueva jefatura" (aviso a RRHH).
+    await this.notificaciones.avisarJefaturasPorRevisar();
     return this.consultarUno(usuarioId, quienActua);
   }
 

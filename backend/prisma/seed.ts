@@ -97,6 +97,12 @@ const PERMISOS: { clave: string; modulo: string; descripcion: string }[] = [
   },
   // Horas extra (09/10): solo un registro que lleva RRHH, sin aprobacion.
   { clave: 'horasExtra.registrar', modulo: 'horasExtra', descripcion: 'Registrar, consultar y anular las horas extra del personal' },
+  { clave: 'notificaciones.ver', modulo: 'notificaciones', descripcion: 'Ver y marcar como leídas sus propias notificaciones' },
+  {
+    clave: 'notificaciones.rrhh',
+    modulo: 'notificaciones',
+    descripcion: 'Recibir los avisos dirigidos a Recursos Humanos (solicitudes, incapacidades, cambios en expedientes)',
+  },
 ];
 
 // ---------------------------------------------------------------------
@@ -112,6 +118,7 @@ const AUTOSERVICIO = [
   'documentos.descargar',
   'documentos.editarPropio',
   'documentos.darDeBajaPropio',
+  'notificaciones.ver',
 ];
 
 const ROLES: { nombre: string; descripcion: string; permisos: string[] | 'todos' }[] = [
@@ -149,6 +156,8 @@ const ROLES: { nombre: string; descripcion: string; permisos: string[] | 'todos'
       'solicitudes.aprobar',
       'solicitudes.administrar',
       'horasExtra.registrar',
+      'notificaciones.ver',
+      'notificaciones.rrhh',
     ],
   },
   {
@@ -166,7 +175,7 @@ const ROLES: { nombre: string; descripcion: string; permisos: string[] | 'todos'
   {
     nombre: 'Consulta',
     descripcion: 'Solo lectura de funcionarios y usuarios, sin ningún permiso de escritura (abre solo su propio expediente). Auditoría Interna.',
-    permisos: ['funcionarios.ver', 'funcionarios.verTodos', 'expediente.ver', 'documentos.descargar', 'usuarios.ver'],
+    permisos: ['funcionarios.ver', 'funcionarios.verTodos', 'expediente.ver', 'documentos.descargar', 'usuarios.ver', 'notificaciones.ver'],
   },
 ];
 

@@ -7,7 +7,8 @@
 import { useState } from 'react';
 import { Link } from 'react-router';
 import { consultarOpcionesDeFuncionario } from '../../api/funcionarios';
-import { consultarTiposDeIncapacidad, consultarTodasLasIncapacidades, type Incapacidad } from '../../api/ausencias';
+import { consultarIncapacidad, consultarTiposDeIncapacidad, consultarTodasLasIncapacidades, type Incapacidad } from '../../api/ausencias';
+import { useAbrirDesdeEnlace } from '../../utilidades/useAbrirDesdeEnlace';
 import { Icono } from '../../componentes/Icono';
 import { Mensaje } from '../../componentes/Mensaje';
 import { Paginacion } from '../../componentes/Paginacion';
@@ -46,6 +47,8 @@ export function IncapacidadesDelPersonal() {
     [tipoIncapacidadId, departamentoId, busqueda, desde, hasta, pagina],
   );
   const [abierta, setAbierta] = useState<Incapacidad | null>(null);
+  // Desde una notificacion (?abrir=<id>) se abre la incapacidad directamente.
+  useAbrirDesdeEnlace(consultarIncapacidad, setAbierta);
 
   return (
     <section className="pagina">

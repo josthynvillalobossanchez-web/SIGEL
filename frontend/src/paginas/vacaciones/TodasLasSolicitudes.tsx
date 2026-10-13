@@ -5,9 +5,10 @@
  * "Solicitud para otra persona".
  */
 import { useState } from 'react';
+import { useAbrirDesdeEnlace } from '../../utilidades/useAbrirDesdeEnlace';
 import { Link } from 'react-router';
 import { consultarOpcionesDeFuncionario } from '../../api/funcionarios';
-import { consultarTiposDeSolicitud, consultarTodasLasSolicitudes, type EstadoDeSolicitud, type SolicitudDeLista } from '../../api/vacaciones';
+import { consultarSolicitud, consultarTiposDeSolicitud, consultarTodasLasSolicitudes, type EstadoDeSolicitud, type SolicitudDeLista } from '../../api/vacaciones';
 import { Icono } from '../../componentes/Icono';
 import { Mensaje } from '../../componentes/Mensaje';
 import { Paginacion } from '../../componentes/Paginacion';
@@ -53,6 +54,8 @@ export function TodasLasSolicitudes() {
     [estado, tipoSolicitudId, departamentoId, busqueda, desde, hasta, pagina, forma],
   );
   const [abierta, setAbierta] = useState<SolicitudDeLista | null>(null);
+  // Desde una notificacion (?abrir=<id>) se abre la solicitud directamente.
+  useAbrirDesdeEnlace(consultarSolicitud, setAbierta);
 
   return (
     <section className="pagina">

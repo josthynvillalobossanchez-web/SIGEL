@@ -174,6 +174,13 @@ export const MENU: GrupoDeMenu[] = [
           { texto: 'Editar rol', patron: /^\/roles\/[^/]+\/editar$/, permisos: ['roles.editar'] },
         ],
       },
+      {
+        texto: 'Bitácora de auditoría',
+        ruta: '/bitacora',
+        icono: 'lista',
+        permisos: ['bitacora.ver'],
+        descripcion: 'Quién hizo qué en SINERGIA y cuándo, con el antes y el después de cada cambio. Solo lectura.',
+      },
     ],
   },
   {
@@ -216,6 +223,13 @@ export const MENU: GrupoDeMenu[] = [
         requiereFuncionario: true,
         descripcion: 'Su expediente laboral: información personal y laboral, documentos e historial de movimientos.',
         subopciones: [{ texto: 'Subir documento', patron: /^\/mi-expediente\/documentos\/nuevo$/, permisos: ['documentos.crear'] }],
+      },
+      {
+        texto: 'Notificaciones',
+        ruta: '/notificaciones',
+        icono: 'campana',
+        permisos: ['notificaciones.ver'],
+        descripcion: 'Los avisos de los trámites que le corresponden: pendientes de leer y anteriores.',
       },
       { texto: 'Mi cuenta', ruta: '/mi-cuenta', icono: 'cuenta', permisos: [], descripcion: 'Sus datos personales, sus datos laborales, sus roles y su contraseña.' },
     ],

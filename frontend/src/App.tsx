@@ -8,6 +8,8 @@
  *     /funcionarios/nuevo, /funcionarios/:id/editar  Registrar / Editar funcionario
  *     /funcionarios/:id/expediente               Expediente laboral (el propio, o RRHH cualquiera)
  *     /mi-expediente                             Mi expediente (solo lectura)
+ *     /bitacora                                  bitacora de auditoria, solo lectura (Super Administrador)
+ *     /notificaciones                            avisos propios (sin leer / todas); la campana de la barra superior abre los recientes
  *     /usuarios                                  lista (ventanas: ver, permisos, estado)
  *     /usuarios/nuevo                            Crear usuario
  *     /usuarios/:id/editar                       Editar usuario
@@ -64,6 +66,8 @@ import { TodasLasSolicitudes } from './paginas/vacaciones/TodasLasSolicitudes';
 import { IncapacidadesDelPersonal } from './paginas/ausencias/IncapacidadesDelPersonal';
 import { HorasExtra } from './paginas/ausencias/HorasExtra';
 import { ReglasDeVacaciones } from './paginas/vacaciones/ReglasDeVacaciones';
+import { Notificaciones } from './paginas/notificaciones/Notificaciones';
+import { Bitacora } from './paginas/bitacora/Bitacora';
 import { Feriados } from './paginas/vacaciones/Feriados';
 import { PaginaNoEncontrada } from './paginas/SinPermiso';
 import { GestorDeAyudas } from './componentes/Ayudas';
@@ -216,6 +220,22 @@ export function App() {
                 }
               />
               <Route path="/mi-cuenta" element={<MiCuenta />} />
+              <Route
+                path="/bitacora"
+                element={
+                  <ConPermisos permisos={['bitacora.ver']}>
+                    <Bitacora />
+                  </ConPermisos>
+                }
+              />
+              <Route
+                path="/notificaciones"
+                element={
+                  <ConPermisos permisos={['notificaciones.ver']}>
+                    <Notificaciones />
+                  </ConPermisos>
+                }
+              />
               <Route
                 path="/mi-expediente"
                 element={

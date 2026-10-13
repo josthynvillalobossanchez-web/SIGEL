@@ -27,12 +27,12 @@ const dias = (n: number) => `${n} ${n === 1 ? 'día' : 'días'}`;
 const conSigno = (n: number) => (n > 0 ? `+${n}` : String(n));
 
 /** Anillo de progreso: la parte llena es lo disponible sobre el tope que se puede acumular. */
-function Anillo({ libre, tope }: { libre: number; tope: number }) {
+export function Anillo({ libre, tope, chico }: { libre: number; tope: number; chico?: boolean }) {
   const radio = 52;
   const largo = 2 * Math.PI * radio;
   const parte = tope > 0 ? Math.max(0, Math.min(1, libre / tope)) : 0;
   return (
-    <div className="anillo" role="img" aria-label={`${dias(libre)} disponibles de un tope de ${tope}`} data-ayuda={`Disponibles sobre el tope de ${tope} días que se pueden acumular`}>
+    <div className={chico ? 'anillo anillo-chico' : 'anillo'} role="img" aria-label={`${dias(libre)} disponibles de un tope de ${tope}`} data-ayuda={`Disponibles sobre el tope de ${tope} días que se pueden acumular`}>
       <svg viewBox="0 0 120 120" width="100%" height="100%" aria-hidden="true">
         <circle cx="60" cy="60" r={radio} className="anillo-fondo" />
         <circle

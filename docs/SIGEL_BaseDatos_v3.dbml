@@ -714,26 +714,23 @@ Table experienciaCandidato {
 Table notificacion {
   id char(36) [pk, note: 'UUID']
 
-  // Debe venir usuarioDestinoId O funcionarioDestinoId (se valida en
-  // backend). Un funcionario sin cuenta igual recibe los avisos
-  // importantes por correo.
-  usuarioDestinoId char(36) [ref: > usuario.id, note: 'Destinatario con cuenta: la ve en su bandeja. HU 42 CA05: cada quien ve solo las suyas.']
-  funcionarioDestinoId char(36) [ref: > funcionario.id, note: 'Destinatario SIN cuenta de usuario: solo se le envia por correo, no tiene bandeja que consultar.']
-  correoDestino varchar(150) [note: '[V3-6] Correo al que se envio realmente. Regla: se usa el correo institucional; si el funcionario no tiene uno registrado, se usa su correo personal, que es obligatorio.']
+  // 10/10/2026: solo dentro del sistema (no hay envio por correo), asi que
+  // el destinatario siempre es una cuenta. Un funcionario sin cuenta no recibe avisos.
+  usuarioDestinoId char(36) [not null, ref: > usuario.id, note: 'HU 42 CA05: cada quien ve solo las suyas.']
 
   clave varchar(80) [not null, note: 'solicitudCreada, solicitudAprobada, solicitudRechazada, solicitudCancelada, incapacidadRegistrada, cuentaCreada, documentoGeneradoFallido, vacacionesPorVencer [V3-2], perfilActualizadoPorFuncionario [V3-9]']
   titulo varchar(200) [not null]
   mensaje varchar(1000) [not null]
   entidad varchar(60) [note: 'Entidad que la origino, por ejemplo solicitud']
   registroId char(36) [note: 'UUID del registro que la origino']
-  enviadaPorCorreo boolean [not null, default: false, note: 'Solo los asuntos importantes van por correo, para no saturar a los funcionarios']
+  referencia varchar(60) [note: 'Para no repetir un aviso periodico: la fecha del aniversario (vacaciones por vencer) o la jefatura vieja (asignar nueva jefatura)']
+  enlace varchar(300) [note: 'Pantalla de SINERGIA que abre el aviso (ruta interna)']
   leida boolean [not null, default: false, note: 'Solo leida / no leida. No se guarda la fecha exacta de lectura.']
 
   fechaCreacion datetime [not null, default: `now()`]
   indexes {
-    (usuarioDestinoId, leida) [name: 'idxNotificacionBandeja']
-    funcionarioDestinoId [name: 'idxNotificacionFuncionario']
-    (clave, registroId) [name: 'idxNotificacionEvento']
+    (usuarioDestinoId, leida, fechaCreacion) [name: 'idxNotificacionBandeja']
+    (clave, registroId, referencia) [name: 'idxNotificacionEvento']
   }
   Note: 'Servicio centralizado: ningun modulo implementa su propio sistema de avisos. El indice por clave y registro evita reenviar dos veces el mismo aviso, por ejemplo el de vacaciones por vencer, sin necesidad de una tabla de control aparte.'
 }

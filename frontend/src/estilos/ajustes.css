@@ -46,25 +46,78 @@
 /* Boton que esta esperando respuesta del servidor. */
 .btn[aria-busy="true"] { cursor: progress; opacity: .8; }
 
-/* Tarjetas de la pagina de inicio (accesos a los modulos disponibles). */
-.inicio-rejilla {
-  display: grid; gap: 14px;
-  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-}
+/* Accesos directos de Inicio (compactos, agrupados como el menu; 12/10).
+   Cada grupo pone su tono en --tono-bg / --tono-fg (ver Inicio.tsx). */
+.inicio-grupos { columns: 3 260px; column-gap: 16px; }
+.inicio-grupo { break-inside: avoid; margin-bottom: 14px; }
+.inicio-grupo h3 { font-size: 12.5px; font-weight: 700; color: var(--texto-sec); margin: 0 0 6px; }
+.inicio-rejilla { display: grid; gap: 6px; grid-template-columns: 1fr; }
 .inicio-tarjeta {
-  display: grid; gap: 6px; padding: 18px; text-align: left; font: inherit;
-  color: var(--texto); background: var(--card); border: 1px solid var(--borde);
-  border-radius: var(--radio-lg); cursor: pointer; text-decoration: none;
-  transition: border-color .15s, box-shadow .15s;
+  display: flex; align-items: center; gap: 10px; padding: 6px 10px; min-height: 42px;
+  font: inherit; color: var(--texto); background: var(--card); border: 1px solid var(--borde);
+  border-radius: var(--radio-md); text-decoration: none; transition: border-color .15s, box-shadow .15s;
 }
-.inicio-tarjeta:hover { border-color: var(--accion); box-shadow: var(--sombra-sm); }
+.inicio-tarjeta:hover { border-color: var(--tono-fg, var(--accion)); box-shadow: var(--sombra-sm); }
 .inicio-tarjeta:focus-visible { outline: 3px solid var(--foco); outline-offset: 2px; }
 .inicio-tarjeta .ico-grande {
-  width: 38px; height: 38px; border-radius: 10px; display: grid; place-items: center;
-  background: var(--accion-tinte); color: var(--accion-sobre-claro);
+  width: 30px; height: 30px; border-radius: 8px; display: grid; place-items: center; flex-shrink: 0;
+  background: var(--tono-bg, var(--accion-tinte)); color: var(--tono-fg, var(--accion-sobre-claro));
 }
-.inicio-tarjeta b { font-size: 16px; }
-.inicio-tarjeta span { font-size: 13.5px; color: var(--texto-sec); line-height: 1.45; }
+.inicio-tarjeta b { font-size: 14.5px; font-weight: 600; }
+
+/* Paneles de Inicio: mis vacaciones, fuera esta semana, ausencias del mes. */
+.inicio-paneles { display: grid; gap: 14px; grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)); align-items: start; margin: 16px 0 6px; }
+.inicio-panel {
+  background: var(--card); border: 1px solid var(--borde); border-radius: var(--radio-lg);
+  padding: 14px 16px 16px; display: flex; flex-direction: column; gap: 10px; min-width: 0;
+}
+.inicio-panel > header { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+.inicio-panel > header h2 { font-size: 15px; font-weight: 700; margin: 0; }
+.inicio-panel > header .btn-texto { font-size: 13px; white-space: nowrap; }
+.inicio-panel .panel-sub { margin: -4px 0 0; }
+
+.mias-cuerpo { display: flex; gap: 16px; align-items: center; }
+.anillo.anillo-chico { width: 104px; height: 104px; }
+.anillo-chico .anillo-texto b { font-size: 30px; }
+.anillo-chico .anillo-texto span { font-size: 11px; max-width: 70px; }
+.anillo-cargando { border-radius: 50%; border: 9px solid var(--neutro-bg); box-sizing: border-box; }
+.mias-sin-saldo { max-width: 110px; }
+.mias-proximas { flex: 1; min-width: 0; }
+.mias-proximas h3 { font-size: 12.5px; font-weight: 700; color: var(--texto-sec); margin: 0 0 6px; }
+.mias-proximas ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.mias-proximas li { display: flex; align-items: center; gap: 8px; font-size: 13.5px; }
+.mias-proximas li > span:nth-child(2) { display: grid; min-width: 0; flex: 1; }
+.mias-proximas li b { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mias-proximas li small { color: var(--texto-sec); }
+.mias-proximas .ayuda-detalle { margin: 6px 0 0; }
+.punto-tipo { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+.mias-pedir { align-self: flex-start; }
+
+.semana-tira { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; }
+.semana-tira li {
+  display: flex; flex-direction: column; gap: 6px; padding: 6px 4px 8px; min-height: 92px;
+  border-radius: var(--radio-md); background: var(--superficie); border: 1px solid transparent; align-items: center;
+}
+.semana-tira li[data-hoy] { border-color: var(--accion); background: var(--accion-tinte); }
+.semana-tira li[data-pasado] { opacity: .6; }
+.semana-dia { font-size: 11.5px; color: var(--texto-sec); text-transform: capitalize; text-align: center; }
+.semana-dia b { display: block; font-size: 16px; color: var(--texto); }
+.semana-gente { display: flex; flex-wrap: wrap; justify-content: center; gap: 3px; }
+.semana-persona {
+  width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center;
+  font-size: 10.5px; font-weight: 700; color: #fff; letter-spacing: .02em; cursor: default;
+  box-shadow: 0 0 0 2px var(--card);
+}
+.semana-mas { background: var(--neutro-bg); color: var(--neutro-fg); }
+.semana-nadie { color: var(--texto-desh); }
+.semana-feriado { font-size: 11px; font-weight: 600; color: var(--info-fg); background: var(--info-bg); padding: 2px 6px; border-radius: var(--radio-full); }
+
+.barras { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.barras li { display: grid; grid-template-columns: minmax(80px, 46%) 1fr auto; align-items: center; gap: 8px; font-size: 13px; }
+.barra-nombre { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.barra-pista { height: 10px; border-radius: var(--radio-full); background: var(--neutro-bg); overflow: hidden; }
+.barra-relleno { display: block; height: 100%; border-radius: inherit; transition: width .5s ease; }
+.barra-valor { font-variant-numeric: tabular-nums; min-width: 2ch; text-align: right; }
 
 /* Bloque de pagina simple (tarjeta con relleno) para Mi cuenta y avisos. */
 .bloque { padding: 20px 22px; margin-bottom: 16px; }
@@ -498,7 +551,7 @@ input.solo-lectura { background: var(--neutro-bg); color: var(--texto-sec); curs
 
 /* Inicio: titulos de seccion y cifras del resumen (cada una lleva a la lista filtrada). */
 .inicio-titulo { font-size: 13px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--texto-sec); margin: 18px 0 10px; }
-.inicio-cifras { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 14px; }
+.inicio-cifras { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 180px), 1fr)); gap: 10px; }
 .inicio-cifra {
   display: flex; flex-direction: column; gap: 2px; padding: 14px 18px; border-radius: var(--radio-lg);
   background: var(--card); border: 1px solid var(--borde); color: var(--texto); text-decoration: none;
@@ -634,3 +687,17 @@ button.nav-titulo[aria-expanded="true"] svg { transform: none; }
 .zarch-quitar:hover { color: var(--error-fg); border-color: var(--error-fg); }
 .zarch-quitar:focus-visible { outline: 3px solid var(--foco); outline-offset: 2px; }
 @media (max-width: 480px) { .zarch-cambiar { display: none; } }
+/* Cifra que pide atencion (hay algo pendiente): borde izquierdo de color. */
+.inicio-cifra[data-atencion="si"] { border-left: 4px solid var(--advert-fg); padding-left: 15px; }
+.inicio-cifra[data-atencion="si"] b { color: var(--advert-fg); }
+@media (max-width: 520px) {
+  .inicio-cifras { grid-template-columns: 1fr 1fr; }
+  .inicio-cifra { padding: 10px 12px; }
+  .inicio-cifra b { font-size: 22px; }
+  .semana-tira li { min-height: 76px; }
+  .semana-persona { width: 22px; height: 22px; font-size: 9.5px; }
+  .inicio-rejilla { grid-template-columns: 1fr 1fr; }
+  .inicio-tarjeta { padding: 6px 8px; gap: 8px; }
+  .inicio-tarjeta b { font-size: 13.5px; line-height: 1.25; }
+  .inicio-tarjeta .ico-grande { width: 26px; height: 26px; }
+}
