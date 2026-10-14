@@ -6,12 +6,13 @@ import { ConfigService } from '@nestjs/config';
 import { cifrar, descifrar, ErrorDeCifrado, versionDeLlaveDe } from './cifrado-de-archivos.js';
 
 /** Carpetas de primer nivel dentro de RUTA_ARCHIVOS. */
-export type CategoriaDeArchivo = 'expedientes' | 'fotos';
+/** Carpetas de primer nivel. "candidatos": el curriculum del Talent Pool (13/10), por candidato. */
+export type CategoriaDeArchivo = 'expedientes' | 'fotos' | 'candidatos';
 
 /** UUID en minusculas, como los genera randomUUID() y la base de datos. */
 const UUID = '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}';
 /** Forma unica que puede tener una ruta guardada: categoria/funcionario/archivo.enc */
-const RUTA_VALIDA = new RegExp(`^(expedientes|fotos)/${UUID}/${UUID}\\.enc$`);
+const RUTA_VALIDA = new RegExp(`^(expedientes|fotos|candidatos)/${UUID}/${UUID}\\.enc$`);
 
 /**
  * Almacen de archivos cifrados del expediente (y fotos de perfil).
@@ -110,6 +111,16 @@ export class AlmacenCifradoService {
     } catch (error) {
       this.registro.warn(`No se pudo limpiar el archivo huérfano ${ruta}: ${error instanceof Error ? error.message : String(error)}`);
     }
+  }
+
+  /**
+   * Borra un archivo para siempre. SOLO para el curriculum de un candidato del
+   * Talent Pool cuando la persona reemplaza su registro o pide que se eliminen
+   * sus datos (Ley 8968). Los documentos del expediente NUNCA se borran.
+   */
+  async eliminarDeCandidato(ruta: string): Promise<void> {
+    if (!ruta.startsWith('candidatos/')) throw new Error('Solo se borran archivos de candidatos.');
+    await this.descartarRecienGuardado(ruta);
   }
 
   /** Convierte la ruta relativa en absoluta, verificando que no se salga de la carpeta de archivos. */

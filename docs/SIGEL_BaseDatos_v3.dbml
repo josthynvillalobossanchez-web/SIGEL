@@ -601,7 +601,8 @@ Table consentimiento {
   version varchar(20) [not null, unique]
   titulo varchar(180) [not null]
   texto text [not null, note: 'Copia del archivo backend/contenido/consentimiento-talent-pool.txt al momento de la version. Si el archivo cambia, se guarda una version nueva. Texto oficial pendiente de Joseph (hoy borrador).']
-  vigenteDesde date [not null]
+  huella char(64) [not null, unique, note: 'SHA-256 del texto: asi se sabe si el archivo cambio (13/10).']
+  vigenteDesde datetime [not null]
   activo boolean [not null, default: true]
   Note: 'Versionado, para poder demostrar que texto acepto cada candidato y cuando. RN-05. Aceptarlo es un paso obligatorio del registro (Ficha 32, Diagrama 8).'
 }
@@ -615,6 +616,7 @@ Table candidato {
   correo varchar(150)
   telefono varchar(30)
   fechaNacimiento date
+  residencia varchar(150) [note: '13/10: canton o lugar donde vive (texto libre).']
 
   // [V3-4] Se cataloga la profesion para que el filtro de HU 39 sea
   // confiable, pero el formulario es publico y el candidato podria no
@@ -623,9 +625,11 @@ Table candidato {
   profesionTexto varchar(150) [note: '[V3-4] Solo si el candidato no encuentra su profesion en la lista. RRHH revisa estos casos y, si corresponde, agrega la profesion al catalogo y reasigna.']
 
   descripcion text [note: 'Perfil o resumen profesional']
+  mesesExperiencia smallint [not null, default: 0, note: '13/10: meses de experiencia sumados al enviar (filtro de años de experiencia).']
   estado estadoCandidato [not null, default: 'activo', note: 'Los inactivos no salen en la busqueda normal (HU 41 CA03). Pasar a contratado dispara la Ficha 41.']
 
   cvNombreArchivo varchar(255)
+  cvTamanoBytes int
   cvRutaArchivo varchar(500) [note: 'Ruta al servidor de archivos. Al contratar, este CV se copia como documento del expediente del nuevo funcionario (V3-10).']
 
   funcionarioId char(36) [unique, ref: - funcionario.id, note: 'Nulo mientras no se le contrate. Un candidato solo puede convertirse en un funcionario.']
@@ -634,9 +638,12 @@ Table candidato {
   fechaConsentimiento datetime [not null]
   ipConsentimiento varchar(45)
 
+  vecesEnviado int [not null, default: 1, note: '13/10: cuantas veces la persona envio (reemplazo) su registro.']
   fechaRegistro datetime [not null, default: `now()`]
-  fechaActualizacion datetime
-  usuarioActualizacionId char(36) [ref: > usuario.id, note: 'Nulo cuando la actualizacion la hace el propio candidato desde el formulario publico']
+  fechaActualizacion datetime [not null, note: 'Ultimo envio del formulario publico.']
+  fechaCambioEstado datetime
+  usuarioCambioEstadoId char(36) [ref: > usuario.id, note: '13/10: quien de RRHH cambio el estado por ultima vez (reemplaza usuarioActualizacionId: la persona actualiza desde el formulario publico, sin cuenta).']
+  notaInterna varchar(1000) [note: '13/10: nota de RRHH; no la ve el candidato.']
   indexes {
     cedula [name: 'idxCandidatoCedula']
     (primerApellido, nombre) [name: 'idxCandidatoNombre']

@@ -1090,3 +1090,13 @@ son de revisión con Joseph**. Si pide otra semana, seguir ese mismo formato.
   solo a la persona; la cancelación de una pendiente, solo a la jefatura; la de una ya aprobada, a la
   jefatura y a RRHH. Licencias e incapacidades (sin aprobación) siguen llegando a jefatura y RRHH al
   registrarse. El Súper Administrador recibe lo de RRHH (Joseph lo aprobó).
+
+### Decisiones del 13/10/2026 (Josthyn, Talent Pool)
+
+- **Formulario público sin cuenta**, en `/trabaje-con-nosotros`, identificado solo con la cédula.
+- **Privacidad:** el formulario **no muestra nunca datos guardados**. Con la misma cédula se llena todo de
+  nuevo y al enviar se **reemplaza el registro completo**; se avisa antes de enviar y la respuesta no confirma
+  si la cédula existía. Se acepta el riesgo de que alguien reemplace el registro de otra persona.
+- **Pantalla de RRHH** con buscador y filtros, y botón **Contratar** que crea funcionario (y cuenta, si se
+  pide) con los datos del candidato y copia el currículum al expediente. Detalle en ENTREGABLE_3 §5.
+- La rama de las piscinas se creó el 13/10 desde `Sprint-3`, antes del Talent Pool.

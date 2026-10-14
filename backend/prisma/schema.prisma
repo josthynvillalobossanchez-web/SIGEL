@@ -130,6 +130,7 @@ model usuario {
   permisosAsignados    usuarioPermiso[]             @relation("permisosAsignadosPorEsteUsuario")
   tokensRecuperacion   tokenRecuperacionContrasena[]
   sesiones             sesion[]
+  candidatosCambiados  candidato[]                  @relation("cambioEstadoCandidato")
   solicitudesHechas    solicitud[]                  @relation("solicitudesHechasPorUsuario")
   solicitudesAAprobar  solicitud[]                  @relation("solicitudesDelAprobador")
   solicitudesResueltas solicitud[]                  @relation("solicitudesResueltasPorUsuario")
@@ -286,6 +287,7 @@ model profesion {
   activo      Boolean @default(true)
 
   funcionarios funcionario[]
+  candidatos   candidato[]
 }
 
 /// Regimen de vacaciones. Cada uno define su propio tope de acumulacion.
@@ -363,6 +365,8 @@ model funcionario {
   incapacidades     incapacidad[]
   capacitaciones    capacitacion[]
   horasExtra        horaExtra[]
+  /// Si se contrato desde el Talent Pool (Ficha 41).
+  candidato         candidato?
 
   @@index([cedula], map: "idxFuncionarioCedula")
   @@index([primerApellido, nombre], map: "idxFuncionarioNombre")
@@ -751,4 +755,174 @@ model notificacion {
 
   @@index([usuarioDestinoId, leida, fechaCreacion], map: "idxNotificacionBandeja")
   @@index([clave, registroId, referencia], map: "idxNotificacionEvento")
+}
+
+// =====================================================================
+// 7. TALENT POOL (Sprint 3, HU 38-41; Fichas 32-35 y 41)
+// Modulo separado del expediente. El registro es PUBLICO (sin cuenta) y se
+// identifica solo con la cedula. Regla de privacidad (Josthyn, 13/10): el
+// formulario NUNCA devuelve datos guardados; si la cedula ya existe, el
+// registro se REEMPLAZA completo con lo que la persona digite de nuevo.
+// Solo Recursos Humanos consulta los perfiles.
+// =====================================================================
+
+enum estadoCandidato {
+  activo
+  inactivo
+  contratado
+  descartado
+}
+
+enum nivelEducativo {
+  primaria
+  secundaria
+  tecnico
+  universitaria
+  posgrado
+  /// Otros cursos y capacitaciones.
+  curso
+}
+
+enum categoriaHabilidad {
+  tecnica
+  blanda
+  idioma
+  herramienta
+}
+
+enum nivelHabilidad {
+  basico
+  intermedio
+  avanzado
+}
+
+/// Versiones del consentimiento informado. El texto sale del archivo
+/// backend/contenido/consentimiento-talent-pool.txt: si cambia, al arrancar
+/// se guarda una version nueva, y cada candidato queda ligado a la que acepto.
+model consentimiento {
+  id           String   @id @default(uuid()) @db.Char(36)
+  version      String   @unique @db.VarChar(20)
+  titulo       String   @db.VarChar(180)
+  texto        String   @db.Text
+  /// SHA-256 del texto, para saber si el archivo cambio.
+  huella       String   @unique @db.Char(64)
+  vigenteDesde DateTime @default(now())
+  activo       Boolean  @default(true)
+
+  candidatos candidato[]
+}
+
+model candidato {
+  id              String    @id @default(uuid()) @db.Char(36)
+  /// RN-04: identificador. Si ya existe, el registro se reemplaza (no se duplica).
+  cedula          String    @unique @db.VarChar(20)
+  nombre          String    @db.VarChar(80)
+  primerApellido  String    @db.VarChar(80)
+  segundoApellido String?   @db.VarChar(80)
+  correo          String    @db.VarChar(150)
+  telefono        String?   @db.VarChar(30)
+  fechaNacimiento DateTime? @db.Date
+  /// Canton o lugar donde vive (texto libre, para orientar a RRHH).
+  residencia      String?   @db.VarChar(150)
+
+  /// Profesion del catalogo (filtro confiable por carrera, HU 39).
+  profesionId    String? @db.Char(36)
+  /// Solo si no encontro su profesion en la lista: RRHH la revisa.
+  profesionTexto String? @db.VarChar(150)
+  /// Resumen o perfil profesional.
+  descripcion    String? @db.Text
+  /// Meses de experiencia laboral sumados al enviar (filtro "años de experiencia").
+  mesesExperiencia Int   @default(0) @db.SmallInt
+
+  estado estadoCandidato @default(activo)
+
+  /// Curriculum en PDF, cifrado como los documentos del expediente.
+  cvNombreArchivo String? @db.VarChar(255)
+  cvRutaArchivo   String? @db.VarChar(500)
+  cvTamanoBytes   Int?
+
+  /// Funcionario creado al contratarlo (Ficha 41). Uno solo.
+  funcionarioId String? @unique @db.Char(36)
+
+  consentimientoId    String   @db.Char(36)
+  fechaConsentimiento DateTime
+  ipConsentimiento    String?  @db.VarChar(45)
+
+  /// Cuantas veces la persona reemplazo su registro (1 = solo se registro).
+  vecesEnviado           Int       @default(1)
+  fechaRegistro          DateTime  @default(now())
+  /// Ultimo envio del formulario publico.
+  fechaActualizacion     DateTime  @default(now())
+  /// Ultimo cambio de RRHH (estado, nota).
+  fechaCambioEstado      DateTime?
+  usuarioCambioEstadoId  String?   @db.Char(36)
+  /// Nota interna de RRHH (no la ve el candidato).
+  notaInterna            String?   @db.VarChar(1000)
+
+  profesion         profesion?            @relation(fields: [profesionId], references: [id])
+  funcionario       funcionario?          @relation(fields: [funcionarioId], references: [id])
+  consentimiento    consentimiento        @relation(fields: [consentimientoId], references: [id])
+  usuarioCambioEstado usuario?            @relation("cambioEstadoCandidato", fields: [usuarioCambioEstadoId], references: [id])
+  formacion         formacionCandidato[]
+  habilidades       candidatoHabilidad[]
+  experiencia       experienciaCandidato[]
+
+  @@index([primerApellido, nombre], map: "idxCandidatoNombre")
+  @@index([correo], map: "idxCandidatoCorreo")
+  @@index([estado, fechaActualizacion], map: "idxCandidatoEstado")
+  @@index([profesionId], map: "idxCandidatoProfesion")
+}
+
+model formacionCandidato {
+  id               String         @id @default(uuid()) @db.Char(36)
+  candidatoId      String         @db.Char(36)
+  nivel            nivelEducativo
+  institucion      String?        @db.VarChar(180)
+  titulo           String?        @db.VarChar(180)
+  areaEstudio      String?        @db.VarChar(150)
+  anioFinalizacion Int?           @db.SmallInt
+  concluido        Boolean        @default(true)
+
+  candidato candidato @relation(fields: [candidatoId], references: [id], onDelete: Cascade)
+
+  @@index([candidatoId, nivel], map: "idxFormacionCandidato")
+}
+
+/// Catalogo administrable por RRHH (evita texto libre y hace confiable el filtro).
+model habilidad {
+  id          String             @id @default(uuid()) @db.Char(36)
+  nombre      String             @unique @db.VarChar(120)
+  descripcion String?            @db.VarChar(255)
+  categoria   categoriaHabilidad
+  activo      Boolean            @default(true)
+
+  candidatos candidatoHabilidad[]
+}
+
+model candidatoHabilidad {
+  id          String          @id @default(uuid()) @db.Char(36)
+  candidatoId String          @db.Char(36)
+  habilidadId String          @db.Char(36)
+  nivel       nivelHabilidad?
+
+  candidato candidato @relation(fields: [candidatoId], references: [id], onDelete: Cascade)
+  habilidad habilidad @relation(fields: [habilidadId], references: [id])
+
+  @@unique([candidatoId, habilidadId], map: "uqCandidatoHabilidad")
+}
+
+model experienciaCandidato {
+  id          String    @id @default(uuid()) @db.Char(36)
+  candidatoId String    @db.Char(36)
+  empresa     String    @db.VarChar(180)
+  /// Puesto que tuvo fuera de la Municipalidad (texto libre).
+  puesto      String    @db.VarChar(150)
+  fechaInicio DateTime? @db.Date
+  fechaFin    DateTime? @db.Date
+  esActual    Boolean   @default(false)
+  descripcion String?   @db.VarChar(500)
+
+  candidato candidato @relation(fields: [candidatoId], references: [id], onDelete: Cascade)
+
+  @@index([candidatoId], map: "idxExperienciaCandidato")
 }

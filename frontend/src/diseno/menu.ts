@@ -145,6 +145,14 @@ export const MENU: GrupoDeMenu[] = [
           { texto: 'Subir documento', patron: /^\/funcionarios\/[^/]+\/expediente\/documentos\/nuevo$/, permisos: ['documentos.crear'] },
         ],
       },
+      {
+        // Sprint 3 (HU 38-41): solo Recursos Humanos ve los candidatos.
+        texto: 'Talent Pool',
+        ruta: '/talent-pool',
+        icono: 'maletin',
+        permisos: ['talentPool.ver'],
+        descripcion: 'Candidatos que se registraron en «Trabaje con nosotros»: buscar por profesión, estudios o habilidades y contratarlos.',
+      },
     ],
   },
   {

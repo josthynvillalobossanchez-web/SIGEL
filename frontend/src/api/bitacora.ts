@@ -71,5 +71,7 @@ export const NOMBRE_DE_ENTIDAD: Record<string, string> = {
   puesto: 'Puesto',
   profesion: 'Profesión',
   tipoIncapacidad: 'Tipo de incapacidad',
+  candidato: 'Candidato (Talent Pool)',
+  habilidad: 'Habilidad (Talent Pool)',
 };
 export const nombreDeEntidad = (e: string) => NOMBRE_DE_ENTIDAD[e] ?? e;

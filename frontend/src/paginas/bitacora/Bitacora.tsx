@@ -28,7 +28,7 @@ import { useBusquedaDiferida } from '../../utilidades/useBusquedaDiferida';
 import { useConsulta } from '../../utilidades/useConsulta';
 
 const quienLoHizo = (m: MovimientoDeBitacora) =>
-  m.usuario ? (m.usuario.funcionario ? `${m.usuario.funcionario.nombre} ${m.usuario.funcionario.primerApellido}` : m.usuario.correo) : 'SINERGIA (automático)';
+  m.usuario ? (m.usuario.funcionario ? `${m.usuario.funcionario.nombre} ${m.usuario.funcionario.primerApellido}` : m.usuario.correo) : m.entidad === 'candidato' ? 'Formulario público (sin cuenta)' : 'SINERGIA (automático)';
 const personaAfectada = (m: MovimientoDeBitacora) =>
   m.funcionarioAfectado ? [m.funcionarioAfectado.nombre, m.funcionarioAfectado.primerApellido, m.funcionarioAfectado.segundoApellido].filter(Boolean).join(' ') : null;
 

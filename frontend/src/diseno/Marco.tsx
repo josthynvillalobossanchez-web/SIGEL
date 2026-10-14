@@ -269,10 +269,6 @@ function MarcoInterno() {
               </div>
             );
           })}
-
-          <p style={{ marginTop: 'auto', padding: 12, fontSize: 11.5, color: 'var(--texto-sec)', lineHeight: 1.5 }}>
-            El Talent Pool llega en el Sprint 3.
-          </p>
         </nav>
 
         <main className="contenido" id="contenido" tabIndex={-1}>

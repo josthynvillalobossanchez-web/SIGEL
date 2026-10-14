@@ -384,6 +384,11 @@ export class FuncionariosService {
     datos: RegistrarFuncionarioDto,
     quienActua: UsuarioAutenticado,
     direccionIp?: string,
+    /**
+     * Algo mas que debe pasar en la MISMA transaccion (13/10: al contratar
+     * desde el Talent Pool se liga el candidato; si falla, no se crea nada).
+     */
+    alCrear?: (tx: Prisma.TransactionClient, funcionarioId: string) => Promise<void>,
   ): Promise<{ funcionario: DetalleDeFuncionario; cuenta: CuentaCreada | null }> {
     const cedula = normalizarCedula(datos.cedula);
     if (cedula.length < 5 || cedula.length > 20) {
@@ -471,6 +476,8 @@ export class FuncionariosService {
       // El saldo inicial de vacaciones es el punto de partida de la acumulacion:
       // se anota siempre (aunque sea 0) para que la persona empiece a acumular.
       await this.vacaciones.cargarSaldoInicial(tx, creado.id, datos.saldoInicialVacaciones ?? 0, quienActua, direccionIp);
+
+      if (alCrear) await alCrear(tx, creado.id);
 
       const cuenta = datos.cuenta
         ? await this.usuarios.crearCuentaEnTransaccion(tx, { funcionarioId: creado.id, roles: datos.cuenta.roles }, quienActua, direccionIp)

@@ -28,7 +28,8 @@ import {
   problemaDeNombres,
 } from '../../utilidades/validaciones';
 import { useConsulta } from '../../utilidades/useConsulta';
-import { useNavigate, useParams } from 'react-router';
+import { useNavigate, useParams, useSearchParams } from 'react-router';
+import { consultarParaContratar, contratarCandidato, type DatosParaContratar } from '../../api/talentPool';
 import { ErrorDeApi, textoDelError } from '../../api/cliente';
 import {
   consultarFuncionario,
@@ -96,9 +97,16 @@ const PASO_DEL_ERROR: Record<string, number> = {
 /* ================================================================== */
 
 export function PaginaRegistrarFuncionario() {
-  const { datos: opciones, error } = useConsulta(consultarOpcionesDeFuncionario, []);
-  if (!opciones) return <Cargando titulo="Registrar funcionario" error={error} />;
-  return <FormularioDeFuncionario opciones={opciones} />;
+  // ?candidato=<id>: contratar desde el Talent Pool (Ficha 41), con sus datos personales ya llenos.
+  const [parametros] = useSearchParams();
+  const candidatoId = parametros.get('candidato');
+  const { datos, error } = useConsulta(
+    () => Promise.all([consultarOpcionesDeFuncionario(), candidatoId ? consultarParaContratar(candidatoId) : Promise.resolve(null)]),
+    [candidatoId],
+  );
+  const [opciones, candidato] = datos ?? [null, null];
+  if (!opciones) return <Cargando titulo={candidatoId ? 'Contratar desde el Talent Pool' : 'Registrar funcionario'} error={error} />;
+  return <FormularioDeFuncionario opciones={opciones} candidato={candidato} />;
 }
 
 export function PaginaEditarFuncionario() {
@@ -138,7 +146,7 @@ function Cargando({ titulo, error, bloqueo, detalle }: { titulo: string; error: 
 
 /* ================================================================== */
 
-function FormularioDeFuncionario({ opciones, detalle }: { opciones: OpcionesDeFormulario; detalle?: DetalleDeFuncionario }) {
+function FormularioDeFuncionario({ opciones, detalle, candidato }: { opciones: OpcionesDeFormulario; detalle?: DetalleDeFuncionario; candidato?: DatosParaContratar | null }) {
   const editando = Boolean(detalle);
   const { tienePermisos } = useSesion();
   const irSeguro = useIrSeguro();
@@ -147,16 +155,16 @@ function FormularioDeFuncionario({ opciones, detalle }: { opciones: OpcionesDeFo
 
   const inicial = useMemo<Formulario>(
     () => ({
-      cedula: detalle?.cedula ?? '',
-      nombre: detalle?.nombre ?? '',
-      primerApellido: detalle?.primerApellido ?? '',
-      segundoApellido: detalle?.segundoApellido ?? '',
-      fechaNacimiento: detalle?.fechaNacimiento ?? '',
-      profesionId: detalle?.profesion?.id ?? '',
-      correoPersonal: detalle?.correoPersonal ?? '',
+      cedula: detalle?.cedula ?? candidato?.cedula ?? '',
+      nombre: detalle?.nombre ?? candidato?.nombre ?? '',
+      primerApellido: detalle?.primerApellido ?? candidato?.primerApellido ?? '',
+      segundoApellido: detalle?.segundoApellido ?? candidato?.segundoApellido ?? '',
+      fechaNacimiento: detalle?.fechaNacimiento ?? candidato?.fechaNacimiento ?? '',
+      profesionId: detalle?.profesion?.id ?? candidato?.profesionId ?? '',
+      correoPersonal: detalle?.correoPersonal ?? candidato?.correoPersonal ?? '',
       correoInstitucional: detalle?.correoInstitucional ?? '',
-      telefonoPersonal: detalle?.telefonoPersonal ?? '',
-      direccion: detalle?.direccion ?? '',
+      telefonoPersonal: detalle?.telefonoPersonal ?? candidato?.telefonoPersonal ?? '',
+      direccion: detalle?.direccion ?? candidato?.direccion ?? '',
       puestoId: detalle?.puesto?.id ?? '',
       departamentoId: detalle?.departamento?.id ?? '',
       jefaturaId: detalle?.jefatura?.id ?? '',
@@ -165,7 +173,7 @@ function FormularioDeFuncionario({ opciones, detalle }: { opciones: OpcionesDeFo
       fechaIngreso: detalle?.fechaIngreso ?? hoy,
       saldoInicialVacaciones: '',
     }),
-    [detalle, opciones, hoy],
+    [detalle, opciones, hoy, candidato],
   );
 
   const [paso, setPaso] = useState(0);
@@ -174,7 +182,7 @@ function FormularioDeFuncionario({ opciones, detalle }: { opciones: OpcionesDeFo
   const [marcados, setMarcados] = useState<RolesMarcados>({});
   const [ocupado, setOcupado] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [registrado, setRegistrado] = useState<{ nombre: string; cuenta: CuentaCreada | null } | null>(null);
+  const [registrado, setRegistrado] = useState<{ nombre: string; cuenta: CuentaCreada | null; curriculumCopiado?: boolean | null } | null>(null);
   const [editado, setEditado] = useState<string | null>(null);
   // Fotografia (solo al editar): se guarda al momento, no con "Guardar cambios".
   const [tieneFoto, setTieneFoto] = useState(detalle?.tieneFoto ?? false);
@@ -275,8 +283,14 @@ function FormularioDeFuncionario({ opciones, detalle }: { opciones: OpcionesDeFo
         // El saldo inicial es numero (vacio = sin indicar).
         const saldo = datos.saldoInicialVacaciones.trim();
         cuerpo.saldoInicialVacaciones = saldo === '' ? undefined : Number(saldo);
-        const r = await registrarFuncionario({ ...cuerpo, ...(crearCuenta ? { cuenta: { roles: aPedidos(marcados) } } : {}) });
-        setRegistrado({ nombre: nombreCompleto(r.funcionario), cuenta: r.cuenta });
+        const pedido = { ...cuerpo, ...(crearCuenta ? { cuenta: { roles: aPedidos(marcados) } } : {}) };
+        if (candidato) {
+          const r = await contratarCandidato(candidato.id, pedido);
+          setRegistrado({ nombre: nombreCompleto(r.funcionario), cuenta: r.cuenta, curriculumCopiado: r.curriculumCopiado });
+        } else {
+          const r = await registrarFuncionario(pedido);
+          setRegistrado({ nombre: nombreCompleto(r.funcionario), cuenta: r.cuenta });
+        }
       } else {
         const cuerpo = Object.fromEntries(cambios.map((c) => [c, aEnviar(c)]));
         const r = await editarFuncionario(detalle.id, cuerpo);
@@ -337,13 +351,20 @@ function FormularioDeFuncionario({ opciones, detalle }: { opciones: OpcionesDeFo
         migas={
           detalle
             ? [{ texto: 'Funcionarios', a: LISTA }, { texto: nombreCompleto(detalle), a: `${LISTA}?ver=${detalle.id}` }, { texto: 'Editar funcionario' }]
-            : [{ texto: 'Funcionarios', a: LISTA }, { texto: 'Registrar funcionario' }]
+            : candidato
+              ? [{ texto: 'Talent Pool', a: '/talent-pool' }, { texto: 'Contratar' }]
+              : [{ texto: 'Funcionarios', a: LISTA }, { texto: 'Registrar funcionario' }]
         }
-        titulo={editando ? 'Editar funcionario' : 'Registrar funcionario'}
+        titulo={editando ? 'Editar funcionario' : candidato ? 'Contratar desde el Talent Pool' : 'Registrar funcionario'}
         descripcion={
           detalle ? (
             <>
               <b>{nombreCompleto(detalle)}</b> · Cédula {detalle.cedula}
+            </>
+          ) : candidato ? (
+            <>
+              Los datos personales de <b>{nombreCompleto(candidato)}</b> ya están llenos (revíselos). Complete los datos laborales y decida si tendrá cuenta.{' '}
+              {candidato.tieneCurriculum ? 'Su currículum se copiará a su expediente.' : ''}
             </>
           ) : (
             'Al guardar se crea automáticamente su expediente laboral. La cédula no se puede repetir.'
@@ -354,16 +375,16 @@ function FormularioDeFuncionario({ opciones, detalle }: { opciones: OpcionesDeFo
         alCambiarPaso={setPaso}
         revisarPaso={revisarPaso}
         libre={editando}
-        alCancelar={() => irSeguro(LISTA)}
+        alCancelar={() => irSeguro(candidato ? '/talent-pool' : LISTA)}
         alGuardar={() => void guardar()}
-        textoGuardar={editando ? 'Guardar cambios' : 'Registrar funcionario'}
+        textoGuardar={editando ? 'Guardar cambios' : candidato ? 'Contratar y registrar' : 'Registrar funcionario'}
         bloqueoGuardar={editando && !hayCambios ? 'no hay cambios que guardar.' : null}
         ocupado={ocupado}
         error={error}
         claveDeDatos={JSON.stringify([datos, crearCuenta, marcados])}
       >
         {paso === 0 && (
-          <PasoDatosPersonales datos={datos} poner={poner} editando={editando} listas={listas} opciones={opciones} errorNacimiento={errorNacimiento} hoy={hoy} />
+          <PasoDatosPersonales datos={datos} poner={poner} editando={editando} cedulaFija={Boolean(candidato)} listas={listas} opciones={opciones} errorNacimiento={errorNacimiento} hoy={hoy} />
         )}
         {paso === 1 && <PasoContacto datos={datos} poner={poner} editando={editando} detalle={detalle} />}
         {paso === 2 && (
@@ -416,7 +437,12 @@ function FormularioDeFuncionario({ opciones, detalle }: { opciones: OpcionesDeFo
         <ModalExito titulo="Funcionario registrado con éxito" alAceptar={() => navegar(LISTA)}>
           <p>
             <b>{registrado.nombre}</b> quedó registrado y su expediente laboral ya existe.
+            {candidato && ' En el Talent Pool quedó como «Contratado».'}
           </p>
+          {registrado.curriculumCopiado === true && <p className="nota-modal">Su currículum se copió al expediente.</p>}
+          {registrado.curriculumCopiado === false && (
+            <Mensaje tipo="advert">El currículum no se pudo copiar al expediente: descárguelo del Talent Pool y súbalo manualmente.</Mensaje>
+          )}
           {registrado.cuenta && (
             <>
               <p className="nota-modal" style={{ margin: '10px 0 6px' }}>

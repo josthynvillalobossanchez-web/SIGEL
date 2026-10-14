@@ -1,0 +1,112 @@
+/* =====================================================================
+   Talent Pool (Sprint 3, HU 38-41): formulario publico y pantalla de RRHH.
+   ===================================================================== */
+
+/* ---------- Pagina publica (sin menu) ---------- */
+.tp-publico { min-height: 100vh; display: flex; flex-direction: column; background: var(--superficie); }
+.tp-barra { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 20px; background: var(--barra); color: var(--barra-txt); }
+.tp-marca { display: flex; align-items: center; gap: 10px; }
+.tp-marca img { width: 36px; height: 36px; border-radius: 8px; background: #fff; padding: 3px; }
+.tp-marca b { display: block; font-size: 15px; }
+.tp-marca small { display: block; font-size: 12px; color: var(--barra-sec); }
+.tp-contenido { width: 100%; max-width: 920px; margin: 0 auto; padding: 24px 16px 32px; flex: 1; }
+.tp-intro h1 { margin: 0 0 6px; font-size: 26px; }
+.tp-intro p { margin: 0 0 18px; color: var(--texto-sec); max-width: 70ch; }
+.tp-pie { display: flex; flex-wrap: wrap; gap: 10px 18px; align-items: center; justify-content: center; padding: 18px 16px 24px; color: var(--texto-sec); font-size: 13.5px; }
+.tp-pie img { height: 34px; width: auto; }
+.tp-pie img.logo-oscuro { display: none; }
+:root[data-theme="dark"] .tp-pie img.logo-claro { display: none; }
+:root[data-theme="dark"] .tp-pie img.logo-oscuro { display: block; }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .tp-pie img.logo-claro { display: none; }
+  :root:not([data-theme="light"]) .tp-pie img.logo-oscuro { display: block; }
+}
+.tp-publico .form-pasos { margin-top: 14px; }
+.tp-trampa { position: absolute; left: -10000px; width: 1px; height: 1px; overflow: hidden; }
+.tp-casilla { margin: 4px 0 0; font-size: 13.5px; align-self: end; }
+
+.tp-lista { display: grid; gap: 12px; margin-top: 6px; }
+.tp-lista h3 { margin: 6px 0 0; font-size: 15px; }
+.tp-bloque { border: 1px solid var(--borde); border-radius: var(--radio-md); padding: 10px 14px 4px; background: var(--card); }
+.tp-bloque-cab { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+.tp-lista > .btn { justify-self: start; }
+
+.tp-habilidades { display: grid; gap: 14px; }
+.tp-habilidades fieldset { border: 0; padding: 0; margin: 0; }
+.tp-habilidades legend { font-weight: 700; font-size: 13px; color: var(--texto-sec); margin-bottom: 8px; padding: 0; }
+.tp-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.tp-chip { display: inline-flex; align-items: center; border: 1px solid var(--borde-fuerte); border-radius: var(--radio-full); background: var(--card); overflow: hidden; }
+.tp-chip button { border: 0; background: transparent; font: inherit; font-size: 14px; padding: 7px 13px; cursor: pointer; color: var(--texto); display: inline-flex; gap: 5px; align-items: center; min-height: 36px; }
+.tp-chip.elegida { border-color: var(--accion); background: var(--accion-tinte); }
+.tp-chip.elegida button { color: var(--accion-sobre-claro); font-weight: 700; }
+.tp-chip select { border: 0; border-left: 1px solid var(--borde); background: transparent; font: inherit; font-size: 13px; padding: 0 6px; color: var(--texto); height: 36px; }
+
+.tp-consentimiento { max-height: 220px; overflow-y: auto; border: 1px solid var(--borde); border-radius: var(--radio-md); padding: 12px 16px; background: var(--superficie); font-size: 13.5px; line-height: 1.55; margin: 12px 0; white-space: pre-line; }
+.tp-consentimiento p { margin: 0 0 8px; }
+.tp-consentimiento:focus-visible { outline: 3px solid var(--foco); outline-offset: 2px; }
+.tp-acepto { font-weight: 600; }
+
+.tp-listo { max-width: 620px; margin: 24px auto; padding: 32px 24px; text-align: center; display: grid; gap: 12px; justify-items: center; }
+.tp-listo h1 { margin: 0; font-size: 24px; }
+.tp-listo p { margin: 0; }
+.tp-listo-ico { width: 60px; height: 60px; border-radius: 50%; display: grid; place-items: center; background: var(--exito-bg); color: var(--exito-fg); }
+
+/* ---------- RRHH ---------- */
+.tp-pestanas { margin-bottom: 14px; }
+.tp-lista-candidatos { list-style: none; margin: 0 0 12px; padding: 0; display: grid; gap: 8px; }
+.tp-candidato {
+  width: 100%; display: flex; gap: 14px; align-items: flex-start; text-align: left; font: inherit; color: var(--texto);
+  background: var(--card); border: 1px solid var(--borde); border-radius: var(--radio-lg); padding: 12px 16px; cursor: pointer;
+  transition: border-color .15s, box-shadow .15s;
+}
+.tp-candidato:hover { border-color: var(--accion); box-shadow: var(--sombra-sm); }
+.tp-candidato:focus-visible { outline: 3px solid var(--foco); outline-offset: 2px; }
+.tp-candidato .avatar { width: 40px; height: 40px; background: var(--avatar-bg); font-size: 14px; }
+.tp-candidato-cuerpo { flex: 1; min-width: 0; display: grid; gap: 4px; }
+.tp-candidato-cab { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.tp-candidato-cab b { font-size: 15.5px; }
+.tp-candidato-sub { font-size: 13.5px; color: var(--texto-sec); }
+.tp-candidato-hab { display: flex; gap: 5px; flex-wrap: wrap; }
+.tp-candidato-fin { display: grid; gap: 2px; justify-items: end; text-align: right; color: var(--texto-sec); flex-shrink: 0; }
+.tp-candidato-fin small { font-size: 12px; }
+.tp-cv { display: inline-flex; gap: 4px; align-items: center; color: var(--accion-sobre-claro); font-weight: 600; }
+@media (max-width: 640px) {
+  .tp-candidato { flex-wrap: wrap; }
+  .tp-candidato-fin { width: 100%; justify-items: start; text-align: left; grid-auto-flow: column; justify-content: start; gap: 10px; }
+}
+
+.tp-perfil { display: grid; gap: 14px; }
+.tp-perfil h3 { margin: 0 0 6px; font-size: 13px; text-transform: uppercase; letter-spacing: .05em; color: var(--texto-sec); }
+.tp-perfil-cab { display: flex; gap: 8px; align-items: center; color: var(--texto-sec); font-size: 13px; }
+.tp-datos { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 200px), 1fr)); gap: 10px 18px; margin: 0; }
+.tp-datos dt { font-size: 12px; font-weight: 700; color: var(--texto-sec); text-transform: uppercase; letter-spacing: .04em; }
+.tp-datos dd { margin: 2px 0 0; overflow-wrap: anywhere; }
+.tp-parrafo { margin: 4px 0 0; white-space: pre-line; font-size: 14px; line-height: 1.5; }
+.tp-items { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.tp-items li { display: grid; gap: 2px; padding-left: 12px; border-left: 3px solid var(--borde); }
+.tp-items li span { font-size: 13.5px; color: var(--texto-sec); }
+.tp-gestion { border-top: 1px solid var(--borde); padding-top: 12px; }
+.tp-gestion .campo .btn { margin-top: 6px; }
+.tp-acciones { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.tp-acciones .btn-texto-peligro { margin-left: auto; }
+
+.tp-nueva-habilidad { display: flex; gap: 10px; align-items: flex-end; flex-wrap: wrap; margin-bottom: 12px; }
+.tp-nueva-habilidad .campo { margin: 0; flex: 1 1 180px; }
+.tp-catalogo { display: grid; gap: 14px; }
+.tp-catalogo h3 { margin: 0 0 6px; font-size: 13px; text-transform: uppercase; letter-spacing: .05em; color: var(--texto-sec); }
+.tp-catalogo ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
+.tp-catalogo li { display: flex; gap: 10px; align-items: center; padding: 6px 10px; border: 1px solid var(--borde); border-radius: var(--radio-md); flex-wrap: wrap; }
+.tp-catalogo li > span:first-child { flex: 1; display: flex; gap: 8px; align-items: center; }
+.tp-catalogo li[data-activa="no"] > span:first-child { color: var(--texto-sec); }
+.tp-catalogo li small { color: var(--texto-sec); }
+.tp-catalogo-acc { display: flex; gap: 8px; align-items: center; }
+.tp-catalogo-acc select { font: inherit; font-size: 13px; padding: 4px 6px; border: 1px solid var(--borde); border-radius: var(--radio-md); background: var(--card); color: var(--texto); }
+.tp-publico .tp-contenido { max-width: 1080px; }
+.tp-publico .campo > .btn-texto { align-self: flex-start; margin-top: 2px; }
+.tp-version { display: block; margin: -6px 0 12px 28px; }
+/* Celular: solo se ve el paso actual (la barra y "Paso X de 5" dicen el resto). */
+@media (max-width: 640px) {
+  .tp-publico .pasos .paso:not([aria-current]) { display: none; }
+  .tp-publico .pasos { grid-template-columns: 1fr; }
+  .tp-barra { padding: 8px 14px; }
+}

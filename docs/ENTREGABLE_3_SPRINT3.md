@@ -44,7 +44,7 @@ recibe los avisos dirigidos a RRHH). Se quitaron del diseño las columnas de env
 | 7 | Pruebas: `pruebas-notificaciones.mjs` (74) y `ui-notificaciones.py` (28); regresión completa en verde | **Hecha** |
 | 8 | Ajustes del 12/10: campana en la esquina ([Salir] [Tema] [Notificaciones]); en la Bitácora, «Sobre qué» con el nombre de la persona y el UUID aparte como «Código interno del registro»; la ayuda emergente se esconde al hacer clic | **Hecha** |
 | 9 | Inicio más visual (12/10), sin librerías ni consultas nuevas al backend: anillo del saldo y próximas 3 ausencias; «Fuera esta semana» (lunes a viernes, iniciales por tipo; jefatura: su equipo, RRHH: todos); barras de ausencias del mes por tipo (RRHH); accesos directos compactos agrupados como el menú. Como mucho 2 llamadas al calendario que ya existía | **Hecha** |
-| 10 | Talent Pool (HU 38–41) | Pendiente (al final del sprint) |
+| 10 | Talent Pool (HU 38–41): ver §5 | **Hecha** (13/10) |
 
 ## 4. Cambios pedidos por Joseph (13/10/2026)
 
@@ -56,7 +56,38 @@ recibe los avisos dirigidos a RRHH). Se quitaron del diseño las columnas de env
 | 4 | **RRHH se entera cuando la ausencia queda en firme**: la solicitud nueva solo a la jefatura; la aprobación a la persona y a RRHH; el rechazo solo a la persona; cancelar una pendiente, solo a la jefatura; una aprobada, también a RRHH | **Hecha** |
 | 5 | Pruebas: `pruebas-vacaciones` 190, `pruebas-ausencias` 142, `pruebas-notificaciones` 79; navegador `ui-vacaciones` 104, `ui-ausencias` 65; `preparar-ui-vacaciones.mjs` ya no falla cuando las fechas de octubre pasan | **Hecha** |
 
-## 5. Notas
+## 5. Talent Pool (13/10/2026, HU 38–41; Fichas 32–35 y 41)
+
+Migración `20261013010000_talent_pool`: tablas `consentimiento` (versionado), `candidato`, `formacionCandidato`,
+`habilidad` (20 iniciales), `candidatoHabilidad` y `experienciaCandidato`; permisos `talentPool.ver` y
+`talentPool.administrar` (SA y Administrador). Módulo `backend/src/talent-pool/` aislado: nada más depende de él.
+
+**Reglas de Josthyn (13/10):**
+1. **Página pública** `/trabaje-con-nosotros`, sin cuenta, identificada **solo con la cédula**.
+2. **Privacidad primero:** el formulario **nunca trae datos guardados**. Si la cédula ya existe, la persona
+   llena todo de nuevo y al enviar **se reemplaza el registro completo** (estudios, experiencia, habilidades y
+   currículum; el anterior se borra del disco). La respuesta es la misma exista o no la cédula, para no
+   confirmar quién está registrado. Riesgo aceptado: alguien con la cédula de otro puede reemplazar su
+   registro; es preferible a revelar información privada.
+3. Consentimiento informado obligatorio (texto de `backend/contenido/consentimiento-talent-pool.txt`; si cambia,
+   al arrancar se guarda una versión nueva y cada candidato queda ligado a la que aceptó).
+
+| # | Tarea | Estado |
+|---|---|---|
+| 1 | Formulario público por pasos: datos personales, estudios (profesión del catálogo o «no encuentro la mía»), experiencia, habilidades (chips con nivel), currículum PDF opcional y consentimiento | **Hecha** |
+| 2 | Seguridad del formulario: límite de 5 envíos cada 10 minutos por IP (`TALENT_POOL_ENVIOS_POR_IP`), campo trampa contra robots, validación completa en el backend, currículum cifrado | **Hecha** |
+| 3 | Pantalla de RRHH `/talent-pool` (menú Personal): pestañas por estado, buscador (cédula, nombre, profesión, estudios, puestos, habilidades) y filtros (profesión, nivel mínimo, habilidades, años de experiencia, con currículum, orden) | **Hecha** |
+| 4 | Perfil: datos, estudios, experiencia, habilidades, currículum (su consulta queda en la bitácora), nota interna, estados activo/inactivo/descartado | **Hecha** |
+| 5 | **Contratar** (Ficha 41): doble confirmación → «Registrar funcionario» con los datos personales del candidato (cédula fija); RRHH completa los laborales y decide si tendrá cuenta; en una sola transacción se crea el funcionario y el candidato queda «contratado»; el currículum se copia al expediente (tipo «Curriculum»; si falla, se avisa a RRHH) | **Hecha** |
+| 6 | Catálogo de habilidades (agregar, cambiar categoría, inactivar) y **eliminar los datos a pedido de la persona** (Ley 8968; la bitácora guarda solo la cédula) | **Hecha** |
+| 7 | Avisos: «Nuevo candidato» / «Candidato actualizado» a RRHH. Bitácora: registro y reemplazo anónimos («Formulario público (sin cuenta)»), cambios de RRHH, contratación | **Hecha** |
+| 8 | Pruebas: `pruebas-talent-pool.mjs` (77) y `ui-talent-pool.py` (42); regresión completa en verde | **Hecha** |
+
+**Se apartan de las fichas (a propósito):** no se envía correo de confirmación al candidato (decisión del 10/10:
+el correo solo se usa para la cuenta nueva); el mensaje de éxito en pantalla lo reemplaza. Si una persona
+«inactiva» vuelve a enviar el formulario, queda «activa» otra vez; «descartado» y «contratado» se conservan.
+
+## 6. Notas
 
 - El Súper Administrador tiene todos los permisos, así que también recibe los avisos de RRHH.
   Quitárselo rompería la regla de reparto de acceso (el SA tiene que tener todo); si Joseph no los

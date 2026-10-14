@@ -103,6 +103,13 @@ const PERMISOS: { clave: string; modulo: string; descripcion: string }[] = [
     modulo: 'notificaciones',
     descripcion: 'Recibir los avisos dirigidos a Recursos Humanos (solicitudes, incapacidades, cambios en expedientes)',
   },
+  // Talent Pool (13/10): solo Recursos Humanos ve los candidatos.
+  { clave: 'talentPool.ver', modulo: 'talentPool', descripcion: 'Consultar los candidatos del Talent Pool y su curriculum' },
+  {
+    clave: 'talentPool.administrar',
+    modulo: 'talentPool',
+    descripcion: 'Cambiar el estado de los candidatos, administrar las habilidades y contratar desde el Talent Pool',
+  },
 ];
 
 // ---------------------------------------------------------------------
@@ -158,6 +165,8 @@ const ROLES: { nombre: string; descripcion: string; permisos: string[] | 'todos'
       'horasExtra.registrar',
       'notificaciones.ver',
       'notificaciones.rrhh',
+      'talentPool.ver',
+      'talentPool.administrar',
     ],
   },
   {
@@ -177,6 +186,30 @@ const ROLES: { nombre: string; descripcion: string; permisos: string[] | 'todos'
     descripcion: 'Solo lectura de funcionarios y usuarios, sin ningún permiso de escritura (abre solo su propio expediente). Auditoría Interna.',
     permisos: ['funcionarios.ver', 'funcionarios.verTodos', 'expediente.ver', 'documentos.descargar', 'usuarios.ver', 'notificaciones.ver'],
   },
+];
+
+// Habilidades iniciales del Talent Pool; RRHH agrega mas con el uso.
+const HABILIDADES: { nombre: string; categoria: 'tecnica' | 'blanda' | 'idioma' | 'herramienta' }[] = [
+  { nombre: 'Atención al público', categoria: 'blanda' },
+  { nombre: 'Trabajo en equipo', categoria: 'blanda' },
+  { nombre: 'Liderazgo', categoria: 'blanda' },
+  { nombre: 'Comunicación escrita', categoria: 'blanda' },
+  { nombre: 'Resolución de problemas', categoria: 'blanda' },
+  { nombre: 'Manejo de conflictos', categoria: 'blanda' },
+  { nombre: 'Inglés', categoria: 'idioma' },
+  { nombre: 'Lengua de señas (LESCO)', categoria: 'idioma' },
+  { nombre: 'Microsoft Excel', categoria: 'herramienta' },
+  { nombre: 'Microsoft Word', categoria: 'herramienta' },
+  { nombre: 'Sistemas de información geográfica (SIG)', categoria: 'herramienta' },
+  { nombre: 'AutoCAD', categoria: 'herramienta' },
+  { nombre: 'Contabilidad', categoria: 'tecnica' },
+  { nombre: 'Gestión de proyectos', categoria: 'tecnica' },
+  { nombre: 'Contratación administrativa', categoria: 'tecnica' },
+  { nombre: 'Topografía', categoria: 'tecnica' },
+  { nombre: 'Mantenimiento de infraestructura', categoria: 'tecnica' },
+  { nombre: 'Licencia de conducir B1', categoria: 'tecnica' },
+  { nombre: 'Programación', categoria: 'tecnica' },
+  { nombre: 'Redacción de informes', categoria: 'tecnica' },
 ];
 
 const REGIMENES = [
@@ -338,6 +371,12 @@ async function main(): Promise<void> {
     });
   }
   console.log(`  Regimenes de vacaciones: ${REGIMENES.length}`);
+
+  // --- Habilidades del Talent Pool (si ya existe, no se toca) ---
+  for (const h of HABILIDADES) {
+    await prisma.habilidad.upsert({ where: { nombre: h.nombre }, update: {}, create: h });
+  }
+  console.log(`  Habilidades del Talent Pool: ${HABILIDADES.length}`);
 
   // --- Tipos de documento ---
   for (const tipo of TIPOS_DOCUMENTO) {

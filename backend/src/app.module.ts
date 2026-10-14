@@ -16,6 +16,7 @@ import { RolesModule } from './roles/roles.module.js';
 import { TiposDocumentoModule } from './tipos-documento/tipos-documento.module.js';
 import { MiCuentaModule } from './mi-cuenta/mi-cuenta.module.js';
 import { UsuariosModule } from './usuarios/usuarios.module.js';
+import { TalentPoolModule } from './talent-pool/talent-pool.module.js';
 import { VacacionesModule } from './vacaciones/vacaciones.module.js';
 import { AusenciasModule } from './ausencias/ausencias.module.js';
 import { SaludController } from './salud/salud.controller.js';
@@ -47,6 +48,8 @@ import { SaludController } from './salud/salud.controller.js';
     DocumentosModule,
     VacacionesModule,
     AusenciasModule,
+    // Talent Pool (Sprint 3, HU 38-41): registro publico y consulta de RRHH.
+    TalentPoolModule,
   ],
   controllers: [SaludController],
   providers: [

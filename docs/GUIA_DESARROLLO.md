@@ -673,10 +673,10 @@ queda atenuado, no hace nada, y el globo y el lector de pantalla dicen por qué.
 | Rama | Para qué |
 |---|---|
 | `main` | SINERGIA completo, para la Municipalidad de Palmares |
-| `piscinas` | Se creará a partir de `main` cuando el expediente esté terminado, sin el módulo de Talent Pool, para adaptarlo al proyecto de las piscinas municipales |
+| `piscinas-municipales` | Creada el 13/10 desde `Sprint-3` (con notificaciones y bitácora), **antes** del Talent Pool, para adaptarla al proyecto de las piscinas municipales |
 
-La idea es terminar primero todo lo del expediente, sacar la rama `piscinas` desde ahí y
-seguir con el Talent Pool en `main`.
+Las correcciones que sirvan a los dos sistemas se llevan a la rama de las piscinas con `cherry-pick` (no con
+`merge` de `Sprint-3`, que traería el Talent Pool).
 
 ---
 
@@ -936,3 +936,21 @@ El comando termina con error (código 1) si hubo archivos ilegibles o con error.
 - Avisos periódicos: `vacaciones/avisos-periodicos.service.ts`; no se repiten gracias a la columna
   `referencia` (la fecha del aniversario o la jefatura vieja).
 - Para que un aviso abra su trámite, la pantalla destino lee `?abrir=<id>` con `useAbrirDesdeEnlace`.
+
+## Talent Pool (Sprint 3)
+
+- Backend `backend/src/talent-pool/` (módulo aislado: la rama de las piscinas lo quita sin tocar nada más,
+  junto con la ruta y la opción del menú del frontend).
+- Público (`@Publico`): `GET /talent-pool/publico/formulario` (consentimiento vigente, profesiones,
+  habilidades, niveles; **ningún dato de personas**) y `POST /talent-pool/publico/registro` (multipart: campo
+  `datos` = JSON validado con `RegistroDeCandidatoDto`, campo `curriculum` = PDF opcional). Si la cédula ya
+  existe, **reemplaza todo**; la respuesta es la misma en los dos casos.
+- RRHH: `GET /talent-pool/candidatos` (filtros `busqueda, estado, profesionId, nivel, habilidades=a,b,
+  aniosExperiencia, conCurriculum, orden`), `GET /talent-pool/resumen`, `GET /talent-pool/opciones`,
+  `GET /talent-pool/candidatos/:id`, `GET …/:id/curriculum`, `PATCH …/:id` (estado y nota), `POST …/:id/eliminar`,
+  `GET …/:id/para-contratar`, `POST …/:id/contratar` (cuerpo de Registrar funcionario), `GET/POST/PATCH /talent-pool/habilidades`.
+- Contratar reutiliza `FuncionariosService.registrar(datos, quien, ip, alCrear)`: `alCrear` corre dentro de la
+  misma transacción (liga al candidato). El currículum se copia con `DocumentosService.registrarGenerado`.
+- El currículum se guarda cifrado en `archivos/candidatos/<id>/`. Es lo único que el sistema **borra** del
+  disco (reemplazo del registro o eliminación a pedido): `AlmacenCifradoService.eliminarDeCandidato`.
+- Variable nueva: `TALENT_POOL_ENVIOS_POR_IP` (por omisión 5 envíos cada 10 minutos).

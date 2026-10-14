@@ -28,8 +28,11 @@ export type AccionDeBitacora =
 
 /** Un movimiento que se va a anotar en la bitacora. */
 export interface MovimientoDeBitacora {
-  /** Quien lo hizo. Sale siempre de la sesion, nunca del cuerpo de la peticion. */
-  usuarioId: string;
+  /**
+   * Quien lo hizo. Sale siempre de la sesion, nunca del cuerpo de la peticion.
+   * null solo en acciones anonimas: el registro publico del Talent Pool (Ficha 32).
+   */
+  usuarioId: string | null;
 
   /** Tabla o concepto afectado: "usuario", "funcionario", "documento"... */
   entidad: string;

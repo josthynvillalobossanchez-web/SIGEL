@@ -26,7 +26,9 @@ export type ClaveDeNotificacion =
   | 'revisarJefatura'
   | 'vacacionesPorVencer'
   | 'vacacionesSobreElTope'
-  | 'constanciaFallida';
+  | 'constanciaFallida'
+  | 'candidatoRegistrado'
+  | 'curriculumNoCopiado';
 
 export interface Aviso {
   clave: ClaveDeNotificacion;

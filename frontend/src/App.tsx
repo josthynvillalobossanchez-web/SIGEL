@@ -2,6 +2,7 @@
  * Mapa de rutas de la aplicacion.
  *
  *   Sin sesion:           /iniciar-sesion, /recuperar-contrasena
+ *   Publico (con o sin):  /trabaje-con-nosotros   formulario del Talent Pool (sin cuenta, por cedula)
  *   Contrasena temporal:  /primer-ingreso
  *   Con sesion (marco):   /, /mi-cuenta y "no encontrada", mas:
  *     /funcionarios                              lista (ventanas: ficha, salida, reingreso)
@@ -26,6 +27,7 @@
  *     /bandeja                                   solicitudes que le toca resolver a la jefatura
  *     /solicitudes, /solicitudes/nueva           todas las solicitudes y registrar una a nombre de otra persona (RRHH)
  *     /feriados                                  feriados y dias no laborables (RRHH)
+ *     /talent-pool                               candidatos del Talent Pool, perfil, estados, habilidades y contratar (RRHH)
  *
  * Regla (26/09): consultar = ventana; crear o editar = pagina aparte por
  * pasos, con su subseccion en el menu (diseno/menu.ts). El expediente es la
@@ -70,6 +72,8 @@ import { Notificaciones } from './paginas/notificaciones/Notificaciones';
 import { Bitacora } from './paginas/bitacora/Bitacora';
 import { Feriados } from './paginas/vacaciones/Feriados';
 import { PaginaNoEncontrada } from './paginas/SinPermiso';
+import { RegistroPublico } from './paginas/talentPool/RegistroPublico';
+import { TalentPool } from './paginas/talentPool/TalentPool';
 import { GestorDeAyudas } from './componentes/Ayudas';
 
 /** /usuarios/:id -> /usuarios?ver=:id  y  /roles/:id -> /roles?rol=:id */
@@ -324,9 +328,20 @@ export function App() {
                   </ConPermisos>
                 }
               />
+              <Route
+                path="/talent-pool"
+                element={
+                  <ConPermisos permisos={['talentPool.ver']}>
+                    <TalentPool />
+                  </ConPermisos>
+                }
+              />
               <Route path="*" element={<PaginaNoEncontrada />} />
             </Route>
           </Route>
+
+          {/* Publico, con o sin sesion: formulario del Talent Pool. */}
+          <Route path="/trabaje-con-nosotros" element={<RegistroPublico />} />
         </Routes>
       </SesionProveedor>
     </BrowserRouter>

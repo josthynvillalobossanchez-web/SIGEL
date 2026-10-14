@@ -95,6 +95,12 @@ const TRAZOS = {
   ),
   mas: <path d="M12 5v14M5 12h14" />,
   menos: <path d="M5 12h14" />,
+  maletin: (
+    <>
+      <rect x="3" y="7" width="18" height="13" rx="2" />
+      <path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M3 13h18" />
+    </>
+  ),
   editar: (
     <>
       <path d="M11 4H4v16h16v-7" />
