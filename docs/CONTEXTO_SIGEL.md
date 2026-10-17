@@ -1110,3 +1110,12 @@ son de revisión con Joseph**. Si pide otra semana, seguir ese mismo formato.
 - Filtro de habilidades sin límite. Estudios y experiencia agregados con todos sus campos obligatorios
   (incluidas funciones y «Hasta» salvo trabajo actual). Currículum obligatorio.
 - El nivel de estudio sigue siendo lista fija (lo necesita el filtro «nivel mínimo»); la profesión es catálogo.
+
+### Decisiones del 17/10/2026 (Josthyn, despliegue)
+
+- Sprint 3 ya está en `main` (PR hecho). Se dockeriza **ahora** (CONTEXTO §2: "al final, antes del
+  despliegue"): un solo contenedor `sinergia` (interfaz + API + HTTPS, sin proxy) junto a `sigel-mysql`,
+  con el perfil `servidor` del `docker-compose.yml`. Detalle en GUIA §11. Despliegue previsto el lunes
+  19/10 en la noche, por AnyDesk.
+- `npm audit` en 0 en los dos proyectos: Prisma 7.10.1 (arrastra mariadb, mysql2 y deepmerge-ts
+  corregidos) y nodemailer 10.1.2 (único cambio que rompe: pide Node 20 o más; se usa Node 24).

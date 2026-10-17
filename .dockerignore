@@ -1,0 +1,32 @@
+# Lo que NUNCA entra a la imagen de SINERGIA.
+# Secretos: el .env se entrega al contenedor al arrancar (env_file), no se copia.
+**/.env
+**/.env.*
+!**/.env.example
+**/*.pem
+**/*.key
+**/*.crt
+**/*.pfx
+**/*.csr
+certificados-bd/
+certificados-https/
+secrets/
+
+# Datos: se montan como carpetas del servidor (TI los respalda).
+backend/archivos/
+backend/registros/
+
+# Se generan dentro de la imagen.
+**/node_modules/
+**/dist/
+backend/src/generated/
+**/*.tsbuildinfo
+**/*.log
+
+# No hacen falta para ejecutar.
+.git/
+docs/
+**/.vscode/
+**/.idea/
+docker-compose*.yml
+Dockerfile

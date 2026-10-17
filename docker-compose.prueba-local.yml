@@ -1,0 +1,23 @@
+# Para PROBAR el contenedor de SINERGIA en la PC de desarrollo (no en el servidor).
+# Usa el backend/.env de desarrollo (sin HTTPS ni TLS de base) y queda en
+#   http://localhost:8443
+# Se usa junto con el docker-compose.yml (desde la carpeta SIGEL):
+#   docker compose -f docker-compose.yml -f docker-compose.prueba-local.yml --profile servidor up -d --build
+# Para apagarlo:
+#   docker compose -f docker-compose.yml -f docker-compose.prueba-local.yml --profile servidor stop sinergia
+# Pasos: docs/GUIA_DESARROLLO.md, seccion 11.5.
+services:
+  sinergia:
+    environment:
+      # Sin certificados en la PC: HTTP solo en esta maquina.
+      CERTIFICADO_HTTPS: ""
+      LLAVE_HTTPS: ""
+      BD_TLS_CA: ""
+      ORIGEN_FRONTEND: http://localhost:8443
+      COOKIE_SEGURA: "false"
+    ports: !override
+      - "127.0.0.1:8443:8443"
+    volumes: !override
+      - ./backend/archivos:/app/backend/archivos
+      - ./backend/registros:/app/backend/registros
+      - ./backend/contenido:/app/backend/contenido:ro

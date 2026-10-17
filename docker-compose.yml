@@ -13,5 +13,42 @@ services:
     volumes:
       - sigel_mysql_data:/var/lib/mysql
 
+  # SINERGIA completo (interfaz + API + HTTPS). Solo en el servidor: en desarrollo
+  # "docker compose up -d" sigue levantando unicamente la base de datos.
+  #   docker compose --profile servidor up -d --build
+  # Pasos: docs/GUIA_DESARROLLO.md, seccion 11.
+  sinergia:
+    profiles: ["servidor"]
+    build: .
+    image: sinergia:latest
+    container_name: sinergia
+    restart: unless-stopped
+    depends_on:
+      - mysql
+    # Las mismas variables de backend/.env del servidor (GUIA 10.3). No se copian a la imagen.
+    env_file:
+      - ./backend/.env
+    # Lo que cambia por estar dentro de Docker (tiene prioridad sobre backend/.env):
+    environment:
+      BD_SERVIDOR_CONTENEDOR: "mysql:3306"
+      BD_TLS_CA: /certificados/bd/ca.pem
+      CERTIFICADO_HTTPS: /certificados/https/certificado.pem
+      LLAVE_HTTPS: /certificados/https/llave.pem
+      PUERTO: "8443"
+      RUTA_FRONTEND: /app/frontend/dist
+      RUTA_ARCHIVOS: /app/backend/archivos
+      RUTA_REGISTROS: /app/backend/registros
+    ports:
+      - "443:8443"
+    volumes:
+      # Datos que TI respalda: quedan en las mismas carpetas de siempre del servidor.
+      - ./backend/archivos:/app/backend/archivos
+      - ./backend/registros:/app/backend/registros
+      # Textos (consentimiento del Talent Pool): se cambian sin reconstruir la imagen.
+      - ./backend/contenido:/app/backend/contenido:ro
+      # Certificados (fuera de git).
+      - ./certificados-https:/certificados/https:ro
+      - ./certificados-bd/ca.pem:/certificados/bd/ca.pem:ro
+
 volumes:
   sigel_mysql_data:
