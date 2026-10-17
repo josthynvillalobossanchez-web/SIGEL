@@ -1,0 +1,4 @@
+# Los scripts que corren dentro de Docker (Linux) siempre con fin de linea LF,
+# aunque el repositorio se clone en Windows.
+*.sh text eol=lf
+Dockerfile text eol=lf

@@ -52,6 +52,8 @@ docker-compose.override.yml
 *.csr
 # Certificados de la base de datos en el servidor (docs/GUIA_DESARROLLO.md, seccion 10)
 certificados-bd/
+# Certificado HTTPS del subdominio en el servidor (GUIA, seccion 11)
+certificados-https/
 
 # Archivos sensibles
 secrets/

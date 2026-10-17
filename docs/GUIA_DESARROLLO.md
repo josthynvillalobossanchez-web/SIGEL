@@ -734,7 +734,8 @@ backend siempre se arranca **desde esa carpeta**.
 ### 10.2 Base de datos (Docker + TLS)
 
 MySQL corre en Docker igual que en desarrollo. Para TLS hace falta un certificado que traiga
-el nombre del servidor (`127.0.0.1` y `localhost`). **El que MySQL genera solo al arrancar no
+el nombre del servidor: `127.0.0.1` y `localhost` (fuera de Docker) y `mysql` / `sigel-mysql` (el
+nombre con el que SINERGIA la busca cuando corre en su contenedor, sección 11). **El que MySQL genera solo al arrancar no
 sirve**: no trae ese nombre y SINERGIA lo rechaza (probado el 30/09). Se genera así, en **Git Bash**,
 dentro de la carpeta `SIGEL` (la variable `MSYS_NO_PATHCONV=1` evita que Git Bash cambie el
 `/CN=`):
@@ -744,7 +745,7 @@ mkdir certificados-bd && cd certificados-bd
 export MSYS_NO_PATHCONV=1
 openssl req -x509 -newkey rsa:2048 -nodes -days 3650 -subj "/CN=SINERGIA BD CA" -keyout ca-key.pem -out ca.pem
 openssl req -newkey rsa:2048 -nodes -subj "/CN=127.0.0.1" -keyout server-key.pem -out server.csr
-printf "subjectAltName=IP:127.0.0.1,DNS:localhost" > san.txt
+printf "subjectAltName=IP:127.0.0.1,DNS:localhost,DNS:mysql,DNS:sigel-mysql" > san.txt
 openssl x509 -req -in server.csr -CA ca.pem -CAkey ca-key.pem -CAcreateserial -days 825 -extfile san.txt -out server-cert.pem
 openssl verify -CAfile ca.pem server-cert.pem      # debe decir: OK
 ```
@@ -815,8 +816,8 @@ Al arrancar, los registros dicen la dirección (`https://...`), de qué carpeta 
 interfaz y dónde quedan los registros. Antes de arrancar, revisar que nada más use el puerto
 443 (`netstat -ano | findstr :443`): ni IIS ni el Nginx instalado.
 
-Mientras se dockerizan frontend y backend (queda para el final, ver CONTEXTO §2), TI deja el
-proceso corriendo como servicio de Windows con la herramienta que prefiera.
+Esta forma (sin Docker para SINERGIA) queda como respaldo. **La forma de desplegar es la de la
+sección 11**: SINERGIA en su propio contenedor, que se reinicia solo con Docker.
 
 ### 10.5 Correo (cuenta de Gmail)
 
@@ -924,6 +925,157 @@ El comando termina con error (código 1) si hubo archivos ilegibles o con error.
   aceptan PDF, JPG y PNG, y se comprueba que el contenido real sea de ese formato, pero un
   antivirus del servidor es decisión de TI.
 - La foto anterior y los documentos dados de baja **no se borran** del disco (baja lógica).
+
+## 11. SINERGIA en Docker (despliegue, 17/10/2026)
+
+Todo SINERGIA (interfaz + API + HTTPS) corre en **un contenedor**, `sinergia`, junto al de la base
+(`sigel-mysql`), con el mismo `docker-compose.yml` de siempre. Sigue valiendo lo de la sección 10:
+sin proxy inverso, HTTPS directo, base con TLS, mismas carpetas y mismo `backend/.env`.
+
+| Archivo (raíz de `SIGEL`) | Para qué |
+|---|---|
+| `Dockerfile` | Receta de la imagen: compila la interfaz y el backend y deja solo lo necesario para correr. |
+| `.dockerignore` | Lo que **nunca** entra a la imagen: `.env`, certificados, `archivos/`, `registros/`, `docs/`, `.git`. |
+| `docker-compose.yml` | Servicio nuevo `sinergia` con el perfil `servidor`: en desarrollo `docker compose up -d` sigue levantando **solo** la base. |
+| `backend/docker/ejecutar.sh` | Punto de entrada: cambia **solo** servidor y puerto de `DATABASE_URL` (`127.0.0.1:3307` → `mysql:3306`), aplica migraciones y arranca. |
+| `.gitattributes` | Los `.sh` siempre con fin de línea LF (si no, Linux no los ejecuta). |
+
+**Qué hace el contenedor al arrancar:** `prisma migrate deploy` (solo aplica las migraciones que
+falten, no borra datos) y luego SINERGIA. Si una migración falla, no arranca y lo dice en
+`docker compose logs sinergia`.
+
+**Qué queda fuera del contenedor** (en el servidor, y TI lo respalda como antes):
+
+| En el servidor | Dentro del contenedor |
+|---|---|
+| `backend\.env` | Se entrega como variables al arrancar (`env_file`); no se copia a la imagen |
+| `backend\archivos\` | `/app/backend/archivos` (documentos cifrados) |
+| `backend\registros\` | `/app/backend/registros` (logs) |
+| `backend\contenido\` | `/app/backend/contenido` (solo lectura: el consentimiento se cambia sin reconstruir) |
+| `certificados-https\certificado.pem` y `llave.pem` | Certificado del subdominio (de TI) |
+| `certificados-bd\ca.pem` | Autoridad del certificado de la base (sección 10.2) |
+
+Las rutas de esas variables las fija el `docker-compose.yml` (tienen prioridad sobre el `.env`), así
+que en `backend\.env` se pueden dejar como están. El contenedor escucha en 8443 y Docker lo publica
+en el **443** del servidor.
+
+### 11.1 Primera vez en el servidor (por AnyDesk)
+
+1. **Código:** en la VM, `git clone` del repositorio (o `git pull` en `main` si ya está). Debe ser `main`.
+2. **Puerto 443 libre:** `netstat -ano | findstr :443`. Si sale algo (IIS o el Nginx instalado), TI lo
+   detiene; si no, el contenedor no puede publicar el puerto.
+3. **Certificado de la base con el nombre `mysql`:** si los `.pem` de `certificados-bd` se hicieron antes
+   del 17/10, repetir las tres últimas líneas de la sección 10.2 (`server.csr`, `san.txt`,
+   `server-cert.pem`) con el `san.txt` nuevo. La CA (`ca.pem`) es la misma. Luego
+   `docker compose restart mysql`.
+4. **Certificado HTTPS:** crear la carpeta `certificados-https` en la raíz de `SIGEL` y dejar ahí
+   `certificado.pem` (con la cadena completa) y `llave.pem` que entregue TI. Si lo entregan en `.pfx`:
+   ```
+   openssl pkcs12 -in sinergia.pfx -clcerts -nokeys -out certificado.pem
+   openssl pkcs12 -in sinergia.pfx -nocerts -nodes -out llave.pem
+   ```
+5. **`backend\.env` del servidor:** como en la sección 10.3. Con `BD_TLS=true`, `COOKIE_SEGURA=true`,
+   `ORIGEN_FRONTEND=https://<subdominio>`, `ARCHIVOS_LLAVE` nueva (paso 7) y `SEED_ADMIN_CONTRASENA`
+   vacía. Si algún valor tiene el signo `$`, se escribe `$$` (Docker Compose lo interpreta).
+6. **Construir la imagen** (tarda unos minutos; necesita internet):
+   ```
+   docker compose --profile servidor build
+   ```
+7. **Llave de archivos** (solo si todavía no existe en el `.env`):
+   ```
+   docker compose --profile servidor run --rm --no-deps sinergia npm run archivos:generar-llave
+   ```
+   Pegar la línea en `backend\.env` y **guardar la copia aparte** (sección 10.6).
+8. **Base al día y semilla** (solo la primera vez; `run` pasa por el mismo punto de entrada, así que
+   usa la conexión correcta):
+   ```
+   docker compose up -d mysql
+   docker compose --profile servidor run --rm sinergia npx prisma migrate deploy
+   docker compose --profile servidor run --rm sinergia npm run db:seed
+   ```
+   La semilla imprime **una sola vez** la contraseña del Súper Administrador: anotarla.
+9. **Perfil del Súper Administrador** (solo la primera vez), con el archivo fuera del repositorio:
+   ```
+   docker compose --profile servidor run --rm -v C:\ruta\perfil-super-administrador.json:/tmp/perfil.json:ro sinergia npm run db:perfil-super-administrador -- /tmp/perfil.json
+   ```
+10. **Arrancar:**
+    ```
+    docker compose --profile servidor up -d
+    docker compose logs -f sinergia
+    ```
+    Debe decir `API escuchando en https://...`, `Interfaz servida desde /app/frontend/dist`,
+    `Conexión establecida con MySQL` y, con Gmail, `Correo listo`. Ctrl+C sale de los logs (no apaga nada).
+11. **Probar** desde otra computadora: `https://<subdominio>/` (bienvenida), iniciar sesión, subir y
+    abrir un documento, y `https://<subdominio>/api/salud` (debe decir `"baseDeDatos":"conectada"`).
+
+### 11.2 Actualizar SINERGIA (cada versión nueva)
+
+```
+git pull
+docker compose --profile servidor up -d --build
+docker compose logs -f sinergia
+```
+
+Reconstruye la imagen, reemplaza el contenedor y al arrancar aplica las migraciones nuevas. Los
+documentos, registros y la base no se tocan (están fuera del contenedor). Antes de una versión con
+migraciones, respaldo de la base (TI).
+
+### 11.3 Comandos útiles
+
+| Comando | Qué hace |
+|---|---|
+| `docker compose --profile servidor ps` | Estado de los dos contenedores (`healthy` = SINERGIA responde) |
+| `docker compose logs -f sinergia` | Lo que está haciendo SINERGIA |
+| `docker compose restart sinergia` | Reiniciar (por ejemplo, después de cambiar `backend\.env`) |
+| `docker compose stop sinergia` | Apagar SINERGIA sin tocar la base |
+| `docker compose --profile servidor run --rm sinergia npm run contrasena:restablecer` | Herramientas del backend, con la misma conexión |
+
+Los dos contenedores tienen `restart: unless-stopped`: si la VM se reinicia, vuelven solos cuando
+arranca Docker Desktop. Para eso, en Docker Desktop → *Settings* → *General*: **Start Docker Desktop
+when you sign in** (y que la VM inicie sesión con esa cuenta), o instalar Docker como servicio si TI lo
+prefiere.
+
+### 11.5 Probar el contenedor en la PC de desarrollo
+
+Antes de llevarlo al servidor se prueba igual en la PC, con el `backend\.env` de desarrollo (sin
+certificados: HTTP solo en esa máquina). Lo agrega `docker-compose.prueba-local.yml`, que quita
+HTTPS y los certificados y publica en `http://localhost:8443`. Usa la **misma base de desarrollo**
+(`sigel-mysql`) y la misma carpeta `backend\archivos`, así que se ven los mismos datos.
+
+1. Abrir **Docker Desktop** y esperar a que diga que está corriendo (sin Docker abierto no funciona nada
+   de esto, tampoco en el servidor).
+2. Desde la carpeta `SIGEL` (PowerShell o CMD):
+   ```
+   docker compose up -d mysql
+   docker compose -f docker-compose.yml -f docker-compose.prueba-local.yml --profile servidor up -d --build
+   docker compose logs -f sinergia
+   ```
+   La primera vez tarda varios minutos (descarga Node y compila). Debe terminar con
+   `API escuchando en http://localhost:8443/api` y `Interfaz servida desde /app/frontend/dist`.
+3. Abrir `http://localhost:8443` y probar: bienvenida, iniciar sesión, Inicio, abrir un documento, Talent Pool.
+4. En Docker Desktop aparecen: en **Images**, `sinergia`; en **Containers**, el grupo `sigel` con
+   `sigel-mysql` y `sinergia`. Ahí también se ven los logs y se puede detener o arrancar.
+5. Para apagarlo (la base sigue):
+   ```
+   docker compose -f docker-compose.yml -f docker-compose.prueba-local.yml --profile servidor stop sinergia
+   ```
+   Para quitar el contenedor: `... rm -f sinergia` en lugar de `stop`. La imagen queda; se vuelve a
+   construir con `--build` cuando cambia el código.
+
+El backend de desarrollo (`npm run start:dev`, puerto 3000) y Vite (5173) pueden seguir corriendo al
+mismo tiempo: no chocan con el 8443.
+
+### 11.4 Si algo sale mal
+
+| Síntoma en `docker compose logs sinergia` | Causa probable |
+|---|---|
+| `self-signed certificate` / `Hostname/IP does not match` hacia la base | El certificado de la base no trae `mysql` (paso 3) o `ca.pem` no es el correcto |
+| `Para HTTPS hacen falta CERTIFICADO_HTTPS y LLAVE_HTTPS` / `ENOENT ... certificado.pem` | Falta la carpeta `certificados-https` o los nombres de archivo (paso 4) |
+| `bind: address already in use` al hacer `up` | Algo más usa el 443 (paso 2) |
+| El backend se detiene por la llave | `ARCHIVOS_LLAVE` vacía o de largo distinto a 32 bytes (sección 10.6) |
+| `Falta DATABASE_URL` | El contenedor no encontró `backend\.env` |
+| `container name "/sigel-mysql" is already in use` | Se corrió desde otra carpeta: los comandos van siempre desde la carpeta `SIGEL` con la que se creó la base (el nombre de la carpeta es el nombre del proyecto de Docker) |
+| Error de TLS solo en `prisma migrate deploy` | Revisar que `certificados-bd\ca.pem` sea la autoridad que firmó el certificado de la base; nunca se desactiva la verificación |
 
 ## Notificaciones (Sprint 3)
 
