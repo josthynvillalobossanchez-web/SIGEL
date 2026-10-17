@@ -73,7 +73,11 @@ export function GestorDeAyudas() {
       if (el && (e.target as Element).matches(':focus-visible')) mostrar(el);
     };
     const alTocar = (e: PointerEvent) => {
-      if (e.pointerType !== 'touch') return;
+      // Con mouse, el clic esconde la ayuda (p. ej. al abrir la campana no debe tapar el panel).
+      if (e.pointerType !== 'touch') {
+        if (actual.current) ocultar();
+        return;
+      }
       ultimoToque.current = Date.now();
       const el = (e.target as Element).closest?.(`${SELECTOR}[aria-disabled="true"], label${SELECTOR}`);
       if (!el) {

@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service.js';
+import type { Prisma } from '../generated/prisma/client.js';
 import { armarPagina, type PaginaDeResultados } from '../comun/dto/paginacion.dto.js';
 import type { ConsultarBitacoraDto } from './dto/consultar-bitacora.dto.js';
 
@@ -27,8 +28,11 @@ export type AccionDeBitacora =
 
 /** Un movimiento que se va a anotar en la bitacora. */
 export interface MovimientoDeBitacora {
-  /** Quien lo hizo. Sale siempre de la sesion, nunca del cuerpo de la peticion. */
-  usuarioId: string;
+  /**
+   * Quien lo hizo. Sale siempre de la sesion, nunca del cuerpo de la peticion.
+   * null solo en acciones anonimas: el registro publico del Talent Pool (Ficha 32).
+   */
+  usuarioId: string | null;
 
   /** Tabla o concepto afectado: "usuario", "funcionario", "documento"... */
   entidad: string;
@@ -119,7 +123,7 @@ export class BitacoraService {
      * vinieron. Poner "undefined" en un campo hace que Prisma lo ignore, asi
      * que no hacen falta consultas distintas para cada combinacion.
      */
-    const donde = {
+    const donde: Prisma.bitacoraCambioWhereInput = {
       usuarioId: filtros.usuarioId,
       entidad: filtros.entidad,
       registroAfectadoId: filtros.registroAfectadoId,
@@ -127,9 +131,23 @@ export class BitacoraService {
       accion: filtros.accion,
       fechaHora:
         filtros.desde || filtros.hasta
-          ? { gte: filtros.desde ? new Date(filtros.desde) : undefined, lte: filtros.hasta ? new Date(filtros.hasta) : undefined }
+          ? { gte: filtros.desde ? limiteDelDia(filtros.desde, 'inicio') : undefined, lte: filtros.hasta ? limiteDelDia(filtros.hasta, 'fin') : undefined }
           : undefined,
     };
+    // Cada palabra debe aparecer en la descripcion, el correo de quien lo hizo o el nombre de la persona afectada.
+    const palabras = (filtros.busqueda ?? '').trim().split(/\s+/).filter(Boolean).slice(0, 6);
+    if (palabras.length) {
+      donde.AND = palabras.map((p) => ({
+        OR: [
+          { descripcion: { contains: p } },
+          { usuario: { is: { correo: { contains: p } } } },
+          { funcionarioAfectado: { is: { nombre: { contains: p } } } },
+          { funcionarioAfectado: { is: { primerApellido: { contains: p } } } },
+          { funcionarioAfectado: { is: { segundoApellido: { contains: p } } } },
+          { funcionarioAfectado: { is: { cedula: { contains: p } } } },
+        ],
+      }));
+    }
 
     /**
      * Las dos consultas van juntas en una transaccion para que el total y la
@@ -155,12 +173,38 @@ export class BitacoraService {
           datosNuevos: true,
           // Del usuario solo su correo: jamas el hash de la contrasena ni
           // el resto de la fila.
-          usuario: { select: { id: true, correo: true } },
-          funcionarioAfectado: { select: { id: true, nombre: true, primerApellido: true } },
+          usuario: { select: { id: true, correo: true, funcionario: { select: { nombre: true, primerApellido: true } } } },
+          funcionarioAfectado: { select: { id: true, nombre: true, primerApellido: true, segundoApellido: true } },
         },
       }),
     ]);
 
     return armarPagina(movimientos, total, pagina, tamano);
   }
+
+  /**
+   * Opciones de los filtros de la pantalla de auditoria: las entidades que
+   * aparecen en la bitacora y las cuentas que hicieron algun movimiento.
+   */
+  async opciones(): Promise<{ entidades: string[]; usuarios: { id: string; correo: string; nombre: string | null }[] }> {
+    const [entidades, porUsuario] = await Promise.all([
+      this.prisma.bitacoraCambio.groupBy({ by: ['entidad'], orderBy: { entidad: 'asc' } }),
+      this.prisma.bitacoraCambio.groupBy({ by: ['usuarioId'], where: { usuarioId: { not: null } } }),
+    ]);
+    const cuentas = await this.prisma.usuario.findMany({
+      where: { id: { in: porUsuario.map((u) => u.usuarioId!).filter(Boolean) } },
+      select: { id: true, correo: true, funcionario: { select: { nombre: true, primerApellido: true } } },
+      orderBy: { correo: 'asc' },
+    });
+    return {
+      entidades: entidades.map((e) => e.entidad),
+      usuarios: cuentas.map((c) => ({ id: c.id, correo: c.correo, nombre: c.funcionario ? `${c.funcionario.nombre} ${c.funcionario.primerApellido}` : null })),
+    };
+  }
+}
+
+/** "2026-10-10" se toma como el dia completo en hora de Costa Rica; una fecha con hora se respeta. */
+function limiteDelDia(texto: string, cual: 'inicio' | 'fin'): Date {
+  if (/^\d{4}-\d{2}-\d{2}$/.test(texto)) return new Date(`${texto}T${cual === 'inicio' ? '00:00:00.000' : '23:59:59.999'}-06:00`);
+  return new Date(texto);
 }

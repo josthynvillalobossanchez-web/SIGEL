@@ -19,6 +19,7 @@ import { aFechaSola, hoyEnCostaRica, interpretarFechaSola } from '../comun/fecha
 import { ExpedientesService } from '../expedientes/expedientes.service.js';
 import type { Prisma } from '../generated/prisma/client.js';
 import { PrismaService } from '../prisma/prisma.service.js';
+import { NotificacionesService } from '../notificaciones/notificaciones.service.js';
 import type { ConsultarDocumentosDto, DarDeBajaDocumentoDto, EditarDocumentoDto, SubirDocumentoDto } from './dto/documentos.dto.js';
 
 /** Permisos de la gestion documental (ver seed.ts). */
@@ -134,7 +135,25 @@ export class DocumentosService {
     private readonly bitacora: BitacoraService,
     private readonly almacen: AlmacenCifradoService,
     private readonly expedientes: ExpedientesService,
+    private readonly notificaciones: NotificacionesService,
   ) {}
+
+  /**
+   * Aviso de un cambio en los documentos del expediente (decision 10/10): si la
+   * persona cambio lo suyo, a RRHH; si RRHH cambio lo de la persona, a ella.
+   */
+  private async avisarCambio(documentoId: string, quienActua: UsuarioAutenticado, que: (titulo: string) => string): Promise<void> {
+    const doc = await this.prisma.documento.findUnique({ where: { id: documentoId }, select: { funcionarioId: true, titulo: true } });
+    if (!doc) return;
+    await this.notificaciones.avisarCambioDeExpediente({
+      funcionarioId: doc.funcionarioId,
+      quienActua,
+      que: que(doc.titulo),
+      entidad: 'documento',
+      registroId: documentoId,
+      pestana: 'documentos',
+    });
+  }
 
   /* ================================================================ */
   /* Consultar                                                         */
@@ -321,6 +340,7 @@ export class DocumentosService {
         );
         return fila;
       });
+      await this.avisarCambio(creado.id, quienActua, (t) => `subió el documento «${t}» (${tipo.nombre})`);
       return await this.consultarUno(creado.id, quienActua);
     } catch (error) {
       // No quedo registrado: se quita el archivo recien guardado para no dejar huerfanos.
@@ -596,6 +616,7 @@ export class DocumentosService {
         tx,
       );
     });
+    await this.avisarCambio(documentoId, quienActua, (t) => `editó los datos del documento «${t}»`);
     return this.consultarUno(documentoId, quienActua);
   }
 
@@ -642,6 +663,7 @@ export class DocumentosService {
         tx,
       );
     });
+    await this.avisarCambio(documentoId, quienActua, (t) => `dio de baja el documento «${t}»${datos.motivo ? ` (${datos.motivo})` : ''}`);
     // Quien no puede ver bajas (la propia persona) ya no lo ve: solo se confirma.
     return this.puedeVerBajas(quienActua) ? this.consultarUno(documentoId, quienActua) : { id: documentoId, vigente: false };
   }
@@ -677,6 +699,7 @@ export class DocumentosService {
         tx,
       );
     });
+    await this.avisarCambio(documentoId, quienActua, (t) => `restauró el documento «${t}»`);
     return this.consultarUno(documentoId, quienActua);
   }
 

@@ -31,6 +31,13 @@ export class BitacoraController {
    * Exige "bitacora.ver", que por decision de la Municipalidad tiene
    * unicamente el Super Administrador.
    */
+  /** GET /api/bitacora/opciones  Entidades y cuentas para los filtros. */
+  @RequierePermisos('bitacora.ver')
+  @Get('opciones')
+  opciones(): Promise<{ entidades: string[]; usuarios: { id: string; correo: string; nombre: string | null }[] }> {
+    return this.bitacora.opciones();
+  }
+
   @RequierePermisos('bitacora.ver')
   @Get()
   consultar(@Query() filtros: ConsultarBitacoraDto): Promise<PaginaDeResultados<unknown>> {

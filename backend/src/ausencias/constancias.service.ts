@@ -3,6 +3,7 @@ import type { UsuarioAutenticado } from '../autenticacion/tipos.js';
 import { aFechaSola } from '../comun/fechas.js';
 import { DocumentosService } from '../documentos/documentos.service.js';
 import { PrismaService } from '../prisma/prisma.service.js';
+import { NotificacionesService } from '../notificaciones/notificaciones.service.js';
 import { DiasNoLaborablesService } from '../vacaciones/dias-no-laborables.service.js';
 import { PERMISO_ADMINISTRAR, VacacionesService } from '../vacaciones/vacaciones.service.js';
 import { generarConstanciaPdf } from './constancia-pdf.js';
@@ -48,6 +49,7 @@ export class ConstanciasService {
     private readonly documentos: DocumentosService,
     private readonly vacaciones: VacacionesService,
     private readonly feriados: DiasNoLaborablesService,
+    private readonly notificaciones: NotificacionesService,
   ) {}
 
   /** Genera la constancia; nunca lanza: devuelve true si quedo generada. */
@@ -122,6 +124,16 @@ export class ConstanciasService {
       await this.prisma.solicitud
         .updateMany({ where: { id: solicitudId, documentoGeneradoId: null }, data: { estadoDocumentoGenerado: 'fallido' } })
         .catch(() => undefined);
+      // RRHH se entera para generarla de nuevo (o subirla a mano).
+      const s = await this.prisma.solicitud.findUnique({ where: { id: solicitudId }, select: { consecutivo: true } }).catch(() => null);
+      await this.notificaciones.avisarARrhh({
+        clave: 'constanciaFallida',
+        titulo: 'No se pudo generar una constancia',
+        mensaje: `La constancia de la solicitud ${s?.consecutivo ?? ''} no se pudo generar. Ábrala y use «Generar de nuevo».`,
+        entidad: 'solicitud',
+        registroId: solicitudId,
+        enlace: `/solicitudes?abrir=${solicitudId}`,
+      });
       return false;
     }
   }

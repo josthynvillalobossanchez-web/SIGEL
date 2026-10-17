@@ -7,8 +7,9 @@
  * La persona elige verlas en tarjetas o en lista compacta.
  */
 import { useMemo, useState } from 'react';
+import { useAbrirDesdeEnlace } from '../../utilidades/useAbrirDesdeEnlace';
 import { Link } from 'react-router';
-import { consultarBandeja, consultarCalendario, type EstadoDeSolicitud, type SolicitudDeLista } from '../../api/vacaciones';
+import { consultarBandeja, consultarCalendario, consultarSolicitud, type EstadoDeSolicitud, type SolicitudDeLista } from '../../api/vacaciones';
 import { Icono } from '../../componentes/Icono';
 import { Mensaje } from '../../componentes/Mensaje';
 import { Paginacion } from '../../componentes/Paginacion';
@@ -33,6 +34,8 @@ export function BandejaDeJefatura() {
 
   const lista = useConsulta(() => consultarBandeja({ estado, pagina, tamano: 10 }), [estado, pagina]);
   const [abierta, setAbierta] = useState<SolicitudDeLista | null>(null);
+  // Desde una notificacion (?abrir=<id>) se abre la solicitud directamente.
+  useAbrirDesdeEnlace(consultarSolicitud, setAbierta);
   const [aviso, setAviso] = useState<string | null>(null);
   const [forma, setForma] = usePreferencia('forma-bandeja', FORMAS, 'tarjetas');
 

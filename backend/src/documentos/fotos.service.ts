@@ -5,6 +5,7 @@ import { detectarFormato, FORMATOS, TAMANO_MAXIMO_FOTO, validarArchivo, type Arc
 import { BitacoraService } from '../bitacora/bitacora.service.js';
 import { alcanzaATodos, FuncionariosService } from '../funcionarios/funcionarios.service.js';
 import { PrismaService } from '../prisma/prisma.service.js';
+import { NotificacionesService } from '../notificaciones/notificaciones.service.js';
 
 /**
  * Fotografia de perfil (pendiente 13).
@@ -25,6 +26,7 @@ export class FotosService {
     private readonly bitacora: BitacoraService,
     private readonly almacen: AlmacenCifradoService,
     private readonly funcionarios: FuncionariosService,
+    private readonly notificaciones: NotificacionesService,
   ) {}
 
   /** Devuelve la foto descifrada y su tipo, o 404 si no tiene. */
@@ -73,6 +75,7 @@ export class FotosService {
       await this.almacen.descartarRecienGuardado(ruta);
       throw error;
     }
+    await this.notificaciones.avisarCambioDeExpediente({ funcionarioId, quienActua, que: 'cambió la fotografía de perfil', entidad: 'funcionario' });
     return { tieneFoto: true };
   }
 
@@ -99,6 +102,7 @@ export class FotosService {
         tx,
       );
     });
+    await this.notificaciones.avisarCambioDeExpediente({ funcionarioId, quienActua, que: 'quitó la fotografía de perfil', entidad: 'funcionario' });
     return { tieneFoto: false };
   }
 

@@ -145,6 +145,14 @@ export const MENU: GrupoDeMenu[] = [
           { texto: 'Subir documento', patron: /^\/funcionarios\/[^/]+\/expediente\/documentos\/nuevo$/, permisos: ['documentos.crear'] },
         ],
       },
+      {
+        // Sprint 3 (HU 38-41): solo Recursos Humanos ve los candidatos.
+        texto: 'Talent Pool',
+        ruta: '/talent-pool',
+        icono: 'maletin',
+        permisos: ['talentPool.ver'],
+        descripcion: 'Candidatos que se registraron en «Trabaje con nosotros»: buscar por profesión, estudios o habilidades y contratarlos.',
+      },
     ],
   },
   {
@@ -173,6 +181,13 @@ export const MENU: GrupoDeMenu[] = [
           { texto: 'Crear rol', ruta: '/roles/nuevo', permisos: ['roles.editar'] },
           { texto: 'Editar rol', patron: /^\/roles\/[^/]+\/editar$/, permisos: ['roles.editar'] },
         ],
+      },
+      {
+        texto: 'Bitácora de auditoría',
+        ruta: '/bitacora',
+        icono: 'lista',
+        permisos: ['bitacora.ver'],
+        descripcion: 'Quién hizo qué en SINERGIA y cuándo, con el antes y el después de cada cambio. Solo lectura.',
       },
     ],
   },
@@ -216,6 +231,13 @@ export const MENU: GrupoDeMenu[] = [
         requiereFuncionario: true,
         descripcion: 'Su expediente laboral: información personal y laboral, documentos e historial de movimientos.',
         subopciones: [{ texto: 'Subir documento', patron: /^\/mi-expediente\/documentos\/nuevo$/, permisos: ['documentos.crear'] }],
+      },
+      {
+        texto: 'Notificaciones',
+        ruta: '/notificaciones',
+        icono: 'campana',
+        permisos: ['notificaciones.ver'],
+        descripcion: 'Los avisos de los trámites que le corresponden: pendientes de leer y anteriores.',
       },
       { texto: 'Mi cuenta', ruta: '/mi-cuenta', icono: 'cuenta', permisos: [], descripcion: 'Sus datos personales, sus datos laborales, sus roles y su contraseña.' },
     ],

@@ -1,0 +1,72 @@
+/* Notificaciones (Sprint 3): campana de la barra superior y pagina /notificaciones. */
+
+/* --- Campana --- */
+.campana { position: relative; }
+.campana-btn { position: relative; }
+.campana-globo { position: absolute; top: -4px; right: -4px; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 9px;
+  /* Rojo fijo con texto blanco (contraste AA en los dos temas): la barra superior siempre es oscura. */
+  background: #C62828; color: #fff; font-size: 11px; font-weight: 800; line-height: 18px; text-align: center;
+  border: 2px solid var(--barra); }
+.campana-panel { position: absolute; right: 0; top: calc(100% + 10px); width: min(380px, calc(100vw - 24px)); max-height: min(520px, calc(100vh - 90px));
+  display: flex; flex-direction: column; background: var(--card); color: var(--texto); border: 1px solid var(--borde);
+  border-radius: var(--radio-lg, 14px); box-shadow: var(--sombra-lg); z-index: 60; overflow: hidden; }
+.campana-cab { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 12px 14px; border-bottom: 1px solid var(--borde); }
+.campana-cab b { font-size: 15px; }
+.campana-lista { list-style: none; margin: 0; padding: 4px; overflow-y: auto; }
+.campana-vacio { margin: 0; padding: 24px 16px; color: var(--texto-sec); text-align: center; font-size: 14px; }
+.campana-pie { padding: 10px 14px; border-top: 1px solid var(--borde); display: flex; justify-content: flex-end; }
+@media (max-width: 600px) { .campana-panel { position: fixed; left: 12px; right: 12px; top: 64px; width: auto; } }
+
+/* --- Un aviso (lo usan la campana y la pagina) --- */
+.notif-item { width: 100%; display: flex; gap: 10px; align-items: flex-start; text-align: left; padding: 10px; border: 0;
+  border-radius: var(--radio-md); background: transparent; color: var(--texto); font: inherit; cursor: pointer; }
+.notif-item:hover { background: var(--neutro-bg); }
+.notif-item:focus-visible { outline: 3px solid var(--foco); outline-offset: -2px; }
+.notif-punto { flex: none; width: 9px; height: 9px; margin-top: 6px; border-radius: 50%; background: var(--accion); }
+.notif-item[data-leida='si'] .notif-punto { background: transparent; border: 1.5px solid var(--borde-fuerte); }
+.notif-texto { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.notif-texto b { font-size: 14px; }
+.notif-item[data-leida='si'] .notif-texto b { font-weight: 600; color: var(--texto-sec); }
+.notif-mensaje { font-size: 13.5px; color: var(--texto-sec); line-height: 1.45; }
+.notif-texto small { font-size: 12px; color: var(--texto-sec); }
+.campana-lista .notif-mensaje { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+
+/* --- Pagina --- */
+.lista-notificaciones { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.lista-notificaciones li { display: flex; align-items: flex-start; gap: 6px; background: var(--card); border: 1px solid var(--borde);
+  border-radius: var(--radio-lg, 14px); padding: 6px; }
+.lista-notificaciones li[data-leida='no'] { border-left: 4px solid var(--accion); }
+.lista-notificaciones .notif-item { padding: 10px 12px; }
+.notif-cab { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.notif-marcar { flex: none; margin: 8px 6px 0 0; }
+.segmentado-cuenta { display: inline-block; margin-left: 6px; min-width: 20px; padding: 0 6px; border-radius: 10px; background: var(--accion);
+  color: var(--accion-txt); font-size: 12px; line-height: 20px; text-align: center; }
+
+/* Bitacora de auditoria (Sprint 3, HU 46) */
+.tabla-bitacora .celda-fecha { white-space: nowrap; font-variant-numeric: tabular-nums; }
+.tabla-bitacora .celda-descripcion { max-width: 420px; color: var(--texto-sec); }
+.tabla-bitacora .chip { white-space: nowrap; }
+.chip.accion-crear { background: var(--exito-bg); color: var(--exito-fg); }
+.chip.accion-modificar { background: var(--info-bg); color: var(--info-fg); }
+.chip.accion-eliminar, .chip.accion-rechazar, .chip.accion-cancelar { background: var(--error-bg); color: var(--error-fg); }
+.chip.accion-aprobar { background: var(--exito-bg); color: var(--exito-fg); }
+.chip.accion-consultar, .chip.accion-descargar { background: var(--neutro-bg); color: var(--neutro-fg); }
+.chips-filtro { display: flex; gap: 8px; flex-wrap: wrap; margin: -4px 0 12px; }
+.chips-filtro .chip { display: inline-flex; align-items: center; gap: 6px; border: 0; cursor: pointer; font: inherit; font-size: 13px; }
+.codigo-registro { font-family: ui-monospace, SFMono-Regular, Consolas, monospace; font-size: 11.5px; color: var(--texto-sec); margin-left: 6px; word-break: break-all; }
+.detalle-bitacora { margin-bottom: 14px; }
+.antes-despues table th[scope='row'] { font-weight: 600; text-align: left; white-space: nowrap; }
+.antes-despues td { word-break: break-word; }
+/* La tabla de la bitacora no se sale: columnas fijas y el texto se parte. */
+@media (min-width: 900px) {
+  .tabla-bitacora { table-layout: fixed; width: 100%; }
+  .tabla-bitacora th:nth-child(1) { width: 150px; }
+  .tabla-bitacora th:nth-child(2) { width: 17%; }
+  .tabla-bitacora th:nth-child(3) { width: 110px; }
+  .tabla-bitacora th:nth-child(4) { width: 13%; }
+  .tabla-bitacora th:nth-child(5) { width: 15%; }
+  .tabla-bitacora td { overflow-wrap: anywhere; }
+  .tabla-bitacora .celda-descripcion { max-width: none; }
+}
+.detalle-bitacora .detalle-codigo dt, .detalle-bitacora .detalle-codigo .codigo-registro { color: var(--texto-sec); }
+.detalle-bitacora .detalle-codigo .codigo-registro { margin-left: 0; }

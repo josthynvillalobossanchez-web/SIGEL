@@ -97,6 +97,19 @@ const PERMISOS: { clave: string; modulo: string; descripcion: string }[] = [
   },
   // Horas extra (09/10): solo un registro que lleva RRHH, sin aprobacion.
   { clave: 'horasExtra.registrar', modulo: 'horasExtra', descripcion: 'Registrar, consultar y anular las horas extra del personal' },
+  { clave: 'notificaciones.ver', modulo: 'notificaciones', descripcion: 'Ver y marcar como leídas sus propias notificaciones' },
+  {
+    clave: 'notificaciones.rrhh',
+    modulo: 'notificaciones',
+    descripcion: 'Recibir los avisos dirigidos a Recursos Humanos (solicitudes, incapacidades, cambios en expedientes)',
+  },
+  // Talent Pool (13/10): solo Recursos Humanos ve los candidatos.
+  { clave: 'talentPool.ver', modulo: 'talentPool', descripcion: 'Consultar los candidatos del Talent Pool y su curriculum' },
+  {
+    clave: 'talentPool.administrar',
+    modulo: 'talentPool',
+    descripcion: 'Cambiar el estado de los candidatos, administrar las habilidades y contratar desde el Talent Pool',
+  },
 ];
 
 // ---------------------------------------------------------------------
@@ -112,6 +125,7 @@ const AUTOSERVICIO = [
   'documentos.descargar',
   'documentos.editarPropio',
   'documentos.darDeBajaPropio',
+  'notificaciones.ver',
 ];
 
 const ROLES: { nombre: string; descripcion: string; permisos: string[] | 'todos' }[] = [
@@ -149,6 +163,10 @@ const ROLES: { nombre: string; descripcion: string; permisos: string[] | 'todos'
       'solicitudes.aprobar',
       'solicitudes.administrar',
       'horasExtra.registrar',
+      'notificaciones.ver',
+      'notificaciones.rrhh',
+      'talentPool.ver',
+      'talentPool.administrar',
     ],
   },
   {
@@ -166,8 +184,32 @@ const ROLES: { nombre: string; descripcion: string; permisos: string[] | 'todos'
   {
     nombre: 'Consulta',
     descripcion: 'Solo lectura de funcionarios y usuarios, sin ningún permiso de escritura (abre solo su propio expediente). Auditoría Interna.',
-    permisos: ['funcionarios.ver', 'funcionarios.verTodos', 'expediente.ver', 'documentos.descargar', 'usuarios.ver'],
+    permisos: ['funcionarios.ver', 'funcionarios.verTodos', 'expediente.ver', 'documentos.descargar', 'usuarios.ver', 'notificaciones.ver'],
   },
+];
+
+// Habilidades iniciales del Talent Pool; RRHH agrega mas con el uso.
+const HABILIDADES: { nombre: string; categoria: 'tecnica' | 'blanda' | 'idioma' | 'herramienta' }[] = [
+  { nombre: 'Atención al público', categoria: 'blanda' },
+  { nombre: 'Trabajo en equipo', categoria: 'blanda' },
+  { nombre: 'Liderazgo', categoria: 'blanda' },
+  { nombre: 'Comunicación escrita', categoria: 'blanda' },
+  { nombre: 'Resolución de problemas', categoria: 'blanda' },
+  { nombre: 'Manejo de conflictos', categoria: 'blanda' },
+  { nombre: 'Inglés', categoria: 'idioma' },
+  { nombre: 'Lengua de señas (LESCO)', categoria: 'idioma' },
+  { nombre: 'Microsoft Excel', categoria: 'herramienta' },
+  { nombre: 'Microsoft Word', categoria: 'herramienta' },
+  { nombre: 'Sistemas de información geográfica (SIG)', categoria: 'herramienta' },
+  { nombre: 'AutoCAD', categoria: 'herramienta' },
+  { nombre: 'Contabilidad', categoria: 'tecnica' },
+  { nombre: 'Gestión de proyectos', categoria: 'tecnica' },
+  { nombre: 'Contratación administrativa', categoria: 'tecnica' },
+  { nombre: 'Topografía', categoria: 'tecnica' },
+  { nombre: 'Mantenimiento de infraestructura', categoria: 'tecnica' },
+  { nombre: 'Licencia de conducir B1', categoria: 'tecnica' },
+  { nombre: 'Programación', categoria: 'tecnica' },
+  { nombre: 'Redacción de informes', categoria: 'tecnica' },
 ];
 
 const REGIMENES = [
@@ -175,13 +217,13 @@ const REGIMENES = [
     nombre: 'general',
     descripcion: '15 días hábiles los primeros 6 años de servicio y 20 días después.',
     periodosMaximosAcumulables: 2,
-    diasAvisoAntesDeVencer: 60,
+    diasAvisoAntesDeVencer: 30,
   },
   {
     nombre: 'anterior',
     descripcion: '30 días para los funcionarios amparados al régimen anterior.',
     periodosMaximosAcumulables: 2,
-    diasAvisoAntesDeVencer: 60,
+    diasAvisoAntesDeVencer: 30,
   },
 ];
 
@@ -320,13 +362,21 @@ async function main(): Promise<void> {
 
   // --- Regimenes de vacaciones ---
   for (const regimen of REGIMENES) {
+    // Si ya existe no se toca: el tope, el aviso y que pasa al superar el tope los
+    // decide RRHH en "Reglas de vacaciones" y el seed no debe deshacerlo.
     await prisma.regimenVacaciones.upsert({
       where: { nombre: regimen.nombre },
-      update: regimen,
-      create: regimen,
+      update: {},
+      create: { ...regimen, alSuperarElTope: 'avisar' },
     });
   }
   console.log(`  Regimenes de vacaciones: ${REGIMENES.length}`);
+
+  // --- Habilidades del Talent Pool (si ya existe, no se toca) ---
+  for (const h of HABILIDADES) {
+    await prisma.habilidad.upsert({ where: { nombre: h.nombre }, update: {}, create: h });
+  }
+  console.log(`  Habilidades del Talent Pool: ${HABILIDADES.length}`);
 
   // --- Tipos de documento ---
   for (const tipo of TIPOS_DOCUMENTO) {

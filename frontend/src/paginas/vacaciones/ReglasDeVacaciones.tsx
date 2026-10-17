@@ -13,7 +13,7 @@
  */
 import { useEffect, useMemo, useState } from 'react';
 import { textoDelError } from '../../api/cliente';
-import { consultarReglasDeVacaciones, guardarRegimen, type RegimenDeVacaciones, type TramoDeVacaciones } from '../../api/vacaciones';
+import { consultarReglasDeVacaciones, guardarRegimen, type AccionAlTope, type RegimenDeVacaciones, type TramoDeVacaciones } from '../../api/vacaciones';
 import { BotonIcono } from '../../componentes/Botones';
 import { Icono } from '../../componentes/Icono';
 import { Mensaje } from '../../componentes/Mensaje';
@@ -45,7 +45,7 @@ export function ReglasDeVacaciones() {
       <div className="pagina-cab">
         <div>
           <h1>Reglas de vacaciones</h1>
-          <p>Cuántos días se ganan por año de servicio en cada régimen, cuántos periodos se pueden acumular y cuándo se avisa que se perderían días. Los cambios rigen para los próximos aniversarios: lo ya ganado no cambia.</p>
+          <p>Cuántos días se ganan por año de servicio en cada régimen, cuántos periodos se pueden acumular, qué pasa al superar ese tope y con cuánta anticipación se avisa. Los cambios rigen para los próximos aniversarios: lo ya ganado no cambia.</p>
         </div>
       </div>
       {aviso && <Mensaje tipo="exito">{aviso}</Mensaje>}
@@ -54,7 +54,7 @@ export function ReglasDeVacaciones() {
       <div className="lista-regimenes">
         {lista.datos?.map((r) => (
           <TarjetaDeRegimen
-            key={r.id + resumenDeTramos(r.tramos) + r.periodosMaximosAcumulables + r.diasAvisoAntesDeVencer}
+            key={r.id + resumenDeTramos(r.tramos) + r.periodosMaximosAcumulables + r.diasAvisoAntesDeVencer + r.alSuperarElTope}
             regimen={r}
             alGuardar={(texto) => {
               setAviso(texto);
@@ -75,11 +75,12 @@ function TarjetaDeRegimen({ regimen, alGuardar }: { regimen: RegimenDeVacaciones
   const [filas, setFilas] = useState<FilaEditable[]>(() => filasDe(regimen));
   const [tope, setTope] = useState(String(regimen.periodosMaximosAcumulables));
   const [aviso, setAvisoDias] = useState(String(regimen.diasAvisoAntesDeVencer));
+  const [alSuperar, setAlSuperar] = useState<AccionAlTope>(regimen.alSuperarElTope);
   const [descripcion, setDescripcion] = useState(regimen.descripcion ?? '');
   const [confirmando, setConfirmando] = useState(false);
   const [ocupado, setOcupado] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  useEffect(() => setError(null), [filas, tope, aviso, descripcion]);
+  useEffect(() => setError(null), [filas, tope, aviso, alSuperar, descripcion]);
 
   // Tramos que resultan de lo escrito (el "desde" se calcula) y sus problemas.
   const { tramos, problemas } = useMemo(() => {
@@ -98,7 +99,7 @@ function TarjetaDeRegimen({ regimen, alGuardar }: { regimen: RegimenDeVacaciones
     const t = Number(tope);
     if (!Number.isInteger(t) || t < 1 || t > 5) errores.push('El tope debe ser un número entero entre 1 y 5 periodos.');
     const a = Number(aviso);
-    if (!Number.isInteger(a) || a < 0 || a > 365) errores.push('El aviso debe ser un número entero entre 0 y 365 días.');
+    if (!Number.isInteger(a) || a < 20 || a > 365) errores.push('El aviso debe ser un número entero entre 20 y 365 días (al menos 20, para que alcance el tiempo de tomar las vacaciones).');
     return { tramos: lista, problemas: errores };
   }, [filas, tope, aviso]);
 
@@ -106,6 +107,7 @@ function TarjetaDeRegimen({ regimen, alGuardar }: { regimen: RegimenDeVacaciones
     resumenDeTramos(tramos) !== resumenDeTramos(regimen.tramos) ||
     Number(tope) !== regimen.periodosMaximosAcumulables ||
     Number(aviso) !== regimen.diasAvisoAntesDeVencer ||
+    alSuperar !== regimen.alSuperarElTope ||
     descripcion.trim() !== (regimen.descripcion ?? '');
 
   function cambiar(i: number, campo: keyof FilaEditable, valor: string) {
@@ -134,6 +136,7 @@ function TarjetaDeRegimen({ regimen, alGuardar }: { regimen: RegimenDeVacaciones
         descripcion: descripcion.trim(),
         periodosMaximosAcumulables: Number(tope),
         diasAvisoAntesDeVencer: Number(aviso),
+        alSuperarElTope: alSuperar,
         tramos,
       });
       setConfirmando(false);
@@ -207,15 +210,33 @@ function TarjetaDeRegimen({ regimen, alGuardar }: { regimen: RegimenDeVacaciones
           <label htmlFor={`tope-${regimen.id}`}>Tope de periodos acumulables</label>
           <input id={`tope-${regimen.id}`} type="number" min={1} max={5} value={tope} onChange={(e) => setTope(e.target.value)} aria-describedby={`tope-ayuda-${regimen.id}`} />
           <span className="ayuda" id={`tope-ayuda-${regimen.id}`}>
-            {topeEnDias > 0 ? `Con el último tramo, nadie acumula más de ${topeEnDias} días; lo que pase se pierde.` : 'Lo que pase del tope se pierde.'}
+            {topeEnDias > 0 ? `Con el último tramo, el tope es de ${topeEnDias} días.` : 'Lo que pase del tope se maneja como se elija abajo.'}
           </span>
         </div>
         <div className="campo">
           <label htmlFor={`aviso-${regimen.id}`}>Avisar con cuántos días de anticipación</label>
-          <input id={`aviso-${regimen.id}`} type="number" min={0} max={365} value={aviso} onChange={(e) => setAvisoDias(e.target.value)} />
-          <span className="ayuda">Antes del aniversario en que se perderían días.</span>
+          <input id={`aviso-${regimen.id}`} type="number" min={20} max={365} value={aviso} onChange={(e) => setAvisoDias(e.target.value)} />
+          <span className="ayuda">Antes del aniversario en que se pasaría el tope. Mínimo 20 días; se recomienda un mes (30).</span>
         </div>
       </div>
+
+      <fieldset className="opciones-tope">
+        <legend>Al superar el tope</legend>
+        <label className={alSuperar === 'avisar' ? 'opcion-tope elegida' : 'opcion-tope'}>
+          <input type="radio" name={`al-superar-${regimen.id}`} value="avisar" checked={alSuperar === 'avisar'} onChange={() => setAlSuperar('avisar')} />
+          <span>
+            <b>Solo avisar</b> <small className="chip chip-neutro">Por omisión</small>
+            <small>Los días se siguen acumulando. Se avisa antes a la persona, a su jefatura y a Recursos Humanos para que programen vacaciones.</small>
+          </span>
+        </label>
+        <label className={alSuperar === 'vencer' ? 'opcion-tope elegida' : 'opcion-tope'}>
+          <input type="radio" name={`al-superar-${regimen.id}`} value="vencer" checked={alSuperar === 'vencer'} onChange={() => setAlSuperar('vencer')} />
+          <span>
+            <b>Vencen los días</b>
+            <small>En cada aniversario, lo que pase del tope se pierde (queda como «días vencidos»). Se avisa antes igual.</small>
+          </span>
+        </label>
+      </fieldset>
 
       {problemas.length > 0 && huboCambios && (
         <Mensaje tipo="advert">
@@ -237,6 +258,7 @@ function TarjetaDeRegimen({ regimen, alGuardar }: { regimen: RegimenDeVacaciones
             setFilas(filasDe(regimen));
             setTope(String(regimen.periodosMaximosAcumulables));
             setAvisoDias(String(regimen.diasAvisoAntesDeVencer));
+            setAlSuperar(regimen.alSuperarElTope);
             setDescripcion(regimen.descripcion ?? '');
           }}
           data-ayuda="Volver a las reglas guardadas"
@@ -264,8 +286,14 @@ function TarjetaDeRegimen({ regimen, alGuardar }: { regimen: RegimenDeVacaciones
           ocupado={ocupado}
         >
           <p>
-            <b>{resumenDeTramos(tramos)}</b>; tope de {tope} {Number(tope) === 1 ? 'periodo' : 'periodos'}; aviso {aviso} días antes.
+            <b>{resumenDeTramos(tramos)}</b>; tope de {tope} {Number(tope) === 1 ? 'periodo' : 'periodos'}; aviso {aviso} días antes; al superar el tope,{' '}
+            <b>{alSuperar === 'vencer' ? 'vencen los días' : 'solo se avisa'}</b>.
           </p>
+          {alSuperar === 'vencer' && regimen.alSuperarElTope !== 'vencer' && (
+            <Mensaje tipo="advert">
+              Quien hoy tenga días por encima del tope los perderá en su próximo aniversario, salvo que los use antes. Puede volver a «Solo avisar» cuando quiera, pero los días que ya vencieron no regresan solos (Recursos Humanos puede devolverlos con un ajuste).
+            </Mensaje>
+          )}
           <p>
             Afecta a {regimen.funcionariosActivos} {regimen.funcionariosActivos === 1 ? 'persona' : 'personas'} desde su próximo aniversario. Lo que ya ganaron no cambia. El cambio queda en la bitácora.
           </p>

@@ -135,3 +135,16 @@ export function sumarAnios(fecha: Date, anios: number): Date {
   copia.setUTCFullYear(copia.getUTCFullYear() + anios);
   return copia;
 }
+
+/**
+ * "el 12 de octubre de 2026" o "del 12 al 16 de octubre de 2026" (fechas AAAA-MM-DD).
+ * Para los mensajes que lee la persona (notificaciones).
+ */
+export function rangoEnPalabras(desde: string, hasta: string): string {
+  const formato = (f: string, conAnio: boolean) =>
+    new Intl.DateTimeFormat('es-CR', { day: 'numeric', month: 'long', ...(conAnio ? { year: 'numeric' } : {}), timeZone: 'UTC' }).format(new Date(`${f}T00:00:00Z`));
+  if (desde === hasta) return `el ${formato(desde, true)}`;
+  const mismoAnio = desde.slice(0, 4) === hasta.slice(0, 4);
+  if (mismoAnio && desde.slice(5, 7) === hasta.slice(5, 7)) return `del ${Number(desde.slice(8))} al ${formato(hasta, true)}`;
+  return `del ${formato(desde, !mismoAnio)} al ${formato(hasta, true)}`;
+}

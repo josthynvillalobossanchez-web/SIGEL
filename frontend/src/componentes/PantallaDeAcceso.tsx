@@ -6,7 +6,9 @@
  * Mismo HTML que las vistas vLogin / vRecuperar / vPrimerIngreso del prototipo.
  */
 import type { ReactNode } from 'react';
+import { Link } from 'react-router';
 import { BotonTema } from './BotonTema';
+import { Icono } from './Icono';
 import logoClaro from '../recursos/logo-claro.png';
 import logoOscuro from '../recursos/logo-oscuro.png';
 import simboloSinergia from '../recursos/sinergia-simbolo.png';
@@ -17,11 +19,18 @@ interface PropiedadesDePantallaDeAcceso {
   children: ReactNode;
   /** Texto al pie, fuera de la tarjeta. */
   pie?: ReactNode;
+  /** Boton "Volver al inicio" (la bienvenida), arriba a la izquierda (17/10). */
+  volverAlInicio?: boolean;
 }
 
-export function PantallaDeAcceso({ subtitulo, children, pie }: PropiedadesDePantallaDeAcceso) {
+export function PantallaDeAcceso({ subtitulo, children, pie, volverAlInicio }: PropiedadesDePantallaDeAcceso) {
   return (
     <div className="acceso">
+      {volverAlInicio && (
+        <Link to="/" className="btn-icono-claro tp-volver acceso-volver" data-ayuda="Volver a la página de bienvenida">
+          <Icono nombre="volver" tamano={16} /> Volver al inicio
+        </Link>
+      )}
       <div className="acceso-barra">
         <BotonTema clase="btn-icono-claro btn-tema-acceso" />
       </div>

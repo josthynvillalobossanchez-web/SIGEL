@@ -47,6 +47,7 @@ export function PasoDatosPersonales({
   datos,
   poner,
   editando,
+  cedulaFija,
   listas,
   opciones,
   errorNacimiento,
@@ -55,6 +56,8 @@ export function PasoDatosPersonales({
   datos: Formulario;
   poner: Poner;
   editando: boolean;
+  /** Al contratar desde el Talent Pool: la cedula es la del candidato. */
+  cedulaFija?: boolean;
   listas: Listas;
   opciones: OpcionesDeFormulario;
   errorNacimiento: string | null;
@@ -71,13 +74,13 @@ export function PasoDatosPersonales({
               onChange={(e) => poner('cedula')(e.target.value)}
               placeholder="2-0678-0432"
               maxLength={25}
-              readOnly={editando}
-              aria-readonly={editando || undefined}
+              readOnly={editando || cedulaFija}
+              aria-readonly={editando || cedulaFija || undefined}
               aria-required={!editando || undefined}
               style={{ fontVariantNumeric: 'tabular-nums' }}
               autoComplete="off"
             />
-            <span className="ayuda">{editando ? 'No se puede cambiar.' : 'Con o sin guiones. También DIMEX o pasaporte.'}</span>
+            <span className="ayuda">{editando ? 'No se puede cambiar.' : cedulaFija ? 'Es la del candidato: no se cambia.' : 'Con o sin guiones. También DIMEX o pasaporte.'}</span>
           </div>
           <Texto id="fnNombre" etiqueta="Nombre" obligatorio valor={datos.nombre} alCambiar={poner('nombre')} max={LARGO_NOMBRE} />
           <Texto id="fnAp1" etiqueta="Primer apellido" obligatorio valor={datos.primerApellido} alCambiar={poner('primerApellido')} max={LARGO_APELLIDO} />

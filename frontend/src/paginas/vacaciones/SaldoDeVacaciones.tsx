@@ -27,12 +27,13 @@ const dias = (n: number) => `${n} ${n === 1 ? 'día' : 'días'}`;
 const conSigno = (n: number) => (n > 0 ? `+${n}` : String(n));
 
 /** Anillo de progreso: la parte llena es lo disponible sobre el tope que se puede acumular. */
-function Anillo({ libre, tope }: { libre: number; tope: number }) {
+export function Anillo({ libre, tope, chico }: { libre: number; tope: number; chico?: boolean }) {
   const radio = 52;
   const largo = 2 * Math.PI * radio;
   const parte = tope > 0 ? Math.max(0, Math.min(1, libre / tope)) : 0;
+  const sobre = tope > 0 && libre > tope;
   return (
-    <div className="anillo" role="img" aria-label={`${dias(libre)} disponibles de un tope de ${tope}`} data-ayuda={`Disponibles sobre el tope de ${tope} días que se pueden acumular`}>
+    <div className={`anillo${chico ? ' anillo-chico' : ''}${sobre ? ' anillo-sobre' : ''}`} role="img" aria-label={`${dias(libre)} disponibles de un tope de ${tope}`} data-ayuda={`Disponibles sobre el tope de ${tope} días que se pueden acumular`}>
       <svg viewBox="0 0 120 120" width="100%" height="100%" aria-hidden="true">
         <circle cx="60" cy="60" r={radio} className="anillo-fondo" />
         <circle
@@ -86,11 +87,21 @@ export function SaldoDeVacaciones({ saldo, nombre }: { saldo: ResumenDeSaldo; no
         </div>
       </div>
 
-      {p.avisar && (
+      {saldo.sobreElTope > 0 && !p.avisar && (
         <Mensaje tipo="advert">
-          Ese día se perderían <b>{dias(p.diasEnRiesgo)}</b> porque el tope es de {saldo.regimen.topeEnDias} días. Conviene programar sus vacaciones antes del {fechaCorta(p.fecha)}.
+          {nombre ? `${nombre} tiene` : 'Tiene'} <b>{dias(saldo.sobreElTope)}</b> por encima del tope de {saldo.regimen.periodosMaximos} periodos ({saldo.regimen.topeEnDias} días). No se pierden, pero conviene programar vacaciones con la jefatura.
         </Mensaje>
       )}
+      {p.avisar &&
+        (saldo.regimen.alSuperarElTope === 'vencer' ? (
+          <Mensaje tipo="advert">
+            Ese día se perderían <b>{dias(p.diasEnRiesgo)}</b> porque el tope es de {saldo.regimen.topeEnDias} días. Conviene programar sus vacaciones antes del {fechaCorta(p.fecha)}.
+          </Mensaje>
+        ) : (
+          <Mensaje tipo="advert">
+            Ese día el saldo pasará el tope de {saldo.regimen.periodosMaximos} periodos ({saldo.regimen.topeEnDias} días) con <b>{dias(p.diasEnRiesgo)}</b> de más. No se pierden, pero conviene programar vacaciones antes del {fechaCorta(p.fecha)}.
+          </Mensaje>
+        ))}
 
       {saldo.aniosDeServicio === 0 && saldo.ganadosPorAniversario === 0 && (
         <Mensaje tipo="info">
@@ -113,10 +124,12 @@ export function SaldoDeVacaciones({ saldo, nombre }: { saldo: ResumenDeSaldo; no
           <dt>Disfrutados</dt>
           <dd>{saldo.utilizado}</dd>
         </div>
-        <div>
-          <dt>Vencidos</dt>
-          <dd>{saldo.vencido}</dd>
-        </div>
+        {saldo.vencido > 0 && (
+          <div data-ayuda="Días que se perdieron por pasar el tope de periodos">
+            <dt>Vencidos</dt>
+            <dd>{saldo.vencido}</dd>
+          </div>
+        )}
         {saldo.ajustes !== 0 && (
           <div>
             <dt>Ajustes</dt>

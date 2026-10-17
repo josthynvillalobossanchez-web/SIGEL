@@ -4,6 +4,7 @@ import { APP_GUARD } from '@nestjs/core';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { AutenticacionModule } from './autenticacion/autenticacion.module.js';
 import { BitacoraModule } from './bitacora/bitacora.module.js';
+import { NotificacionesModule } from './notificaciones/notificaciones.module.js';
 import { CatalogosModule } from './catalogos/catalogos.module.js';
 import { CorreoModule } from './correo/correo.module.js';
 import { DocumentosModule } from './documentos/documentos.module.js';
@@ -15,6 +16,7 @@ import { RolesModule } from './roles/roles.module.js';
 import { TiposDocumentoModule } from './tipos-documento/tipos-documento.module.js';
 import { MiCuentaModule } from './mi-cuenta/mi-cuenta.module.js';
 import { UsuariosModule } from './usuarios/usuarios.module.js';
+import { TalentPoolModule } from './talent-pool/talent-pool.module.js';
 import { VacacionesModule } from './vacaciones/vacaciones.module.js';
 import { AusenciasModule } from './ausencias/ausencias.module.js';
 import { SaludController } from './salud/salud.controller.js';
@@ -31,6 +33,8 @@ import { SaludController } from './salud/salud.controller.js';
     PrismaModule,
     CorreoModule,
     BitacoraModule,
+    // Avisos dentro del sistema (Sprint 3). Global, como la bitacora.
+    NotificacionesModule,
     AutenticacionModule,
     PermisosModule,
     UsuariosModule,
@@ -44,6 +48,8 @@ import { SaludController } from './salud/salud.controller.js';
     DocumentosModule,
     VacacionesModule,
     AusenciasModule,
+    // Talent Pool (Sprint 3, HU 38-41): registro publico y consulta de RRHH.
+    TalentPoolModule,
   ],
   controllers: [SaludController],
   providers: [

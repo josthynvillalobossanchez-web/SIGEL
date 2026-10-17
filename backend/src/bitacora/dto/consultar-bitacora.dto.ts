@@ -51,8 +51,14 @@ export class ConsultarBitacoraDto extends PaginacionDto {
   @IsDateString({}, { message: 'La fecha inicial no es válida.' })
   desde?: string;
 
-  /** Fecha final, inclusive. */
+  /** Fecha final, inclusive (una fecha AAAA-MM-DD cuenta el dia completo, hora de Costa Rica). */
   @IsOptional()
   @IsDateString({}, { message: 'La fecha final no es válida.' })
   hasta?: string;
+
+  /** Texto libre: busca en la descripcion, el correo de quien lo hizo y el nombre de la persona afectada. */
+  @IsOptional()
+  @IsString({ message: 'La búsqueda debe ser texto.' })
+  @MaxLength(100, { message: 'La búsqueda no puede pasar de 100 caracteres.' })
+  busqueda?: string;
 }

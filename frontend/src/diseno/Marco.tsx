@@ -29,6 +29,7 @@ import { ProveedorDeCambiosSinGuardar, useClicSeguro, useSalirSiSePuede } from '
 import { useSesion } from '../sesion/SesionProveedor';
 import { Icono } from '../componentes/Icono';
 import { BotonTema } from '../componentes/BotonTema';
+import { Campana } from '../componentes/Campana';
 import { MENU, puedeVerOpcion, textoDeOpcion, type OpcionDeMenu } from './menu';
 import { inicialesDesdeCorreo } from '../utilidades/texto';
 import logoMunicipalidad from '../recursos/logo-oscuro.png';
@@ -163,7 +164,6 @@ function MarcoInterno() {
         </div>
 
         <div className="topbar-fin">
-          <BotonTema clase="tb-btn" />
           <div className="usuario">
             <div className="usuario-inicial" aria-hidden="true">
               {inicialesDesdeCorreo(usuario.correo)}
@@ -173,10 +173,14 @@ function MarcoInterno() {
               <span>{textoRoles}</span>
             </div>
           </div>
-          <button className="tb-btn" type="button" onClick={() => salirSiSePuede(() => void salir())} aria-label="Cerrar sesión" data-ayuda="Cerrar sesión y volver al inicio de sesión">
+          {/* Esquina derecha (pedido de Josthyn, 12/10): [Salir] [Tema] [Notificaciones]. La campana va en la
+              esquina para que su panel abra pegado al borde y no a media pantalla. */}
+          <button className="tb-btn" type="button" onClick={() => salirSiSePuede(() => void salir())} aria-label="Cerrar sesión" data-ayuda="Cerrar sesión">
             <Icono nombre="salir" />
             <span className="solo-ancho">Salir</span>
           </button>
+          <BotonTema clase="tb-btn" />
+          {tienePermisos('notificaciones.ver') && <Campana />}
         </div>
       </header>
 
@@ -265,10 +269,6 @@ function MarcoInterno() {
               </div>
             );
           })}
-
-          <p style={{ marginTop: 'auto', padding: 12, fontSize: 11.5, color: 'var(--texto-sec)', lineHeight: 1.5 }}>
-            El Talent Pool llega en el Sprint 3.
-          </p>
         </nav>
 
         <main className="contenido" id="contenido" tabIndex={-1}>

@@ -1,7 +1,8 @@
 /*
  * "Guardias" de las rutas: deciden si una pagina se puede mostrar.
  *
- *   <RutaProtegida>       Pide sesion. Sin sesion -> /iniciar-sesion.
+ *   <RutaProtegida>       Pide sesion. Sin sesion -> /iniciar-sesion (salvo "/":
+ *                         ahi se muestra la bienvenida publica, 17/10).
  *                         Con contrasena temporal -> /primer-ingreso.
  *   <RutaDePrimerIngreso> Solo con sesion Y contrasena temporal.
  *   <RutaSinSesion>       Login y recuperacion: si ya hay sesion, al inicio.
@@ -16,12 +17,15 @@ import { Navigate, Outlet, useLocation } from 'react-router';
 import { useSesion } from './SesionProveedor';
 import { PantallaDeCarga, SinServidor } from '../paginas/Estados';
 import { SinPermiso } from '../paginas/SinPermiso';
+import { Bienvenida } from '../paginas/Bienvenida';
 
 export function RutaProtegida() {
   const { estado, usuario, salioPorSuCuenta } = useSesion();
   const ubicacion = useLocation();
 
   if (estado === 'cargando') return <PantallaDeCarga />;
+  // 17/10: la direccion principal ("/") sin sesion es la bienvenida publica.
+  if (ubicacion.pathname === '/' && (estado === 'sin-servidor' || estado === 'sin-sesion' || !usuario)) return <Bienvenida />;
   if (estado === 'sin-servidor') return <SinServidor />;
   if (estado === 'sin-sesion' || !usuario) {
     // Se guarda a donde queria ir, para volver ahi despues de iniciar sesion

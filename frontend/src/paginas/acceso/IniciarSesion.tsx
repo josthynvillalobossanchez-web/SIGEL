@@ -95,6 +95,7 @@ export function IniciarSesion() {
     <PantallaDeAcceso
       subtitulo="Sistema Integrado de Nómina, Expediente, Recursos y Gestión de Incapacidades y Ausencias · Municipalidad de Palmares"
       pie="Si no tiene cuenta o no puede ingresar, comuníquese con Recursos Humanos."
+      volverAlInicio
     >
       <form className="card" onSubmit={alEnviar} noValidate>
         <h1>Iniciar sesión</h1>

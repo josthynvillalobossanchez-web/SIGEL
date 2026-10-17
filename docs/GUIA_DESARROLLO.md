@@ -112,6 +112,9 @@ Abra `backend\.env` y complete:
 
 - **`SEED_ADMIN_CONTRASENA`**: la contraseña temporal del Súper Administrador. Si la
   deja vacía, el sistema genera una al azar y la imprime una sola vez.
+- **`AVISOS_REVISION_MINUTOS`** y **`AVISOS_PRIMERA_REVISION_SEGUNDOS`** (opcionales): cada cuánto se
+  revisan las vacaciones por vencer y las jefaturas por asignar (por omisión cada 360 min, la primera
+  30 s después de arrancar; 0 apaga la revisión).
 - **`ARCHIVOS_LLAVE`**: la llave que cifra los documentos y fotografías. **Sin ella el backend
   no arranca.** Se genera una vez con `npm run archivos:generar-llave` (imprime una línea
   lista para pegar en el `.env`). Léase la sección 10.6 antes de usarla en el servidor.
@@ -332,7 +335,11 @@ aparece marcado como público, exige sesión.
 | `POST /autenticacion/solicitar-recuperacion` | público | Envía un código de 6 dígitos al correo |
 | `POST /autenticacion/restablecer-contrasena` | público | Cambia la contraseña con ese código |
 | `GET /permisos` | `usuarios.ver` | Catálogo de permisos por módulo; cada uno trae `asignable` |
-| `GET /bitacora` | `bitacora.ver` | Auditoría, paginada y con filtros |
+| `GET /bitacora` | `bitacora.ver` | Auditoría, paginada (`?usuarioId=&accion=&entidad=&funcionarioAfectadoId=&registroAfectadoId=&desde=&hasta=&busqueda=`; una fecha AAAA-MM-DD cuenta el día completo, hora de Costa Rica) |
+| `GET /bitacora/opciones` | `bitacora.ver` | Entidades y cuentas que aparecen en la bitácora (para los filtros) |
+| `GET /notificaciones` | `notificaciones.ver` | Las propias, paginadas (`?estado=sinLeer\|leidas\|todas`), con `sinLeer` |
+| `GET /notificaciones/resumen` | `notificaciones.ver` | Para la campana: `sinLeer` y las 6 más recientes |
+| `POST /notificaciones/:id/leida` · `POST /notificaciones/leer-todas` | `notificaciones.ver` | Marcar como leída una (solo las propias: `NOTIFICACION_NO_ENCONTRADA`) o todas |
 | `GET /usuarios` | `usuarios.ver` | Lista de cuentas, con búsqueda y filtros por estado y rol |
 | `GET /usuarios/:id` | `usuarios.ver` | Detalle de una cuenta con sus roles y permisos |
 | `POST /usuarios` | `usuarios.crear` | Crea la cuenta de un funcionario |
@@ -603,6 +610,8 @@ Nada de páginas largas con scroll en PC.
 | `/bandeja` (`?estado=`) | `solicitudes.aprobar` | Bandeja de la jefatura: tarjetas o lista, choques marcados, detalle con Aprobar/Rechazar y Ver en calendario |
 | `/solicitudes` (`?estado=&tipo=&departamento=&busqueda=&desde=&hasta=`) | `solicitudes.administrar` | Todas las solicitudes (RRHH), lista compacta o tarjetas |
 | `/incapacidades` | `solicitudes.administrar` | Incapacidades del personal: filtros, búsqueda por boleta, detalle con boleta y Anular |
+| `/notificaciones` (`?ver=todas`) | `notificaciones.ver` | Notificaciones: sin leer o todas; marcar leídas; tocar una abre su trámite. La campana de la barra superior muestra las recientes |
+| `/bitacora` (`?busqueda=&usuario=&accion=&entidad=&desde=&hasta=&persona=&registro=`) | `bitacora.ver` | Bitácora de auditoría (solo lectura): tabla, filtros y detalle con el antes y el después |
 | `/horas-extra` (`?mes=&persona=&departamento=&anuladas=si`) | `horasExtra.registrar` | Horas extra: mes, totales, por persona y registros; Registrar (persona → día y horas) y Anular |
 
 `/usuarios/:id` y `/roles/:id` (sin "editar") abren la ventana de consulta.
@@ -664,10 +673,10 @@ queda atenuado, no hace nada, y el globo y el lector de pantalla dicen por qué.
 | Rama | Para qué |
 |---|---|
 | `main` | SINERGIA completo, para la Municipalidad de Palmares |
-| `piscinas` | Se creará a partir de `main` cuando el expediente esté terminado, sin el módulo de Talent Pool, para adaptarlo al proyecto de las piscinas municipales |
+| `piscinas-municipales` | Creada el 13/10 desde `Sprint-3` (con notificaciones y bitácora), **antes** del Talent Pool, para adaptarla al proyecto de las piscinas municipales |
 
-La idea es terminar primero todo lo del expediente, sacar la rama `piscinas` desde ahí y
-seguir con el Talent Pool en `main`.
+Las correcciones que sirvan a los dos sistemas se llevan a la rama de las piscinas con `cherry-pick` (no con
+`merge` de `Sprint-3`, que traería el Talent Pool).
 
 ---
 
@@ -915,3 +924,39 @@ El comando termina con error (código 1) si hubo archivos ilegibles o con error.
   aceptan PDF, JPG y PNG, y se comprueba que el contenido real sea de ese formato, pero un
   antivirus del servidor es decisión de TI.
 - La foto anterior y los documentos dados de baja **no se borran** del disco (baja lógica).
+
+## Notificaciones (Sprint 3)
+
+- Servicio central `backend/src/notificaciones/notificaciones.service.ts` (módulo global). Ningún módulo
+  arma sus propios avisos: llama a `avisarAUsuarios`, `avisarAFuncionario`, `avisarAJefaturaDe`,
+  `avisarARrhh` o `avisarCambioDeExpediente` (la persona cambió lo suyo → RRHH; RRHH cambió lo de la
+  persona → la persona). Siempre con `{ excepto: quienActua.id }`.
+- Un aviso nunca hace fallar la operación (los errores se anotan en el registro) y no va a la bitácora.
+- "RRHH" = cuentas activas con el permiso `notificaciones.rrhh` vigente (mismo cálculo que la sesión).
+- Avisos periódicos: `vacaciones/avisos-periodicos.service.ts`; no se repiten gracias a la columna
+  `referencia` (la fecha del aniversario o la jefatura vieja).
+- Para que un aviso abra su trámite, la pantalla destino lee `?abrir=<id>` con `useAbrirDesdeEnlace`.
+
+## Talent Pool (Sprint 3)
+
+- Backend `backend/src/talent-pool/` (módulo aislado: la rama de las piscinas lo quita sin tocar nada más,
+  junto con la ruta y la opción del menú del frontend).
+- Público (`@Publico`): `GET /talent-pool/publico/formulario` (consentimiento vigente, profesiones,
+  habilidades, niveles; **ningún dato de personas**) y `POST /talent-pool/publico/registro` (multipart: campo
+  `datos` = JSON validado con `RegistroDeCandidatoDto`, campo `curriculum` = PDF opcional). Si la cédula ya
+  existe, **reemplaza todo**; la respuesta es la misma en los dos casos.
+- RRHH: `GET /talent-pool/candidatos` (filtros `busqueda, estado, profesionId, nivel, habilidades=a,b,
+  aniosExperiencia, conCurriculum, orden`), `GET /talent-pool/resumen`, `GET /talent-pool/opciones`,
+  `GET /talent-pool/candidatos/:id`, `GET …/:id/curriculum`, `PATCH …/:id` (estado y nota), `POST …/:id/eliminar`,
+  `GET …/:id/para-contratar`, `POST …/:id/contratar` (cuerpo de Registrar funcionario), `GET/POST/PATCH /talent-pool/habilidades`.
+- Contratar reutiliza `FuncionariosService.registrar(datos, quien, ip, alCrear)`: `alCrear` corre dentro de la
+  misma transacción (liga al candidato). El currículum se copia con `DocumentosService.registrarGenerado`.
+- El currículum se guarda cifrado en `archivos/candidatos/<id>/`. Es lo único que el sistema **borra** del
+  disco (reemplazo del registro o eliminación a pedido): `AlmacenCifradoService.eliminarDeCandidato`.
+- Variable nueva: `TALENT_POOL_ENVIOS_POR_IP` (por omisión 5 envíos cada 10 minutos).
+- (17/10) El currículum es **obligatorio**. Habilidades «Otra»: `habilidadesPropias` en el DTO (nombre,
+  categoría, nivel; máx. 12) → tabla `habilidadPropiaCandidato`; se rechaza la que ya existe en el catálogo
+  activo (sin importar tildes ni mayúsculas) y se borran al reemplazar el registro. No pasan al catálogo.
+- (17/10) Página de bienvenida: `frontend/src/paginas/Bienvenida.tsx` + `estilos/bienvenida.css` (clases `bv-`).
+  `RutaProtegida` la muestra en `/` cuando no hay sesión; con sesión `/` sigue siendo Inicio. Su contenido es
+  fijo (sin llamadas al servidor), así que no expone datos.

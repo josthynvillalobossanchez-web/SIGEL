@@ -350,16 +350,17 @@
   .persona-nombre .avatar { display: none; }
 }
 
-/* ---------- Saldo dentro de Editar funcionario (plegado a proposito) ---------- */
-.ajuste-saldo { margin-top: 18px; padding: 0; }
+/* ---------- Saldo dentro de Editar funcionario (a la vista desde el 13/10) ---------- */
 .campo-doble { grid-column: span 2; align-self: start; padding-top: 26px; min-width: 0; }
 .campo-doble .ajuste-saldo { margin-top: 0; }
 @media (max-width: 900px) { .campo-doble { grid-column: 1 / -1; padding-top: 0; } }
-.ajuste-saldo summary { cursor: pointer; padding: 12px 16px; font-weight: 700; font-size: 14.5px; display: flex; gap: 8px; align-items: center; list-style: none; color: var(--texto-sec); }
-.ajuste-saldo summary::-webkit-details-marker { display: none; }
-.ajuste-saldo summary small { font-weight: 400; }
-.ajuste-saldo[open] summary { border-bottom: 1px solid var(--borde); color: var(--texto); }
-.ajuste-saldo-cuerpo { padding: 14px 16px; display: grid; gap: 10px; justify-items: start; }
+.ajuste-saldo { margin-top: 18px; padding: 10px 14px; display: grid; gap: 8px; }
+.ajuste-saldo-fila { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; justify-content: space-between; }
+.ajuste-saldo h3 { margin: 0; font-size: 13px; font-weight: 700; color: var(--texto-sec); display: flex; gap: 6px; align-items: center; }
+.ajuste-saldo-cifra { margin: 2px 0 0; font-size: 13.5px; color: var(--texto-sec); }
+.ajuste-saldo-cifra b { color: var(--texto); font-size: 16px; }
+.ajuste-saldo-botones { display: flex; flex-wrap: wrap; gap: 6px; }
+.ajuste-saldo .mensaje { margin: 0; padding-top: 7px; padding-bottom: 7px; font-size: 13.5px; }
 
 /* =====================================================================
    Nueva solicitud por pasos (01/10): cada paso cabe en la pantalla
@@ -605,3 +606,16 @@
 .tramo input:focus-visible { outline: 3px solid var(--foco); outline-offset: 1px; }
 /* Un boton deshabilitado debe verse deshabilitado (no habia estilo general para :disabled). */
 .btn:disabled { opacity: .45; cursor: not-allowed; }
+/* En el celular el paso "Revisar" quedaba justo al limite de la pantalla: el motivo, mas bajo. */
+@media (max-width: 600px) { .paso-revisar .campo textarea { min-height: 60px; } }
+/* Saldo por encima del tope (13/10): el anillo se pinta de advertencia. */
+.anillo-sobre .anillo-lleno { stroke: var(--advert-fg); }
+/* Reglas de vacaciones: que pasa al superar el tope (13/10). */
+.opciones-tope { border: 0; padding: 0; margin: 4px 0 12px; display: grid; gap: 8px; grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr)); }
+.opciones-tope legend { font-weight: 600; font-size: 14px; margin-bottom: 6px; padding: 0; }
+.opcion-tope { display: flex; gap: 10px; align-items: flex-start; padding: 12px; border: 1px solid var(--borde); border-radius: var(--radio-md); cursor: pointer; background: var(--card); }
+.opcion-tope.elegida { border-color: var(--accion); background: var(--accion-tinte); }
+.opcion-tope input { margin-top: 3px; accent-color: var(--accion); }
+.opcion-tope span { display: grid; gap: 4px; }
+.opcion-tope small { color: var(--texto-sec); font-size: 13px; line-height: 1.4; }
+.opcion-tope .chip { justify-self: start; font-size: 11px; }

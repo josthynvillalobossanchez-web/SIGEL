@@ -475,14 +475,20 @@ Table diaNoLaborable {
 // Se vuelve tabla porque la regla de vacaciones puede cambiar por
 // normativa, y el requisito es que ese cambio NO obligue a tocar
 // codigo (HU 27 CA04).
+Enum accionAlTope {
+  avisar
+  vencer
+}
+
 Table regimenVacaciones {
   id char(36) [pk, note: 'UUID']
   nombre varchar(60) [not null, unique, note: 'general, anterior']
   descripcion varchar(255) [note: 'general: 15 dias los primeros 6 anios, 20 despues. anterior: 30 dias para trabajadores antiguos.']
   // [V3-2] El tope de acumulacion tambien es parametrico: si manana la
   // norma pasa a 1 o a 3 periodos, se cambia aqui.
-  periodosMaximosAcumulables smallint [not null, default: 2, note: '[V3-2] Norma vigente: 2 periodos. Lo que exceda vence y queda inutilizable.']
-  diasAvisoAntesDeVencer smallint [not null, default: 60, note: '[V3-2] Con cuanta anticipacion se avisa al funcionario y a RRHH que va a perder dias.']
+  periodosMaximosAcumulables smallint [not null, default: 2, note: '[V3-2] Norma vigente: 2 periodos. Que pasa con lo que exceda lo decide alSuperarElTope.']
+  diasAvisoAntesDeVencer smallint [not null, default: 30, note: '[V3-2] Con cuanta anticipacion se avisa a la persona, a su jefatura y a RRHH que va a pasar el tope (13/10: un mes; minimo 20).']
+  alSuperarElTope accionAlTope [not null, default: 'avisar', note: '13/10: avisar = se sigue acumulando y solo se avisa (por omision); vencer = lo que pase del tope se pierde. RRHH lo cambia en cualquier momento.']
   activo boolean [not null, default: true]
   Note: '[V3-1] Catalogo administrable. Un funcionario pertenece a un regimen, y cada regimen tiene sus tramos en reglaVacaciones y su propio tope de acumulacion.'
 }
@@ -595,7 +601,8 @@ Table consentimiento {
   version varchar(20) [not null, unique]
   titulo varchar(180) [not null]
   texto text [not null, note: 'Copia del archivo backend/contenido/consentimiento-talent-pool.txt al momento de la version. Si el archivo cambia, se guarda una version nueva. Texto oficial pendiente de Joseph (hoy borrador).']
-  vigenteDesde date [not null]
+  huella char(64) [not null, unique, note: 'SHA-256 del texto: asi se sabe si el archivo cambio (13/10).']
+  vigenteDesde datetime [not null]
   activo boolean [not null, default: true]
   Note: 'Versionado, para poder demostrar que texto acepto cada candidato y cuando. RN-05. Aceptarlo es un paso obligatorio del registro (Ficha 32, Diagrama 8).'
 }
@@ -609,6 +616,7 @@ Table candidato {
   correo varchar(150)
   telefono varchar(30)
   fechaNacimiento date
+  residencia varchar(150) [note: '13/10: canton o lugar donde vive (texto libre).']
 
   // [V3-4] Se cataloga la profesion para que el filtro de HU 39 sea
   // confiable, pero el formulario es publico y el candidato podria no
@@ -617,9 +625,11 @@ Table candidato {
   profesionTexto varchar(150) [note: '[V3-4] Solo si el candidato no encuentra su profesion en la lista. RRHH revisa estos casos y, si corresponde, agrega la profesion al catalogo y reasigna.']
 
   descripcion text [note: 'Perfil o resumen profesional']
+  mesesExperiencia smallint [not null, default: 0, note: '13/10: meses de experiencia sumados al enviar (filtro de años de experiencia).']
   estado estadoCandidato [not null, default: 'activo', note: 'Los inactivos no salen en la busqueda normal (HU 41 CA03). Pasar a contratado dispara la Ficha 41.']
 
   cvNombreArchivo varchar(255)
+  cvTamanoBytes int
   cvRutaArchivo varchar(500) [note: 'Ruta al servidor de archivos. Al contratar, este CV se copia como documento del expediente del nuevo funcionario (V3-10).']
 
   funcionarioId char(36) [unique, ref: - funcionario.id, note: 'Nulo mientras no se le contrate. Un candidato solo puede convertirse en un funcionario.']
@@ -628,9 +638,12 @@ Table candidato {
   fechaConsentimiento datetime [not null]
   ipConsentimiento varchar(45)
 
+  vecesEnviado int [not null, default: 1, note: '13/10: cuantas veces la persona envio (reemplazo) su registro.']
   fechaRegistro datetime [not null, default: `now()`]
-  fechaActualizacion datetime
-  usuarioActualizacionId char(36) [ref: > usuario.id, note: 'Nulo cuando la actualizacion la hace el propio candidato desde el formulario publico']
+  fechaActualizacion datetime [not null, note: 'Ultimo envio del formulario publico.']
+  fechaCambioEstado datetime
+  usuarioCambioEstadoId char(36) [ref: > usuario.id, note: '13/10: quien de RRHH cambio el estado por ultima vez (reemplaza usuarioActualizacionId: la persona actualiza desde el formulario publico, sin cuenta).']
+  notaInterna varchar(1000) [note: '13/10: nota de RRHH; no la ve el candidato.']
   indexes {
     cedula [name: 'idxCandidatoCedula']
     (primerApellido, nombre) [name: 'idxCandidatoNombre']
@@ -693,6 +706,18 @@ Table candidatoHabilidad {
   Note: 'Muchos a muchos con UUID propio.'
 }
 
+Table habilidadPropiaCandidato {
+  id char(36) [pk, note: 'UUID']
+  candidatoId char(36) [not null, ref: > candidato.id, note: 'Se borra con el candidato']
+  nombre varchar(80) [not null]
+  categoria categoriaHabilidad [not null]
+  nivel nivelHabilidad
+  indexes {
+    candidatoId [name: 'idxHabilidadPropiaCandidato']
+  }
+  Note: 'Habilidad «Otra» escrita por el candidato (17/10). Solo vive en su perfil: nunca entra al catalogo habilidad.'
+}
+
 Table experienciaCandidato {
   id char(36) [pk, note: 'UUID']
   candidatoId char(36) [not null, ref: > candidato.id]
@@ -714,26 +739,23 @@ Table experienciaCandidato {
 Table notificacion {
   id char(36) [pk, note: 'UUID']
 
-  // Debe venir usuarioDestinoId O funcionarioDestinoId (se valida en
-  // backend). Un funcionario sin cuenta igual recibe los avisos
-  // importantes por correo.
-  usuarioDestinoId char(36) [ref: > usuario.id, note: 'Destinatario con cuenta: la ve en su bandeja. HU 42 CA05: cada quien ve solo las suyas.']
-  funcionarioDestinoId char(36) [ref: > funcionario.id, note: 'Destinatario SIN cuenta de usuario: solo se le envia por correo, no tiene bandeja que consultar.']
-  correoDestino varchar(150) [note: '[V3-6] Correo al que se envio realmente. Regla: se usa el correo institucional; si el funcionario no tiene uno registrado, se usa su correo personal, que es obligatorio.']
+  // 10/10/2026: solo dentro del sistema (no hay envio por correo), asi que
+  // el destinatario siempre es una cuenta. Un funcionario sin cuenta no recibe avisos.
+  usuarioDestinoId char(36) [not null, ref: > usuario.id, note: 'HU 42 CA05: cada quien ve solo las suyas.']
 
   clave varchar(80) [not null, note: 'solicitudCreada, solicitudAprobada, solicitudRechazada, solicitudCancelada, incapacidadRegistrada, cuentaCreada, documentoGeneradoFallido, vacacionesPorVencer [V3-2], perfilActualizadoPorFuncionario [V3-9]']
   titulo varchar(200) [not null]
   mensaje varchar(1000) [not null]
   entidad varchar(60) [note: 'Entidad que la origino, por ejemplo solicitud']
   registroId char(36) [note: 'UUID del registro que la origino']
-  enviadaPorCorreo boolean [not null, default: false, note: 'Solo los asuntos importantes van por correo, para no saturar a los funcionarios']
+  referencia varchar(60) [note: 'Para no repetir un aviso periodico: la fecha del aniversario (vacaciones por vencer) o la jefatura vieja (asignar nueva jefatura)']
+  enlace varchar(300) [note: 'Pantalla de SINERGIA que abre el aviso (ruta interna)']
   leida boolean [not null, default: false, note: 'Solo leida / no leida. No se guarda la fecha exacta de lectura.']
 
   fechaCreacion datetime [not null, default: `now()`]
   indexes {
-    (usuarioDestinoId, leida) [name: 'idxNotificacionBandeja']
-    funcionarioDestinoId [name: 'idxNotificacionFuncionario']
-    (clave, registroId) [name: 'idxNotificacionEvento']
+    (usuarioDestinoId, leida, fechaCreacion) [name: 'idxNotificacionBandeja']
+    (clave, registroId, referencia) [name: 'idxNotificacionEvento']
   }
   Note: 'Servicio centralizado: ningun modulo implementa su propio sistema de avisos. El indice por clave y registro evita reenviar dos veces el mismo aviso, por ejemplo el de vacaciones por vencer, sin necesidad de una tabla de control aparte.'
 }
@@ -812,6 +834,7 @@ TableGroup talentPool {
   formacionCandidato
   habilidad
   candidatoHabilidad
+  habilidadPropiaCandidato
   experienciaCandidato
 }
 

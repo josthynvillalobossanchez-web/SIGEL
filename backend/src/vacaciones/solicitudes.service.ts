@@ -10,9 +10,10 @@ import { ModuleRef } from '@nestjs/core';
 import type { UsuarioAutenticado } from '../autenticacion/tipos.js';
 import { BitacoraService } from '../bitacora/bitacora.service.js';
 import { armarPagina, type PaginaDeResultados } from '../comun/dto/paginacion.dto.js';
-import { aFechaSola, hoyEnCostaRica, interpretarFechaSola } from '../comun/fechas.js';
+import { aFechaSola, hoyEnCostaRica, interpretarFechaSola, rangoEnPalabras } from '../comun/fechas.js';
 import type { Prisma } from '../generated/prisma/client.js';
 import { PrismaService } from '../prisma/prisma.service.js';
+import { NotificacionesService } from '../notificaciones/notificaciones.service.js';
 import { desglosarDias, diasHabilesEntre, redondear } from './calculo-de-vacaciones.js';
 import type {
   ConsultarCalendarioDto,
@@ -151,6 +152,7 @@ export class SolicitudesService {
     private readonly vacaciones: VacacionesService,
     private readonly feriados: DiasNoLaborablesService,
     private readonly modulos: ModuleRef,
+    private readonly notificaciones: NotificacionesService,
   ) {}
 
   private readonly registro = new Logger('Solicitudes');
@@ -308,7 +310,9 @@ export class SolicitudesService {
           return fila.id;
         });
         await this.generarConstanciaSiAplica(creada, quienActua.id);
-        return this.detalleSinPermisos(creada);
+        const nueva = await this.detalleSinPermisos(creada);
+        await this.avisar('creada', nueva, quienActua);
+        return nueva;
       } catch (error) {
         // El consecutivo es unico: si dos solicitudes nacen a la vez, la segunda reintenta.
         if (esChoqueDeUnicidad(error) && intento < 5) continue;
@@ -372,7 +376,9 @@ export class SolicitudesService {
     });
 
     await this.generarConstanciaSiAplica(id, quienActua.id);
-    return this.detalleSinPermisos(id);
+    const aprobada = await this.detalleSinPermisos(id);
+    await this.avisar('aprobada', aprobada, quienActua);
+    return aprobada;
   }
 
   async rechazar(id: string, datos: RechazarSolicitudDto, quienActua: UsuarioAutenticado, direccionIp?: string): Promise<SolicitudDeLista> {
@@ -403,7 +409,9 @@ export class SolicitudesService {
         tx,
       );
     });
-    return this.detalleSinPermisos(id);
+    const rechazada = await this.detalleSinPermisos(id);
+    await this.avisar('rechazada', rechazada, quienActua);
+    return rechazada;
   }
 
   /**
@@ -501,7 +509,9 @@ export class SolicitudesService {
           tx,
         );
       });
-      return this.detalleSinPermisos(id);
+      const cancelada = await this.detalleSinPermisos(id);
+      await this.avisar('canceladaAprobada', cancelada, quienActua);
+      return cancelada;
     }
 
     if (s.estado !== 'pendiente') {
@@ -540,7 +550,67 @@ export class SolicitudesService {
         tx,
       );
     });
-    return this.detalleSinPermisos(id);
+    const cancelada = await this.detalleSinPermisos(id);
+    await this.avisar('cancelada', cancelada, quienActua);
+    return cancelada;
+  }
+
+  /**
+   * Avisos de las solicitudes (Sprint 3; regla de Joseph del 13/10: RRHH se
+   * entera cuando la ausencia queda en firme):
+   *   - creada pendiente: solo a la jefatura que la resuelve;
+   *   - creada ya aprobada (tope, la registra la jefatura, licencia): a RRHH y a la jefatura;
+   *   - aprobada: a la persona y a RRHH; rechazada: solo a la persona;
+   *   - cancelada pendiente: a la jefatura; cancelada ya aprobada: a la jefatura y a RRHH.
+   * Si la registro o cancelo otra persona (RRHH, la jefatura), tambien se le avisa a la persona.
+   * Nunca a quien hizo la accion. No hace fallar la operacion.
+   */
+  private async avisar(evento: 'creada' | 'aprobada' | 'rechazada' | 'cancelada' | 'canceladaAprobada', s: SolicitudDeLista, quienActua: UsuarioAutenticado): Promise<void> {
+    const n = this.notificaciones;
+    const op = { excepto: quienActua.id };
+    const persona = s.funcionario.nombre;
+    const dias = s.cantidadDias ? ` (${s.cantidadDias} ${s.cantidadDias === 1 ? 'día hábil' : 'días hábiles'})` : '';
+    const que = `${s.tipo.nombre.toLowerCase()} ${rangoEnPalabras(s.fechaInicio, s.fechaFin)}${dias}`;
+    const base = { entidad: 'solicitud', registroId: s.id };
+    const paraLaPersona = `/mis-ausencias?pestana=solicitudes&abrir=${s.id}`;
+    const paraRrhh = `/solicitudes?abrir=${s.id}`;
+    const paraLaJefatura = `/calendario?alcance=equipo&mes=${s.fechaInicio.slice(0, 7)}&resaltar=${s.id}`;
+    const laHizoOtro = quienActua.funcionarioId !== s.funcionario.id;
+    const quienRegistro = s.solicitadaPor.nombre ?? 'Recursos Humanos';
+
+    if (evento === 'creada' && s.estado === 'pendiente') {
+      // Pendiente: solo la jefatura. RRHH se entera cuando queda en firme (Joseph, 13/10).
+      await n.avisarAUsuarios([s.aprobador?.id], { ...base, clave: 'solicitudPorAprobar', titulo: 'Solicitud por aprobar', mensaje: `${persona} pidió ${que}. Le corresponde aprobarla o rechazarla (${s.consecutivo}).`, enlace: `/bandeja?abrir=${s.id}` }, op);
+      if (laHizoOtro) {
+        await n.avisarAFuncionario(s.funcionario.id, { ...base, clave: 'solicitudANombreSuyo', titulo: 'Se registró una solicitud a su nombre', mensaje: `${quienRegistro} registró a su nombre ${que} (${s.consecutivo}). Queda pendiente de su jefatura.`, enlace: paraLaPersona }, op);
+      }
+      return;
+    }
+    if (evento === 'creada') {
+      const como = s.tipo.requiereAprobacion ? 'quedó aprobada al registrarla' : 'quedó registrada con su comprobante';
+      await n.avisarARrhh({ ...base, clave: 'solicitudRegistrada', titulo: `${s.tipo.nombre}: ${persona}`, mensaje: `${persona}: ${que} ${como} (${s.consecutivo}).`, enlace: paraRrhh }, op);
+      await n.avisarAJefaturaDe(s.funcionario.id, { ...base, clave: 'solicitudRegistrada', titulo: `${s.tipo.nombre}: ${persona}`, mensaje: `${persona}: ${que} ${como} (${s.consecutivo}).`, enlace: paraLaJefatura }, op);
+      if (laHizoOtro) {
+        await n.avisarAFuncionario(s.funcionario.id, { ...base, clave: 'solicitudANombreSuyo', titulo: 'Se registró una solicitud a su nombre', mensaje: `${quienRegistro} registró a su nombre ${que}, que ${como} (${s.consecutivo}).`, enlace: paraLaPersona }, op);
+      }
+      return;
+    }
+    if (evento === 'aprobada') {
+      const descuento = s.tipo.descuentaVacaciones ? ' Los días se descontaron de su saldo.' : '';
+      await n.avisarAFuncionario(s.funcionario.id, { ...base, clave: 'solicitudAprobada', titulo: 'Solicitud aprobada', mensaje: `${s.aprobador?.nombre ?? 'Su jefatura'} aprobó su solicitud de ${que} (${s.consecutivo}).${descuento}`, enlace: paraLaPersona }, op);
+      await n.avisarARrhh({ ...base, clave: 'solicitudAprobada', titulo: `Aprobada: ${s.tipo.nombre.toLowerCase()} de ${persona}`, mensaje: `${s.aprobador?.nombre ?? 'La jefatura'} aprobó ${que} de ${persona} (${s.consecutivo}).`, enlace: paraRrhh }, op);
+      return;
+    }
+    if (evento === 'rechazada') {
+      await n.avisarAFuncionario(s.funcionario.id, { ...base, clave: 'solicitudRechazada', titulo: 'Solicitud rechazada', mensaje: `${s.aprobador?.nombre ?? 'Su jefatura'} rechazó su solicitud de ${que} (${s.consecutivo}). Motivo: ${s.motivoRechazo ?? 'sin indicar'}.`, enlace: paraLaPersona }, op);
+      return;
+    }
+    // Cancelada: la jefatura siempre; RRHH solo si ya estaba aprobada (si estaba pendiente, RRHH nunca se entero).
+    await n.avisarAUsuarios([s.aprobador?.id], { ...base, clave: 'solicitudCancelada', titulo: 'Solicitud cancelada', mensaje: `Se canceló ${que} de ${persona} (${s.consecutivo}).`, enlace: paraLaJefatura }, op);
+    if (evento === 'canceladaAprobada') await n.avisarARrhh({ ...base, clave: 'solicitudCancelada', titulo: `Cancelada: ${s.tipo.nombre.toLowerCase()} de ${persona}`, mensaje: `Se canceló ${que} de ${persona} (${s.consecutivo}).`, enlace: paraRrhh }, op);
+    if (laHizoOtro) {
+      await n.avisarAFuncionario(s.funcionario.id, { ...base, clave: 'solicitudCancelada', titulo: 'Se canceló una solicitud suya', mensaje: `Se canceló su solicitud de ${que} (${s.consecutivo}).`, enlace: paraLaPersona }, op);
+    }
   }
 
   /* ================================================================== */

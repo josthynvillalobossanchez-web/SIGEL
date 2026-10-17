@@ -57,7 +57,16 @@ export interface SolicitudDeLista {
 export interface ResumenDeSaldo {
   funcionarioId: string;
   saldoCargado: boolean;
-  regimen: { nombre: string; diasPorPeriodo: number | null; periodosMaximos: number; topeEnDias: number | null };
+  regimen: {
+    nombre: string;
+    diasPorPeriodo: number | null;
+    periodosMaximos: number;
+    topeEnDias: number | null;
+    /** "avisar" (por omision): se acumula igual y se avisa; "vencer": lo que pase del tope se pierde (13/10). */
+    alSuperarElTope: AccionAlTope;
+  };
+  /** Dias que hoy pasan del tope. */
+  sobreElTope: number;
   aniosDeServicio: number;
   /** Lo que RRHH cargo al registrar (dias que ya traia). */
   inicial: number;
@@ -211,12 +220,16 @@ export interface TramoDeVacaciones {
   diasPorPeriodo: number;
 }
 
+/** Que pasa con los dias que superan el tope de periodos (13/10). */
+export type AccionAlTope = 'avisar' | 'vencer';
+
 export interface RegimenDeVacaciones {
   id: string;
   nombre: string;
   descripcion: string | null;
   periodosMaximosAcumulables: number;
   diasAvisoAntesDeVencer: number;
+  alSuperarElTope: AccionAlTope;
   activo: boolean;
   funcionariosActivos: number;
   tramos: TramoDeVacaciones[];
@@ -226,6 +239,7 @@ export interface DatosDeRegimen {
   descripcion?: string;
   periodosMaximosAcumulables: number;
   diasAvisoAntesDeVencer: number;
+  alSuperarElTope?: AccionAlTope;
   tramos: TramoDeVacaciones[];
 }
 

@@ -7,7 +7,7 @@
  */
 import { useState } from 'react';
 import { Link } from 'react-router';
-import { consultarMiSaldo, consultarMisSolicitudes, type EstadoDeSolicitud, type SolicitudDeLista } from '../../api/vacaciones';
+import { consultarMiSaldo, consultarMisSolicitudes, consultarSolicitud, type EstadoDeSolicitud, type SolicitudDeLista } from '../../api/vacaciones';
 import { Icono } from '../../componentes/Icono';
 import { Mensaje } from '../../componentes/Mensaje';
 import { Paginacion } from '../../componentes/Paginacion';
@@ -15,7 +15,8 @@ import { PanelDePestana, Pestanas } from '../../componentes/Pestanas';
 import { useParametrosEnUrl } from '../../utilidades/parametrosEnUrl';
 import { hoyEnCostaRica } from '../../utilidades/calendario';
 import { useConsulta } from '../../utilidades/useConsulta';
-import { consultarMisIncapacidades, type Incapacidad } from '../../api/ausencias';
+import { consultarIncapacidad, consultarMisIncapacidades, type Incapacidad } from '../../api/ausencias';
+import { useAbrirDesdeEnlace } from '../../utilidades/useAbrirDesdeEnlace';
 import { DetalleDeIncapacidad } from '../ausencias/DetalleDeIncapacidad';
 import { ListaDeIncapacidades } from '../ausencias/ListaDeIncapacidades';
 import { useSesion } from '../../sesion/SesionProveedor';
@@ -44,6 +45,11 @@ export function MisVacaciones() {
   const [abierta, setAbierta] = useState<SolicitudDeLista | null>(null);
   const incapacidades = useConsulta(pestana === 'incapacidades' ? () => consultarMisIncapacidades({ estado: 'todas', pagina, tamano: 8 }) : null, [pestana, pagina]);
   const [incapacidadAbierta, setIncapacidadAbierta] = useState<Incapacidad | null>(null);
+  // Desde una notificacion (?abrir=<id>): una incapacidad (pestana Incapacidades) o una solicitud.
+  useAbrirDesdeEnlace(
+    (id) => (pestana === 'incapacidades' ? consultarIncapacidad(id).then((i) => ({ incapacidad: i })) : consultarSolicitud(id).then((s) => ({ solicitud: s }))),
+    (r: { incapacidad?: Incapacidad; solicitud?: SolicitudDeLista }) => (r.incapacidad ? setIncapacidadAbierta(r.incapacidad) : r.solicitud && setAbierta(r.solicitud)),
+  );
   const [aviso, setAviso] = useState<string | null>(null);
 
   function alCambiar(mensaje: string) {

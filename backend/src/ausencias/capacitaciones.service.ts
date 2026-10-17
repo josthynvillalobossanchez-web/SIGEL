@@ -6,6 +6,7 @@ import { aFechaSola, interpretarFechaSola } from '../comun/fechas.js';
 import { DocumentosService } from '../documentos/documentos.service.js';
 import type { Prisma } from '../generated/prisma/client.js';
 import { PrismaService } from '../prisma/prisma.service.js';
+import { NotificacionesService } from '../notificaciones/notificaciones.service.js';
 import { SolicitudesService } from '../vacaciones/solicitudes.service.js';
 import { PERMISO_ADMINISTRAR } from '../vacaciones/vacaciones.service.js';
 import type { RegistrarCapacitacionDto } from './dto.js';
@@ -67,6 +68,7 @@ export class CapacitacionesService {
     private readonly bitacora: BitacoraService,
     private readonly documentos: DocumentosService,
     private readonly solicitudes: SolicitudesService,
+    private readonly notificaciones: NotificacionesService,
   ) {}
 
   async listar(funcionarioId: string, quienActua: UsuarioAutenticado): Promise<CapacitacionDeLista[]> {
@@ -175,6 +177,17 @@ export class CapacitacionesService {
         );
         return fila;
       });
+      // Si choca con el horario, ya avisa la solicitud que se creo (no se repite el aviso).
+      if (!solicitud) {
+        await this.notificaciones.avisarCambioDeExpediente({
+          funcionarioId,
+          quienActua,
+          que: `registró la capacitación «${datos.nombre}»${adjunto ? ' con su certificado' : ''}`,
+          entidad: 'capacitacion',
+          registroId: creada.id,
+          pestana: 'capacitaciones',
+        });
+      }
       return this.uno(creada.id, quienActua);
     } catch (error) {
       if (adjunto) await this.documentos.descartarAdjunto(adjunto.id, quienActua);
@@ -194,6 +207,14 @@ export class CapacitacionesService {
       direccionIp,
     });
     await this.prisma.capacitacion.update({ where: { id }, data: { documentoId: adjunto.id } });
+    await this.notificaciones.avisarCambioDeExpediente({
+      funcionarioId: actual.funcionarioId,
+      quienActua,
+      que: `adjuntó el certificado de la capacitación «${actual.nombre}»`,
+      entidad: 'capacitacion',
+      registroId: id,
+      pestana: 'capacitaciones',
+    });
     return this.uno(id, quienActua);
   }
 
@@ -214,6 +235,14 @@ export class CapacitacionesService {
         },
         tx,
       );
+    });
+    await this.notificaciones.avisarCambioDeExpediente({
+      funcionarioId: actual.funcionarioId,
+      quienActua,
+      que: `dio de baja la capacitación «${actual.nombre}»`,
+      entidad: 'capacitacion',
+      registroId: id,
+      pestana: 'capacitaciones',
     });
     return { mensaje: 'Capacitación dada de baja.' };
   }

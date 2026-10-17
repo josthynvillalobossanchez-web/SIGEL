@@ -1063,3 +1063,50 @@ Preferencias que Josthyn ya expresó y conviene mantener:
 Josthyn lleva una bitácora de horas de la práctica. Ya se le preparó el cronograma de la semana
 del **lunes 7 al viernes 11 de setiembre de 2026 (25 horas)**, con la nota de que **los martes
 son de revisión con Joseph**. Si pide otra semana, seguir ese mismo formato.
+
+### Decisiones del 10/10/2026 (Sprint 3, notificaciones y auditoría)
+
+- **Notificaciones solo dentro del sistema**; por correo, únicamente la cuenta nueva. Reglas de quién
+  recibe qué en `ENTREGABLE_3_SPRINT3.md` §1 (solicitudes a jefatura y RRHH, resultado al solicitante;
+  licencias e incapacidades a jefatura y RRHH; lo propio → RRHH; lo hecho por RRHH → la persona;
+  jefatura por asignar y constancias fallidas → RRHH; vacaciones por vencer → la persona).
+- **Bitácora**: sin entradas ni salidas ni consultas generales (T-4 se mantiene). Página de consulta
+  solo para el Súper Administrador, de solo lectura.
+
+### Decisiones del 13/10/2026 (Joseph, por medio de Josthyn)
+
+- **Tope de vacaciones configurable.** La ley permite acumular hasta 2 periodos, pero en la
+  Municipalidad hay personas con más (periodos que la institución les debe, traslados de otra
+  institución, casos especiales). Por omisión el tope **solo avisa**: los días se siguen acumulando y
+  no se pierde nada. RRHH puede cambiar a **«Vencen los días»** (y volver) en cualquier momento, por
+  régimen, en Reglas de vacaciones (`regimenVacaciones.alSuperarElTope`, migración
+  `20261013000000_tope_de_vacaciones`). El cambio rige desde el próximo aniversario de cada persona.
+- **Aviso del tope con un mes de anticipación** (30 días; mínimo 20, el tiempo de gastar los días).
+  Le llega a la persona, a su jefatura y a RRHH (`vacacionesSobreElTope`), una vez por aniversario.
+- **RRHH agrega o quita días** desde Editar funcionario → Datos laborales (sección a la vista, ya no
+  plegada), siempre con motivo; queda en la bitácora y se le avisa a la persona. Puede pasar el tope.
+- **RRHH se entera de una ausencia cuando queda en firme.** Vacaciones, permisos y capacitaciones:
+  la solicitud nueva solo le llega a la jefatura; la aprobación, a la persona y a RRHH; el rechazo,
+  solo a la persona; la cancelación de una pendiente, solo a la jefatura; la de una ya aprobada, a la
+  jefatura y a RRHH. Licencias e incapacidades (sin aprobación) siguen llegando a jefatura y RRHH al
+  registrarse. El Súper Administrador recibe lo de RRHH (Joseph lo aprobó).
+
+### Decisiones del 13/10/2026 (Josthyn, Talent Pool)
+
+- **Formulario público sin cuenta**, en `/trabaje-con-nosotros`, identificado solo con la cédula.
+- **Privacidad:** el formulario **no muestra nunca datos guardados**. Con la misma cédula se llena todo de
+  nuevo y al enviar se **reemplaza el registro completo**; se avisa antes de enviar y la respuesta no confirma
+  si la cédula existía. Se acepta el riesgo de que alguien reemplace el registro de otra persona.
+- **Pantalla de RRHH** con buscador y filtros, y botón **Contratar** que crea funcionario (y cuenta, si se
+  pide) con los datos del candidato y copia el currículum al expediente. Detalle en ENTREGABLE_3 §5.
+- La rama de las piscinas se creó el 13/10 desde `Sprint-3`, antes del Talent Pool.
+
+### Decisiones del 17/10/2026 (Josthyn, bienvenida y Talent Pool)
+
+- `/` sin sesión es una **página de bienvenida** pública (información general, sin datos de funcionarios) con
+  dos caminos: iniciar sesión y Talent Pool. Ya no hay enlaces entre esas dos pantallas; ambas vuelven al inicio.
+- Habilidades **«Otra»** por categoría: solo quedan en el perfil del candidato (`habilidadPropiaCandidato`),
+  nunca en el catálogo de RRHH.
+- Filtro de habilidades sin límite. Estudios y experiencia agregados con todos sus campos obligatorios
+  (incluidas funciones y «Hasta» salvo trabajo actual). Currículum obligatorio.
+- El nivel de estudio sigue siendo lista fija (lo necesita el filtro «nivel mínimo»); la profesión es catálogo.
