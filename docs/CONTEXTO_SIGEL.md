@@ -1100,3 +1100,13 @@ son de revisión con Joseph**. Si pide otra semana, seguir ese mismo formato.
 - **Pantalla de RRHH** con buscador y filtros, y botón **Contratar** que crea funcionario (y cuenta, si se
   pide) con los datos del candidato y copia el currículum al expediente. Detalle en ENTREGABLE_3 §5.
 - La rama de las piscinas se creó el 13/10 desde `Sprint-3`, antes del Talent Pool.
+
+### Decisiones del 17/10/2026 (Josthyn, bienvenida y Talent Pool)
+
+- `/` sin sesión es una **página de bienvenida** pública (información general, sin datos de funcionarios) con
+  dos caminos: iniciar sesión y Talent Pool. Ya no hay enlaces entre esas dos pantallas; ambas vuelven al inicio.
+- Habilidades **«Otra»** por categoría: solo quedan en el perfil del candidato (`habilidadPropiaCandidato`),
+  nunca en el catálogo de RRHH.
+- Filtro de habilidades sin límite. Estudios y experiencia agregados con todos sus campos obligatorios
+  (incluidas funciones y «Hasta» salvo trabajo actual). Currículum obligatorio.
+- El nivel de estudio sigue siendo lista fija (lo necesita el filtro «nivel mínimo»); la profesión es catálogo.

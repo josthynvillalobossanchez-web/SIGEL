@@ -110,3 +110,16 @@
   .tp-publico .pasos { grid-template-columns: 1fr; }
   .tp-barra { padding: 8px 14px; }
 }
+
+/* "Otra" habilidad (17/10): la escribe la persona, solo para su perfil. */
+.tp-chip-texto { padding: 7px 4px 7px 13px; font-size: 14px; font-weight: 700; color: var(--accion-sobre-claro); }
+.tp-chip-propia { border-style: dashed; }
+.tp-chip .tp-chip-quitar { padding: 0 10px; min-height: 36px; border-left: 1px solid var(--borde); color: var(--texto-sec); }
+.tp-chip-otra { border-style: dashed; background: transparent; cursor: pointer; font: inherit; font-size: 14px; padding: 7px 13px; gap: 5px; color: var(--texto-sec); min-height: 36px; }
+.tp-chip-otra:hover { color: var(--accion-sobre-claro); border-color: var(--accion); }
+.tp-otra { display: inline-flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.tp-otra input { font: inherit; font-size: 14px; padding: 7px 12px; border: 1px solid var(--accion); border-radius: var(--radio-full); min-width: 200px; background: var(--card); color: var(--texto); }
+.tp-barra-acc { display: flex; gap: 8px; align-items: center; }
+.tp-volver { display: inline-flex; width: auto; padding: 0 12px; gap: 6px; align-items: center; text-decoration: none; font-weight: 600; font-size: 14px; }
+.acceso-volver { position: absolute; top: 16px; left: 16px; }
+.tp-listo-acc { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }

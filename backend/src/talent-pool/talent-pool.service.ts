@@ -100,6 +100,7 @@ const SELECCION_DE_LISTA = {
   profesion: { select: { nombre: true } },
   formacion: { select: { nivel: true } },
   habilidades: { select: { habilidad: { select: { nombre: true } } }, take: 6 },
+  habilidadesPropias: { select: { nombre: true }, take: 4 },
 } satisfies Prisma.candidatoSelect;
 
 type FilaDeLista = Prisma.candidatoGetPayload<{ select: typeof SELECCION_DE_LISTA }>;
@@ -248,16 +249,30 @@ export class TalentPoolService implements OnModuleInit {
     let meses = 0;
     for (const e of datos.experiencia) {
       if (e.esActual) e.hasta = null;
-      if (e.desde && e.desde > mesActual) throw new BadRequestException({ codigo: 'FECHA_NO_VALIDA', message: `La experiencia en «${e.empresa}» empieza en el futuro.` });
-      if (e.desde && e.hasta && e.hasta < e.desde) throw new BadRequestException({ codigo: 'FECHA_NO_VALIDA', message: `En la experiencia en «${e.empresa}», el fin es antes del inicio.` });
-      if (e.desde) meses += mesesEntre(e.desde, e.esActual ? mesActual : (e.hasta ?? e.desde));
+      if (e.desde > mesActual) throw new BadRequestException({ codigo: 'FECHA_NO_VALIDA', message: `La experiencia en «${e.empresa}» empieza en el futuro.` });
+      if (e.hasta && e.hasta > mesActual) throw new BadRequestException({ codigo: 'FECHA_NO_VALIDA', message: `La experiencia en «${e.empresa}» termina en el futuro: si sigue ahí, marque que es su trabajo actual.` });
+      if (e.hasta && e.hasta < e.desde) throw new BadRequestException({ codigo: 'FECHA_NO_VALIDA', message: `En la experiencia en «${e.empresa}», el fin es antes del inicio.` });
+      meses += mesesEntre(e.desde, e.esActual ? mesActual : (e.hasta ?? e.desde));
     }
 
-    const cv = archivo ? validarArchivo(archivo, ['pdf'], TAMANO_MAXIMO_CURRICULUM, 'el currículum') : null;
+    // 17/10: el curriculum es obligatorio.
+    if (!archivo) throw new BadRequestException({ codigo: 'ARCHIVO_REQUERIDO', message: 'Adjunte su currículum en PDF.' });
+    const cv = validarArchivo(archivo, ['pdf'], TAMANO_MAXIMO_CURRICULUM, 'el currículum');
+    // Las propias no pueden repetir una del catalogo ni entre ellas (sin importar mayusculas).
+    const normal = (t: string) => t.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
+    const propias = datos.habilidadesPropias;
+    if (new Set(propias.map((h) => normal(h.nombre))).size !== propias.length) {
+      throw new BadRequestException({ codigo: 'DATOS_INVALIDOS', message: 'Hay una habilidad agregada repetida.' });
+    }
+    if (propias.length) {
+      const delCatalogo = await this.prisma.habilidad.findMany({ where: { activo: true }, select: { nombre: true } });
+      const repetida = propias.find((h) => delCatalogo.some((c) => normal(c.nombre) === normal(h.nombre)));
+      if (repetida) throw new BadRequestException({ codigo: 'DATOS_INVALIDOS', message: `«${repetida.nombre}» ya está en la lista: elíjala ahí en vez de agregarla.` });
+    }
 
     const previo = await this.prisma.candidato.findUnique({ where: { cedula }, select: { id: true, estado: true, cvRutaArchivo: true } });
     const id = previo?.id ?? randomUUID();
-    const rutaNueva = cv && archivo ? await this.almacen.guardar('candidatos', id, archivo.buffer) : null;
+    const rutaNueva = await this.almacen.guardar('candidatos', id, archivo.buffer);
 
     const campos = {
       nombre: datos.nombre,
@@ -271,9 +286,9 @@ export class TalentPoolService implements OnModuleInit {
       profesionTexto: datos.profesionId ? null : (datos.profesionTexto ?? null),
       descripcion: datos.descripcion ?? null,
       mesesExperiencia: Math.min(meses, 32_000),
-      cvNombreArchivo: cv ? cv.nombreOriginal.slice(0, 255) : null,
+      cvNombreArchivo: cv.nombreOriginal.slice(0, 255),
       cvRutaArchivo: rutaNueva,
-      cvTamanoBytes: archivo && cv ? archivo.buffer.length : null,
+      cvTamanoBytes: archivo.buffer.length,
       consentimientoId: consentimiento.id,
       fechaConsentimiento: new Date(),
       ipConsentimiento: direccionIp?.slice(0, 45) ?? null,
@@ -301,6 +316,7 @@ export class TalentPoolService implements OnModuleInit {
         })),
       },
       habilidades: { create: datos.habilidades.map((h) => ({ habilidadId: h.habilidadId, nivel: h.nivel ?? null })) },
+      habilidadesPropias: { create: propias.map((h) => ({ nombre: h.nombre, categoria: h.categoria, nivel: h.nivel ?? null })) },
     };
 
     try {
@@ -310,6 +326,7 @@ export class TalentPoolService implements OnModuleInit {
           await tx.formacionCandidato.deleteMany({ where: { candidatoId: id } });
           await tx.experienciaCandidato.deleteMany({ where: { candidatoId: id } });
           await tx.candidatoHabilidad.deleteMany({ where: { candidatoId: id } });
+          await tx.habilidadPropiaCandidato.deleteMany({ where: { candidatoId: id } });
           await tx.candidato.update({
             where: { id },
             data: {
@@ -395,6 +412,7 @@ export class TalentPoolService implements OnModuleInit {
             { formacion: { some: { OR: [{ titulo: { contains: p } }, { areaEstudio: { contains: p } }, { institucion: { contains: p } }] } } },
             { experiencia: { some: { OR: [{ puesto: { contains: p } }, { empresa: { contains: p } }] } } },
             { habilidades: { some: { habilidad: { nombre: { contains: p } } } } },
+            { habilidadesPropias: { some: { nombre: { contains: p } } } },
           ],
         });
       }
@@ -437,6 +455,7 @@ export class TalentPoolService implements OnModuleInit {
       select: {
         ...SELECCION_DE_LISTA,
         habilidades: { select: { nivel: true, habilidad: { select: { id: true, nombre: true, categoria: true } } }, orderBy: { habilidad: { nombre: 'asc' } } },
+        habilidadesPropias: { select: { id: true, nombre: true, categoria: true, nivel: true }, orderBy: { nombre: 'asc' } },
         fechaNacimiento: true,
         residencia: true,
         descripcion: true,
@@ -456,7 +475,7 @@ export class TalentPoolService implements OnModuleInit {
     if (!c) throw this.noEncontrado();
     const quien = c.usuarioCambioEstado;
     return {
-      ...this.aLista({ ...c, habilidades: c.habilidades.map((h) => ({ habilidad: { nombre: h.habilidad.nombre } })) }),
+      ...this.aLista({ ...c, habilidades: c.habilidades.map((h) => ({ habilidad: { nombre: h.habilidad.nombre } })), habilidadesPropias: c.habilidadesPropias }),
       nombreSolo: c.nombre,
       primerApellido: c.primerApellido,
       segundoApellido: c.segundoApellido,
@@ -473,7 +492,11 @@ export class TalentPoolService implements OnModuleInit {
       funcionario: c.funcionario ? { id: c.funcionario.id, nombre: nombreCompleto(c.funcionario) } : null,
       formacion: c.formacion,
       experiencia: c.experiencia.map((e) => ({ ...e, fechaInicio: aFechaSola(e.fechaInicio)?.slice(0, 7) ?? null, fechaFin: aFechaSola(e.fechaFin)?.slice(0, 7) ?? null })),
-      habilidadesDetalle: c.habilidades.map((h) => ({ id: h.habilidad.id, nombre: h.habilidad.nombre, categoria: h.habilidad.categoria, nivel: h.nivel })),
+      habilidadesDetalle: [
+        ...c.habilidades.map((h) => ({ id: h.habilidad.id, nombre: h.habilidad.nombre, categoria: h.habilidad.categoria, nivel: h.nivel, propia: false })),
+        // Escritas por el candidato: solo de su perfil (17/10).
+        ...c.habilidadesPropias.map((h) => ({ id: h.id, nombre: h.nombre, categoria: h.categoria, nivel: h.nivel, propia: true })),
+      ],
     };
   }
 
@@ -740,7 +763,7 @@ export class TalentPoolService implements OnModuleInit {
       profesionDigitada: !f.profesion && Boolean(f.profesionTexto),
       nivelMaximo,
       aniosExperiencia: Math.floor(f.mesesExperiencia / 12),
-      habilidades: f.habilidades.map((h) => h.habilidad.nombre),
+      habilidades: [...f.habilidades.map((h) => h.habilidad.nombre), ...f.habilidadesPropias.map((h) => h.nombre)],
       estado: f.estado,
       tieneCurriculum: Boolean(f.cvRutaArchivo),
       fechaRegistro: f.fechaRegistro.toISOString(),

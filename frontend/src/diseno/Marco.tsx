@@ -175,7 +175,7 @@ function MarcoInterno() {
           </div>
           {/* Esquina derecha (pedido de Josthyn, 12/10): [Salir] [Tema] [Notificaciones]. La campana va en la
               esquina para que su panel abra pegado al borde y no a media pantalla. */}
-          <button className="tb-btn" type="button" onClick={() => salirSiSePuede(() => void salir())} aria-label="Cerrar sesión" data-ayuda="Cerrar sesión y volver al inicio de sesión">
+          <button className="tb-btn" type="button" onClick={() => salirSiSePuede(() => void salir())} aria-label="Cerrar sesión" data-ayuda="Cerrar sesión">
             <Icono nombre="salir" />
             <span className="solo-ancho">Salir</span>
           </button>

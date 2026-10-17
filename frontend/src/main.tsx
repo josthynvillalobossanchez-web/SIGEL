@@ -10,6 +10,7 @@ import './estilos/ajustes.css';
 import './estilos/vacaciones.css';
 import './estilos/notificaciones.css';
 import './estilos/talentPool.css';
+import './estilos/bienvenida.css';
 
 const raiz = document.getElementById('raiz');
 if (!raiz) throw new Error('No se encontro <div id="raiz"> en index.html.');

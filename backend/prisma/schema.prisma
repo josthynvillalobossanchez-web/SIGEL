@@ -865,6 +865,7 @@ model candidato {
   usuarioCambioEstado usuario?            @relation("cambioEstadoCandidato", fields: [usuarioCambioEstadoId], references: [id])
   formacion         formacionCandidato[]
   habilidades       candidatoHabilidad[]
+  habilidadesPropias habilidadPropiaCandidato[]
   experiencia       experienciaCandidato[]
 
   @@index([primerApellido, nombre], map: "idxCandidatoNombre")
@@ -909,6 +910,21 @@ model candidatoHabilidad {
   habilidad habilidad @relation(fields: [habilidadId], references: [id])
 
   @@unique([candidatoId, habilidadId], map: "uqCandidatoHabilidad")
+}
+
+/// Habilidades que el candidato escribio porque no estaban en el catalogo
+/// (17/10). Son SOLO de su perfil: no se agregan al catalogo ni las ven
+/// otras personas como opcion. RRHH las encuentra con el buscador.
+model habilidadPropiaCandidato {
+  id          String             @id @default(uuid()) @db.Char(36)
+  candidatoId String             @db.Char(36)
+  nombre      String             @db.VarChar(80)
+  categoria   categoriaHabilidad
+  nivel       nivelHabilidad?
+
+  candidato candidato @relation(fields: [candidatoId], references: [id], onDelete: Cascade)
+
+  @@index([candidatoId], map: "idxHabilidadPropiaCandidato")
 }
 
 model experienciaCandidato {

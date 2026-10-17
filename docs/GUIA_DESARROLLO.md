@@ -954,3 +954,9 @@ El comando termina con error (código 1) si hubo archivos ilegibles o con error.
 - El currículum se guarda cifrado en `archivos/candidatos/<id>/`. Es lo único que el sistema **borra** del
   disco (reemplazo del registro o eliminación a pedido): `AlmacenCifradoService.eliminarDeCandidato`.
 - Variable nueva: `TALENT_POOL_ENVIOS_POR_IP` (por omisión 5 envíos cada 10 minutos).
+- (17/10) El currículum es **obligatorio**. Habilidades «Otra»: `habilidadesPropias` en el DTO (nombre,
+  categoría, nivel; máx. 12) → tabla `habilidadPropiaCandidato`; se rechaza la que ya existe en el catálogo
+  activo (sin importar tildes ni mayúsculas) y se borran al reemplazar el registro. No pasan al catálogo.
+- (17/10) Página de bienvenida: `frontend/src/paginas/Bienvenida.tsx` + `estilos/bienvenida.css` (clases `bv-`).
+  `RutaProtegida` la muestra en `/` cuando no hay sesión; con sesión `/` sigue siendo Inicio. Su contenido es
+  fijo (sin llamadas al servidor), así que no expone datos.

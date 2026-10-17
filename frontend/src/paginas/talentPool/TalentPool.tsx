@@ -183,7 +183,6 @@ export function TalentPool() {
           <select
             value=""
             onChange={(e) => e.target.value && cambiar({ habilidades: [...habilidades, e.target.value].join(',') })}
-            disabled={habilidades.length >= 10}
           >
             <option value="">{habilidades.length ? 'Agregar otra habilidad…' : 'Con la habilidad…'}</option>
             {opciones?.habilidades
@@ -507,9 +506,10 @@ function PerfilDeCandidato({
               ) : (
                 <div className="tp-candidato-hab">
                   {c.habilidadesDetalle.map((h) => (
-                    <span key={h.id} className="chip chip-neutro">
+                    <span key={h.id} className={h.propia ? 'chip chip-info' : 'chip chip-neutro'} data-ayuda={h.propia ? 'La escribió el candidato con «Otra»: no está en el catálogo' : undefined}>
                       {h.nombre}
                       {h.nivel && <small> · {NOMBRE_DE_NIVEL_DE_HABILIDAD[h.nivel]}</small>}
+                      {h.propia && <small> · propia</small>}
                     </span>
                   ))}
                 </div>

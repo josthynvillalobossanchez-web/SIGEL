@@ -7,7 +7,10 @@
  *     ya existe, se llena todo de nuevo y al enviar se reemplaza el registro
  *     anterior completo. Se avisa antes de enviar.
  *   - Consentimiento informado obligatorio (Ley 8968).
- *   - Curriculum opcional, solo PDF (hasta 10 MB).
+ *   - Curriculum obligatorio, solo PDF (hasta 10 MB) (17/10).
+ *   - Estudios y experiencias agregados se completan enteros (17/10).
+ *   - "Otra" en habilidades: la persona escribe las que no estan en la
+ *     lista; quedan SOLO en su perfil, no pasan al catalogo (17/10).
  *
  * Por pasos, para no tener que bajar (celular primero):
  *   1. Datos personales  2. Estudios  3. Experiencia  4. Habilidades
@@ -78,9 +81,9 @@ type Personales = typeof VACIO;
 const PASOS = [
   { titulo: 'Datos personales', sub: 'Quién es usted', descripcion: 'Su cédula es lo que lo identifica. Si ya se había registrado, al enviar se reemplazarán sus datos anteriores por estos.' },
   { titulo: 'Estudios', sub: 'Profesión y formación', descripcion: 'Su profesión y los estudios que ha cursado, incluidos cursos y capacitaciones.' },
-  { titulo: 'Experiencia', sub: 'Trabajos anteriores', descripcion: 'Los trabajos que ha tenido. Si aún no tiene experiencia laboral, puede seguir sin agregar ninguno.' },
-  { titulo: 'Habilidades', sub: 'Lo que sabe hacer', descripcion: 'Toque las que tiene. Si quiere, indique su nivel.' },
-  { titulo: 'Enviar', sub: 'Currículum y consentimiento', descripcion: 'Adjunte su currículum (opcional), lea el consentimiento y envíe.' },
+  { titulo: 'Experiencia', sub: 'Trabajos anteriores', descripcion: 'Los trabajos que ha tenido, con sus funciones. Si aún no tiene experiencia laboral, puede seguir sin agregar ninguno.' },
+  { titulo: 'Habilidades', sub: 'Lo que sabe hacer', descripcion: 'Toque las que tiene y, si quiere, indique su nivel. Si le falta alguna, agréguela con «Otra».' },
+  { titulo: 'Enviar', sub: 'Currículum y consentimiento', descripcion: 'Adjunte su currículum en PDF, lea el consentimiento y envíe.' },
 ];
 
 export function RegistroPublico() {
@@ -92,6 +95,9 @@ export function RegistroPublico() {
   const [estudios, setEstudios] = useState<Estudio[]>([]);
   const [experiencias, setExperiencias] = useState<Experiencia[]>([]);
   const [habilidades, setHabilidades] = useState<Record<string, NivelDeHabilidad | ''>>({});
+  // "Otra" (17/10): habilidades que escribe la persona para su propio perfil; no pasan al catalogo.
+  const [propias, setPropias] = useState<{ nombre: string; categoria: CategoriaDeHabilidad; nivel: NivelDeHabilidad | '' }[]>([]);
+  const [escribiendo, setEscribiendo] = useState<{ categoria: CategoriaDeHabilidad; texto: string } | null>(null);
   const [curriculum, setCurriculum] = useState<File | null>(null);
   const [errorCv, setErrorCv] = useState<string | null>(null);
   const [acepta, setAcepta] = useState(false);
@@ -109,7 +115,7 @@ export function RegistroPublico() {
       .catch((e) => setErrorDeCarga(textoDelError(e)));
   }, []);
 
-  useEffect(() => setProblema(null), [datos, estudios, experiencias, habilidades, curriculum, acepta]);
+  useEffect(() => setProblema(null), [datos, estudios, experiencias, habilidades, propias, curriculum, acepta]);
 
   const poner = (campo: keyof Personales) => (valor: string) => setDatos((d) => ({ ...d, [campo]: valor }));
 
@@ -125,10 +131,14 @@ export function RegistroPublico() {
     }
     if (indice === 1) {
       if (!datos.profesionId && !datos.profesionTexto.trim()) return noEncuentroProfesion ? 'Escriba su profesión u oficio.' : 'Elija su profesión u oficio (o toque «No encuentro la mía»).';
-      const i = estudios.findIndex((e) => !e.nivel);
-      if (i >= 0) return `Estudio ${i + 1}: elija el nivel.`;
-      const anio = estudios.findIndex((e) => e.anioFinalizacion && !/^(19[5-9]\d|20\d\d)$/.test(e.anioFinalizacion));
-      if (anio >= 0) return `Estudio ${anio + 1}: el año debe tener 4 dígitos.`;
+      // 17/10: un estudio agregado se completa entero (el año, salvo si esta en curso).
+      for (const [i, e] of estudios.entries()) {
+        if (!e.nivel) return `Estudio ${i + 1}: elija el nivel.`;
+        if (e.titulo.trim().length < 2) return `Estudio ${i + 1}: escriba el título o nombre del curso.`;
+        if (e.institucion.trim().length < 2) return `Estudio ${i + 1}: escriba la institución.`;
+        if (e.concluido && !e.anioFinalizacion) return `Estudio ${i + 1}: indique el año en que terminó (o marque que está en curso).`;
+        if (e.anioFinalizacion && !/^(19[5-9]\d|20\d\d)$/.test(e.anioFinalizacion)) return `Estudio ${i + 1}: el año debe tener 4 dígitos.`;
+      }
     }
     if (indice === 2) {
       for (const [i, e] of experiencias.entries()) {
@@ -136,11 +146,16 @@ export function RegistroPublico() {
         if (e.puesto.trim().length < 2) return `Experiencia ${i + 1}: escriba el puesto.`;
         if (!e.desde) return `Experiencia ${i + 1}: indique el mes en que empezó.`;
         if (e.desde > hoy.slice(0, 7)) return `Experiencia ${i + 1}: empieza en el futuro.`;
-        if (!e.esActual && e.hasta && e.hasta < e.desde) return `Experiencia ${i + 1}: termina antes de empezar.`;
+        if (!e.esActual && !e.hasta) return `Experiencia ${i + 1}: indique hasta cuándo trabajó ahí (o marque que es su trabajo actual).`;
+        if (!e.esActual && e.hasta > hoy.slice(0, 7)) return `Experiencia ${i + 1}: termina en el futuro (si sigue ahí, marque que es su trabajo actual).`;
+        if (!e.esActual && e.hasta < e.desde) return `Experiencia ${i + 1}: termina antes de empezar.`;
+        if (e.descripcion.trim().length < 5) return `Experiencia ${i + 1}: describa sus funciones principales.`;
       }
     }
+    if (indice === 3 && escribiendo?.texto.trim()) return 'Termine de agregar la habilidad que está escribiendo (toque «Agregar») o bórrela.';
     if (indice === 4) {
       if (errorCv) return errorCv;
+      if (!curriculum) return 'Adjunte su currículum en PDF.';
       if (!acepta) return 'Para registrarse debe leer y aceptar el consentimiento informado.';
     }
     return null;
@@ -187,8 +202,8 @@ export function RegistroPublico() {
       descripcion: nulo(datos.descripcion),
       formacion: estudios.map((e) => ({
         nivel: e.nivel as NivelEducativo,
-        titulo: nulo(e.titulo),
-        institucion: nulo(e.institucion),
+        titulo: e.titulo.trim(),
+        institucion: e.institucion.trim(),
         areaEstudio: null,
         anioFinalizacion: e.anioFinalizacion ? Number(e.anioFinalizacion) : null,
         concluido: e.concluido,
@@ -199,9 +214,10 @@ export function RegistroPublico() {
         desde: nulo(e.desde),
         hasta: e.esActual ? null : nulo(e.hasta),
         esActual: e.esActual,
-        descripcion: nulo(e.descripcion),
+        descripcion: e.descripcion.trim(),
       })),
       habilidades: Object.entries(habilidades).map(([habilidadId, nivel]) => ({ habilidadId, nivel: nivel || null })),
+      habilidadesPropias: propias.map((h) => ({ nombre: h.nombre, categoria: h.categoria, nivel: h.nivel || null })),
       consentimientoId: formulario.consentimiento.id,
       aceptaConsentimiento: acepta,
       sitioWeb: trampa,
@@ -222,6 +238,8 @@ export function RegistroPublico() {
     setEstudios([]);
     setExperiencias([]);
     setHabilidades({});
+    setPropias([]);
+    setEscribiendo(null);
     setCurriculum(null);
     setAcepta(false);
     setNoEncuentroProfesion(false);
@@ -242,9 +260,14 @@ export function RegistroPublico() {
             Sus datos solo los verá el Departamento de Recursos Humanos de la Municipalidad de Palmares. Si en algún momento quiere actualizarlos, vuelva a llenar el formulario con la
             misma cédula. Para pedir que se eliminen, comuníquese con Recursos Humanos.
           </p>
-          <button type="button" className="btn btn-secundario" onClick={empezarDeNuevo}>
-            Volver al formulario
-          </button>
+          <div className="tp-listo-acc">
+            <Link to="/" className="btn btn-primario">
+              Volver al inicio
+            </Link>
+            <button type="button" className="btn btn-secundario" onClick={empezarDeNuevo}>
+              Llenar otro formulario
+            </button>
+          </div>
         </div>
       </Marco>
     );
@@ -387,9 +410,9 @@ export function RegistroPublico() {
                               ))}
                             </select>
                           </div>
-                          <Texto id={`tpTit${i}`} etiqueta="Título o nombre del curso" valor={e.titulo} alCambiar={(v) => cambiar({ titulo: v })} max={180} />
-                          <Texto id={`tpIns${i}`} etiqueta="Institución" valor={e.institucion} alCambiar={(v) => cambiar({ institucion: v })} max={180} />
-                          <Texto id={`tpAnio${i}`} etiqueta="Año" tipo="text" valor={e.anioFinalizacion} alCambiar={(v) => cambiar({ anioFinalizacion: v.replace(/\D/g, '').slice(0, 4) })} max={4} placeholder="2019" />
+                          <Texto id={`tpTit${i}`} etiqueta="Título o nombre del curso" obligatorio valor={e.titulo} alCambiar={(v) => cambiar({ titulo: v })} max={180} />
+                          <Texto id={`tpIns${i}`} etiqueta="Institución" obligatorio valor={e.institucion} alCambiar={(v) => cambiar({ institucion: v })} max={180} />
+                          <Texto id={`tpAnio${i}`} etiqueta={e.concluido ? 'Año en que terminó' : 'Año en que terminará (si lo sabe)'} obligatorio={e.concluido} tipo="text" valor={e.anioFinalizacion} alCambiar={(v) => cambiar({ anioFinalizacion: v.replace(/\D/g, '').slice(0, 4) })} max={4} placeholder="2019" />
                           <label className="casilla tp-casilla">
                             <input type="checkbox" checked={!e.concluido} onChange={(ev) => cambiar({ concluido: !ev.target.checked })} /> En curso o sin terminar
                           </label>
@@ -423,7 +446,7 @@ export function RegistroPublico() {
                             <input id={`tpDes${i}`} type="month" value={e.desde} max={hoy.slice(0, 7)} onChange={(ev) => cambiar({ desde: ev.target.value })} />
                           </div>
                           <div className="campo">
-                            <label htmlFor={`tpHas${i}`}>Hasta</label>
+                            <label htmlFor={`tpHas${i}`}>Hasta {!e.esActual && <span className="obligatorio">*</span>}</label>
                             <input id={`tpHas${i}`} type="month" value={e.esActual ? '' : e.hasta} disabled={e.esActual} min={e.desde || undefined} max={hoy.slice(0, 7)} onChange={(ev) => cambiar({ hasta: ev.target.value })} />
                             <label className="casilla tp-casilla">
                               <input type="checkbox" checked={e.esActual} onChange={(ev) => cambiar({ esActual: ev.target.checked })} /> Trabajo aquí actualmente
@@ -431,7 +454,9 @@ export function RegistroPublico() {
                           </div>
                         </div>
                         <div className="campo">
-                          <label htmlFor={`tpFun${i}`}>Funciones principales</label>
+                          <label htmlFor={`tpFun${i}`}>
+                            Funciones principales <span className="obligatorio">*</span>
+                          </label>
                           <textarea id={`tpFun${i}`} rows={2} maxLength={500} value={e.descripcion} onChange={(ev) => cambiar({ descripcion: ev.target.value })} />
                         </div>
                       </>
@@ -444,7 +469,17 @@ export function RegistroPublico() {
                 <div className="tp-habilidades">
                   {(Object.keys(NOMBRE_DE_CATEGORIA) as CategoriaDeHabilidad[]).map((cat) => {
                     const deLaCategoria = formulario.habilidades.filter((h) => h.categoria === cat);
-                    if (!deLaCategoria.length) return null;
+                    const suyas = propias.map((h, i) => ({ ...h, i })).filter((h) => h.categoria === cat);
+                    const agregarPropia = () => {
+                      const texto = (escribiendo?.texto ?? '').trim().replace(/\s{2,}/g, ' ');
+                      const igual = (a: string) => a.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '') === texto.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+                      if (texto.length < 2) return setProblema('Escriba la habilidad que quiere agregar.');
+                      const delCatalogo = formulario.habilidades.find((h) => igual(h.nombre));
+                      if (delCatalogo) return setProblema(`«${delCatalogo.nombre}» ya está en la lista: tóquela para elegirla.`);
+                      if (propias.some((h) => igual(h.nombre))) return setProblema(`Ya agregó «${texto}».`);
+                      setPropias((l) => [...l, { nombre: texto.slice(0, 80), categoria: cat, nivel: '' }]);
+                      setEscribiendo(null);
+                    };
                     return (
                       <fieldset key={cat}>
                         <legend>{NOMBRE_DE_CATEGORIA[cat]}</legend>
@@ -484,11 +519,64 @@ export function RegistroPublico() {
                               </span>
                             );
                           })}
+                          {suyas.map((h) => (
+                            <span key={`propia-${h.i}`} className="tp-chip elegida tp-chip-propia">
+                              <span className="tp-chip-texto">{h.nombre}</span>
+                              <select
+                                aria-label={`Nivel en ${h.nombre}`}
+                                value={h.nivel}
+                                onChange={(e) => setPropias((l) => l.map((x, j) => (j === h.i ? { ...x, nivel: e.target.value as NivelDeHabilidad | '' } : x)))}
+                              >
+                                <option value="">Nivel…</option>
+                                {(Object.keys(NOMBRE_DE_NIVEL_DE_HABILIDAD) as NivelDeHabilidad[]).map((n) => (
+                                  <option key={n} value={n}>
+                                    {NOMBRE_DE_NIVEL_DE_HABILIDAD[n]}
+                                  </option>
+                                ))}
+                              </select>
+                              <button type="button" className="tp-chip-quitar" aria-label={`Quitar ${h.nombre}`} onClick={() => setPropias((l) => l.filter((_, j) => j !== h.i))}>
+                                <Icono nombre="equis" tamano={14} />
+                              </button>
+                            </span>
+                          ))}
+                          {escribiendo?.categoria === cat ? (
+                            <span className="tp-otra">
+                              <input
+                                autoFocus
+                                aria-label={`Otra habilidad (${NOMBRE_DE_CATEGORIA[cat].toLowerCase()})`}
+                                value={escribiendo.texto}
+                                maxLength={80}
+                                placeholder="Escriba su habilidad"
+                                onChange={(e) => setEscribiendo({ categoria: cat, texto: e.target.value })}
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter') {
+                                    e.preventDefault();
+                                    agregarPropia();
+                                  }
+                                  if (e.key === 'Escape') setEscribiendo(null);
+                                }}
+                              />
+                              <button type="button" className="btn btn-secundario btn-chico" onClick={agregarPropia}>
+                                Agregar
+                              </button>
+                              <button type="button" className="btn-texto" onClick={() => setEscribiendo(null)}>
+                                Cancelar
+                              </button>
+                            </span>
+                          ) : (
+                            propias.length < 12 && (
+                              <button type="button" className="tp-chip tp-chip-otra" onClick={() => setEscribiendo({ categoria: cat, texto: '' })} data-ayuda="Agregue una habilidad que no está en la lista. Solo queda en su perfil.">
+                                <Icono nombre="mas" tamano={14} /> Otra
+                              </button>
+                            )
+                          )}
                         </div>
                       </fieldset>
                     );
                   })}
-                  <p className="ayuda-detalle">{Object.keys(habilidades).length} elegidas.</p>
+                  <p className="ayuda-detalle">
+                    {Object.keys(habilidades).length + propias.length} elegidas. Si una no está en la lista, tóquela en «Otra» y escríbala: solo queda en su perfil.
+                  </p>
                 </div>
               )}
 
@@ -496,7 +584,7 @@ export function RegistroPublico() {
                 <>
                   <div className="campo">
                     <label htmlFor="tpCv">
-                      Currículum <small className="opcional">(opcional, PDF de hasta 10 MB)</small>
+                      Currículum <span className="obligatorio">*</span> <small className="opcional">(PDF de hasta 10 MB)</small>
                     </label>
                     <ZonaDeArchivo
                       id="tpCv"
@@ -614,15 +702,18 @@ function Marco({ children }: { children: ReactNode }) {
             <small>Recursos Humanos · Talent Pool</small>
           </span>
         </span>
-        <BotonTema clase="btn-icono-claro" />
+        <span className="tp-barra-acc">
+          <Link to="/" className="btn-icono-claro tp-volver" data-ayuda="Volver a la página de bienvenida">
+            <Icono nombre="volver" tamano={16} /> <span className="solo-ancho">Volver al inicio</span>
+          </Link>
+          <BotonTema clase="btn-icono-claro" />
+        </span>
       </header>
       <main className="tp-contenido">{children}</main>
       <footer className="tp-pie">
         <img className="logo-claro" src={logoClaro} alt="Municipalidad de Palmares" />
         <img className="logo-oscuro" src={logoOscuro} alt="" />
-        <span>
-          ¿Es funcionario? <Link to="/iniciar-sesion">Ingrese a SINERGIA</Link>
-        </span>
+        <span>Municipalidad de Palmares · Departamento de Recursos Humanos</span>
       </footer>
     </div>
   );

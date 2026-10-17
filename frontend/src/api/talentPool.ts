@@ -60,9 +60,11 @@ export interface RegistroDeCandidato {
   profesionId: string | null;
   profesionTexto: string | null;
   descripcion: string | null;
-  formacion: { nivel: NivelEducativo; titulo: string | null; institucion: string | null; areaEstudio: string | null; anioFinalizacion: number | null; concluido: boolean }[];
-  experiencia: { empresa: string; puesto: string; desde: string | null; hasta: string | null; esActual: boolean; descripcion: string | null }[];
+  formacion: { nivel: NivelEducativo; titulo: string; institucion: string; areaEstudio: string | null; anioFinalizacion: number | null; concluido: boolean }[];
+  experiencia: { empresa: string; puesto: string; desde: string | null; hasta: string | null; esActual: boolean; descripcion: string }[];
   habilidades: { habilidadId: string; nivel: NivelDeHabilidad | null }[];
+  /** "Otra": escritas por la persona; solo quedan en su perfil (17/10). */
+  habilidadesPropias: { nombre: string; categoria: CategoriaDeHabilidad; nivel: NivelDeHabilidad | null }[];
   consentimientoId: string;
   aceptaConsentimiento: boolean;
   /** Campo trampa: siempre vacio. */
@@ -115,7 +117,8 @@ export interface DetalleDeCandidato extends CandidatoDeLista {
   funcionario: { id: string; nombre: string } | null;
   formacion: { id: string; nivel: NivelEducativo; titulo: string | null; institucion: string | null; areaEstudio: string | null; anioFinalizacion: number | null; concluido: boolean }[];
   experiencia: { id: string; empresa: string; puesto: string; fechaInicio: string | null; fechaFin: string | null; esActual: boolean; descripcion: string | null }[];
-  habilidadesDetalle: { id: string; nombre: string; categoria: CategoriaDeHabilidad; nivel: NivelDeHabilidad | null }[];
+  /** propia = la escribio el candidato ("Otra"): no esta en el catalogo. */
+  habilidadesDetalle: { id: string; nombre: string; categoria: CategoriaDeHabilidad; nivel: NivelDeHabilidad | null; propia: boolean }[];
 }
 
 export interface FiltrosDeCandidatos {

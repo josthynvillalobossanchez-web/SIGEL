@@ -548,6 +548,10 @@ input.solo-lectura { background: var(--neutro-bg); color: var(--texto-sec); curs
    claro, el icono del calendario se pintaba blanco sobre blanco (28/09). */
 :root[data-theme="light"] { color-scheme: light; }
 :root[data-theme="dark"] { color-scheme: dark; }
+/* 17/10: la lista desplegable de un <select> con fondo transparente (p. ej. el nivel de
+   las habilidades) salia blanca con letra clara en tema oscuro: sus opciones usan los
+   colores del tema. */
+select option, select optgroup { background-color: var(--card); color: var(--texto); }
 
 /* Inicio: titulos de seccion y cifras del resumen (cada una lleva a la lista filtrada). */
 .inicio-titulo { font-size: 13px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--texto-sec); margin: 18px 0 10px; }

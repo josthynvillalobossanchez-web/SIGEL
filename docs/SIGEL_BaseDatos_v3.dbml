@@ -706,6 +706,18 @@ Table candidatoHabilidad {
   Note: 'Muchos a muchos con UUID propio.'
 }
 
+Table habilidadPropiaCandidato {
+  id char(36) [pk, note: 'UUID']
+  candidatoId char(36) [not null, ref: > candidato.id, note: 'Se borra con el candidato']
+  nombre varchar(80) [not null]
+  categoria categoriaHabilidad [not null]
+  nivel nivelHabilidad
+  indexes {
+    candidatoId [name: 'idxHabilidadPropiaCandidato']
+  }
+  Note: 'Habilidad «Otra» escrita por el candidato (17/10). Solo vive en su perfil: nunca entra al catalogo habilidad.'
+}
+
 Table experienciaCandidato {
   id char(36) [pk, note: 'UUID']
   candidatoId char(36) [not null, ref: > candidato.id]
@@ -822,6 +834,7 @@ TableGroup talentPool {
   formacionCandidato
   habilidad
   candidatoHabilidad
+  habilidadPropiaCandidato
   experienciaCandidato
 }
 

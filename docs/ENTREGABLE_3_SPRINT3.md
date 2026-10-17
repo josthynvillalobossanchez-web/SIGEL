@@ -81,7 +81,22 @@ Migración `20261013010000_talent_pool`: tablas `consentimiento` (versionado), `
 | 5 | **Contratar** (Ficha 41): doble confirmación → «Registrar funcionario» con los datos personales del candidato (cédula fija); RRHH completa los laborales y decide si tendrá cuenta; en una sola transacción se crea el funcionario y el candidato queda «contratado»; el currículum se copia al expediente (tipo «Curriculum»; si falla, se avisa a RRHH) | **Hecha** |
 | 6 | Catálogo de habilidades (agregar, cambiar categoría, inactivar) y **eliminar los datos a pedido de la persona** (Ley 8968; la bitácora guarda solo la cédula) | **Hecha** |
 | 7 | Avisos: «Nuevo candidato» / «Candidato actualizado» a RRHH. Bitácora: registro y reemplazo anónimos («Formulario público (sin cuenta)»), cambios de RRHH, contratación | **Hecha** |
-| 8 | Pruebas: `pruebas-talent-pool.mjs` (77) y `ui-talent-pool.py` (42); regresión completa en verde | **Hecha** |
+| 8 | Pruebas: `pruebas-talent-pool.mjs` (88) y `ui-talent-pool.py` (57); regresión completa en verde | **Hecha** |
+
+**Ajustes de Josthyn (17/10/2026):**
+
+| # | Ajuste | Estado |
+|---|---|---|
+| 9 | **Página de bienvenida** en `/` (sin sesión): qué hace el sistema (explorador de funciones con ejemplos inventados), quién ve qué, y la sección «¿Quiere formar parte de nuestro equipo?» que explica el Talent Pool (pasos y preguntas frecuentes). Dos caminos: «Ingresar a SINERGIA» y «Postularme al Talent Pool». Solo información general: ningún dato de funcionarios | **Hecha** |
+| 10 | Se quitan los enlaces entre Iniciar sesión y el Talent Pool; ambas pantallas tienen «Volver al inicio» | **Hecha** |
+| 11 | Habilidades **«Otra»** en cada categoría (Técnicas, Personales, Idiomas, Herramientas): la persona escribe la suya (máx. 12). Quedan **solo en su perfil** (tabla `habilidadPropiaCandidato`, migración `20261017000000_habilidades_propias`), nunca entran al catálogo; no se acepta una que ya esté en el catálogo. RRHH las ve marcadas «propia» y el buscador las encuentra | **Hecha** |
+| 12 | Filtro de habilidades de RRHH **sin límite** (antes 10) | **Hecha** |
+| 13 | Campos obligatorios: cada estudio agregado (nivel, título, institución y año si está concluido); cada experiencia (empresa, puesto, desde, **hasta** salvo trabajo actual —no futura—, **funciones principales**); **currículum PDF obligatorio** | **Hecha** |
+
+Respuestas del 17/10: «Profesión u oficio» sale de la tabla `profesion` (Catálogos de personal), así que es
+escalable. El nivel de estudio es una lista fija en el código (primaria a posgrado, más «curso»), porque el
+filtro «nivel mínimo» necesita su orden. «Copiar enlace del formulario» copia la dirección pública para
+compartirla (redes, sitio web, correo).
 
 **Se apartan de las fichas (a propósito):** no se envía correo de confirmación al candidato (decisión del 10/10:
 el correo solo se usa para la cuenta nueva); el mensaje de éxito en pantalla lo reemplaza. Si una persona

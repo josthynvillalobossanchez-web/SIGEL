@@ -57,19 +57,18 @@ export class FormacionDto {
   @IsIn(NIVELES_EDUCATIVOS, { message: 'Elija el nivel de cada estudio.' })
   nivel!: NivelEducativo;
 
-  @IsOptional()
+  // 17/10: todos los datos del estudio son obligatorios (el año, salvo si esta en curso).
   @Transform(limpiar)
-  @ValidateIf((_o, v) => v !== null)
-  @IsString()
+  @IsString({ message: 'Indique el título o nombre de cada estudio.' })
+  @MinLength(2, { message: 'Indique el título o nombre de cada estudio.' })
   @MaxLength(180, { message: 'El nombre del título no puede pasar de 180 caracteres.' })
-  titulo?: string | null;
+  titulo!: string;
 
-  @IsOptional()
   @Transform(limpiar)
-  @ValidateIf((_o, v) => v !== null)
-  @IsString()
+  @IsString({ message: 'Indique la institución de cada estudio.' })
+  @MinLength(2, { message: 'Indique la institución de cada estudio.' })
   @MaxLength(180, { message: 'La institución no puede pasar de 180 caracteres.' })
-  institucion?: string | null;
+  institucion!: string;
 
   @IsOptional()
   @Transform(limpiar)
@@ -78,10 +77,10 @@ export class FormacionDto {
   @MaxLength(150, { message: 'El área de estudio no puede pasar de 150 caracteres.' })
   areaEstudio?: string | null;
 
-  @IsOptional()
-  @ValidateIf((_o, v) => v !== null)
+  /** Obligatorio si el estudio esta concluido. */
+  @ValidateIf((o: FormacionDto) => o.concluido !== false || (o.anioFinalizacion !== null && o.anioFinalizacion !== undefined))
   @Type(() => Number)
-  @IsInt({ message: 'El año de finalización debe ser un número.' })
+  @IsInt({ message: 'Indique el año en que terminó cada estudio concluido.' })
   @Min(1950, { message: 'El año de finalización no es válido.' })
   @Max(2100, { message: 'El año de finalización no es válido.' })
   anioFinalizacion?: number | null;
@@ -104,16 +103,16 @@ export class ExperienciaDto {
   @MaxLength(150, { message: 'El puesto no puede pasar de 150 caracteres.' })
   puesto!: string;
 
-  /** Mes de inicio, "AAAA-MM". */
-  @IsOptional()
+  /** Mes de inicio, "AAAA-MM". Obligatorio (17/10). */
   @Transform(limpiar)
-  @ValidateIf((_o, v) => v !== null)
+  @IsString({ message: 'Indique el mes en que empezó cada experiencia.' })
   @Matches(MES, { message: 'Los meses de la experiencia deben venir como AAAA-MM.' })
-  desde?: string | null;
+  desde!: string;
 
-  @IsOptional()
+  /** Obligatorio salvo que sea el trabajo actual (17/10). */
+  @ValidateIf((o: ExperienciaDto) => !o.esActual)
   @Transform(limpiar)
-  @ValidateIf((_o, v) => v !== null)
+  @IsString({ message: 'Indique hasta cuándo trabajó en cada experiencia (o marque que es su trabajo actual).' })
   @Matches(MES, { message: 'Los meses de la experiencia deben venir como AAAA-MM.' })
   hasta?: string | null;
 
@@ -121,12 +120,29 @@ export class ExperienciaDto {
   @IsBoolean()
   esActual?: boolean;
 
-  @IsOptional()
+  /** Funciones principales: obligatorias (17/10). */
   @Transform(limpiarParrafo)
-  @ValidateIf((_o, v) => v !== null)
-  @IsString()
+  @IsString({ message: 'Describa las funciones principales de cada experiencia.' })
+  @MinLength(5, { message: 'Describa las funciones principales de cada experiencia.' })
   @MaxLength(500, { message: 'La descripción de cada experiencia no puede pasar de 500 caracteres.' })
-  descripcion?: string | null;
+  descripcion!: string;
+}
+
+/** "Otra": habilidad que el candidato escribe para SI mismo (no pasa al catalogo, 17/10). */
+export class HabilidadPropiaDto {
+  @Transform(limpiar)
+  @IsString({ message: 'Escriba el nombre de cada habilidad que agrega.' })
+  @MinLength(2, { message: 'Escriba el nombre de cada habilidad que agrega.' })
+  @MaxLength(80, { message: 'Cada habilidad que agrega puede tener hasta 80 caracteres.' })
+  nombre!: string;
+
+  @IsIn(CATEGORIAS_DE_HABILIDAD, { message: 'La categoría de una habilidad agregada no es válida.' })
+  categoria!: CategoriaDeHabilidad;
+
+  @IsOptional()
+  @ValidateIf((_o, v) => v !== null)
+  @IsIn(NIVELES_DE_HABILIDAD, { message: 'El nivel de la habilidad no es válido.' })
+  nivel?: (typeof NIVELES_DE_HABILIDAD)[number] | null;
 }
 
 export class HabilidadElegidaDto {
@@ -231,6 +247,13 @@ export class RegistroDeCandidatoDto {
   @Type(() => HabilidadElegidaDto)
   habilidades: HabilidadElegidaDto[] = [];
 
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(12, { message: 'Puede agregar hasta 12 habilidades propias.' })
+  @ValidateNested({ each: true })
+  @Type(() => HabilidadPropiaDto)
+  habilidadesPropias: HabilidadPropiaDto[] = [];
+
   /** La version del consentimiento que se le mostro. */
   @IsUUID(undefined, { message: 'Vuelva a cargar la página: el consentimiento no es válido.' })
   consentimientoId!: string;
@@ -275,7 +298,8 @@ export class ConsultarCandidatosDto extends PaginacionDto {
   @IsOptional()
   @Transform(({ value }) => (typeof value === 'string' ? value.split(',').filter(Boolean) : value))
   @IsArray()
-  @ArrayMaxSize(10, { message: 'Puede filtrar por hasta 10 habilidades.' })
+  // Sin limite practico (17/10): el tope solo evita direcciones absurdas.
+  @ArrayMaxSize(200, { message: 'Demasiadas habilidades en el filtro.' })
   @IsUUID(undefined, { each: true, message: 'Una de las habilidades no es válida.' })
   habilidades?: string[];
 
