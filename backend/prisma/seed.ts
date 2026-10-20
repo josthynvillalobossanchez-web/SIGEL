@@ -431,8 +431,11 @@ async function main(): Promise<void> {
   if (existente) {
     console.log(`  Super Administrador: ya existe (${correo}), no se toca su contraseña.`);
   } else {
-    const generada = !process.env.SEED_ADMIN_CONTRASENA;
-    const contrasena = process.env.SEED_ADMIN_CONTRASENA ?? randomBytes(9).toString('base64url');
+    // Vacia o ausente = se genera una al azar. (Con "??" una variable vacia en el
+    // .env dejaba la cuenta con contrasena vacia: corregido el 20/10/2026.)
+    const indicada = process.env.SEED_ADMIN_CONTRASENA?.trim();
+    const generada = !indicada;
+    const contrasena = indicada || randomBytes(9).toString('base64url');
     // Cuenta y rol en una sola operacion: si el seed se interrumpe, no queda
     // una cuenta de Super Administrador sin rol (que ademas el seed ya no
     // repararia, porque al volver a correr ve que la cuenta "ya existe").
