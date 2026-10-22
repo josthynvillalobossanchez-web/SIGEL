@@ -60,6 +60,7 @@ const SELECCION_DE_LISTA = {
   cantidadDias: true,
   motivo: true,
   motivoRechazo: true,
+  motivoCancelacion: true,
   fechaResolucion: true,
   estadoDocumentoGenerado: true,
   documentoGeneradoId: true,
@@ -83,6 +84,8 @@ export interface SolicitudDeLista {
   cantidadDias: number | null;
   motivo: string | null;
   motivoRechazo: string | null;
+  /** Motivo de cancelar una solicitud que ya estaba aprobada (21/10). */
+  motivoCancelacion: string | null;
   fechaResolucion: string | null;
   tieneConstancia: boolean;
   /** Documento de la constancia en el expediente (si ya se genero). */
@@ -423,7 +426,7 @@ export class SolicitudesService {
    *    dias vuelven al saldo con un movimiento de devolucion (nada se borra).
    *    La pantalla pide doble confirmacion: no se puede deshacer.
    */
-  async cancelar(id: string, quienActua: UsuarioAutenticado, direccionIp?: string): Promise<SolicitudDeLista> {
+  async cancelar(id: string, quienActua: UsuarioAutenticado, direccionIp?: string, motivoIndicado?: string): Promise<SolicitudDeLista> {
     const s = await this.prisma.solicitud.findUnique({
       where: { id },
       select: {
@@ -437,6 +440,7 @@ export class SolicitudesService {
         fechaInicio: true,
         cantidadDias: true,
         tipoSolicitud: { select: { nombre: true, descuentaVacaciones: true, requiereAprobacion: true } },
+        funcionario: { select: { jefaturaId: true } },
       },
     });
     if (!s) throw this.noEncontrada();
@@ -447,13 +451,27 @@ export class SolicitudesService {
       });
     }
     const esSuya = s.usuarioSolicitanteId === quienActua.id || (quienActua.funcionarioId !== null && s.funcionarioId === quienActua.funcionarioId);
-    if (!esSuya) {
-      throw new ForbiddenException({ codigo: 'SOLICITUD_AJENA', message: 'Solo quien hizo la solicitud puede cancelarla.' });
-    }
+    /** La jefatura de la persona: quien la aprobo o su jefatura actual (con el permiso de aprobar). */
+    const esSuJefatura =
+      !esSuya &&
+      quienActua.permisos.includes('solicitudes.aprobar') &&
+      (s.aprobadorId === quienActua.id || (quienActua.funcionarioId !== null && s.funcionario.jefaturaId === quienActua.funcionarioId));
 
     if (s.estado === 'aprobada') {
+      /*
+       * Cancelar una aprobada (21/10, pedido de RRHH y Joseph):
+       *   - Vacaciones: la persona o su jefatura (p. ej. un trabajo no se termino,
+       *     o la persona prefiere tomarlas otro dia), antes de que empiecen y con
+       *     motivo. Se devuelven los dias y se avisa a la jefatura y a RRHH.
+       *   - Otros tramites con aprobacion: como antes, solo quien se la aprobo a
+       *     si mismo (tope de la jerarquia).
+       */
       const seLaAproboASiMismo = s.aprobadorId === quienActua.id && s.funcionarioId === quienActua.funcionarioId;
-      if (!seLaAproboASiMismo) {
+      const permitido = s.tipoSolicitud.descuentaVacaciones ? esSuya || esSuJefatura : seLaAproboASiMismo;
+      if (!permitido) {
+        if (!esSuya && !esSuJefatura) {
+          throw new ForbiddenException({ codigo: 'SOLICITUD_AJENA', message: 'Solo la persona o su jefatura pueden cancelar esta solicitud.' });
+        }
         throw new ConflictException({
           codigo: 'SOLICITUD_YA_RESUELTA',
           message: 'Esta solicitud ya la aprobó su jefatura. Para cambiarla, coordínelo directamente con ella.',
@@ -465,11 +483,15 @@ export class SolicitudesService {
           message: 'Esta solicitud ya empezó: no se puede cancelar. Si hace falta corregir el saldo, Recursos Humanos puede hacer un ajuste.',
         });
       }
+      const motivo = motivoIndicado?.trim();
+      if (!motivo || motivo.length < 5) {
+        throw new BadRequestException({ codigo: 'MOTIVO_REQUERIDO', message: 'Indique el motivo de la cancelación (al menos 5 caracteres).' });
+      }
       await this.prisma.$transaction(async (tx) => {
         await tx.$queryRaw`SELECT id FROM funcionario WHERE id = ${s.funcionarioId} FOR UPDATE`;
         const resultado = await tx.solicitud.updateMany({
           where: { id, estado: 'aprobada' },
-          data: { estado: 'cancelada', fechaResolucion: new Date(), usuarioResolucionId: quienActua.id },
+          data: { estado: 'cancelada', fechaResolucion: new Date(), usuarioResolucionId: quienActua.id, motivoCancelacion: motivo },
         });
         if (resultado.count === 0) throw this.yaResuelta('cancelada');
         // La constancia ya no vale: se da de baja (no se borra).
@@ -504,7 +526,8 @@ export class SolicitudesService {
             accion: 'cancelar',
             direccionIp,
             datosAnteriores: { estado: 'aprobada' },
-            descripcion: `Canceló la solicitud aprobada ${s.consecutivo}${s.tipoSolicitud.descuentaVacaciones ? ` y se devolvieron ${Number(s.cantidadDias ?? 0)} día(s) al saldo` : ''}.`,
+            datosNuevos: { estado: 'cancelada', motivoCancelacion: motivo },
+            descripcion: `Canceló la solicitud aprobada ${s.consecutivo}${s.tipoSolicitud.descuentaVacaciones ? ` y se devolvieron ${Number(s.cantidadDias ?? 0)} día(s) al saldo` : ''}. Motivo: ${motivo}`,
           },
           tx,
         );
@@ -514,6 +537,9 @@ export class SolicitudesService {
       return cancelada;
     }
 
+    if (!esSuya) {
+      throw new ForbiddenException({ codigo: 'SOLICITUD_AJENA', message: 'Solo quien hizo la solicitud puede cancelarla.' });
+    }
     if (s.estado !== 'pendiente') {
       throw new ConflictException({ codigo: 'SOLICITUD_YA_RESUELTA', message: 'Solo se pueden cancelar solicitudes pendientes.' });
     }
@@ -606,10 +632,17 @@ export class SolicitudesService {
       return;
     }
     // Cancelada: la jefatura siempre; RRHH solo si ya estaba aprobada (si estaba pendiente, RRHH nunca se entero).
-    await n.avisarAUsuarios([s.aprobador?.id], { ...base, clave: 'solicitudCancelada', titulo: 'Solicitud cancelada', mensaje: `Se canceló ${que} de ${persona} (${s.consecutivo}).`, enlace: paraLaJefatura }, op);
-    if (evento === 'canceladaAprobada') await n.avisarARrhh({ ...base, clave: 'solicitudCancelada', titulo: `Cancelada: ${s.tipo.nombre.toLowerCase()} de ${persona}`, mensaje: `Se canceló ${que} de ${persona} (${s.consecutivo}).`, enlace: paraRrhh }, op);
+    const porMotivo = s.motivoCancelacion ? ` Motivo: ${s.motivoCancelacion}.` : '';
+    const devueltos = evento === 'canceladaAprobada' && s.tipo.descuentaVacaciones ? ' Los días volvieron al saldo.' : '';
+    // La jefatura actual de la persona (o quien la aprobo, si ya no la tiene): no se le avisa a quien cancelo.
+    if (s.aprobador?.id) {
+      await n.avisarAUsuarios([s.aprobador.id], { ...base, clave: 'solicitudCancelada', titulo: 'Solicitud cancelada', mensaje: `Se canceló ${que} de ${persona} (${s.consecutivo}).${devueltos}${porMotivo}`, enlace: paraLaJefatura }, op);
+    } else {
+      await n.avisarAJefaturaDe(s.funcionario.id, { ...base, clave: 'solicitudCancelada', titulo: 'Solicitud cancelada', mensaje: `Se canceló ${que} de ${persona} (${s.consecutivo}).${devueltos}${porMotivo}`, enlace: paraLaJefatura }, op);
+    }
+    if (evento === 'canceladaAprobada') await n.avisarARrhh({ ...base, clave: 'solicitudCancelada', titulo: `Cancelada: ${s.tipo.nombre.toLowerCase()} de ${persona}`, mensaje: `Se canceló ${que} de ${persona} (${s.consecutivo}).${devueltos}${porMotivo}`, enlace: paraRrhh }, op);
     if (laHizoOtro) {
-      await n.avisarAFuncionario(s.funcionario.id, { ...base, clave: 'solicitudCancelada', titulo: 'Se canceló una solicitud suya', mensaje: `Se canceló su solicitud de ${que} (${s.consecutivo}).`, enlace: paraLaPersona }, op);
+      await n.avisarAFuncionario(s.funcionario.id, { ...base, clave: 'solicitudCancelada', titulo: 'Se canceló una solicitud suya', mensaje: `Se canceló su solicitud de ${que} (${s.consecutivo}).${devueltos}${porMotivo}`, enlace: paraLaPersona }, op);
     }
   }
 
@@ -1076,6 +1109,7 @@ export class SolicitudesService {
       cantidadDias: f.cantidadDias === null ? null : Number(f.cantidadDias),
       motivo: f.motivo,
       motivoRechazo: f.motivoRechazo,
+      motivoCancelacion: f.motivoCancelacion,
       fechaResolucion: f.fechaResolucion ? f.fechaResolucion.toISOString() : null,
       tieneConstancia: Boolean(f.documentoGeneradoId),
       constanciaId: f.documentoGeneradoId,
@@ -1152,6 +1186,7 @@ function incapacidadComoEvento(i: {
     cantidadDias: Number(i.cantidadDias),
     motivo: null,
     motivoRechazo: null,
+    motivoCancelacion: null,
     fechaResolucion: null,
     tieneConstancia: false,
     constanciaId: null,

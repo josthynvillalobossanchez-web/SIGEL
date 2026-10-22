@@ -15,6 +15,7 @@ import {
   darDeBajaDocumento,
   editarDocumento,
   restaurarDocumento,
+  eliminarDocumento,
   type DocumentoDeLista,
   type TipoDeDocumento,
 } from '../../api/documentos';
@@ -240,6 +241,61 @@ export function ModalRestaurarDocumento({
           {documento.baja.motivo ? `. Motivo: ${documento.baja.motivo}` : '.'}
         </p>
       )}
+    </Modal>
+  );
+}
+
+/* ================================================================== */
+/* Eliminar definitivamente (21/10)                                    */
+/* ================================================================== */
+
+/**
+ * Para lo que se subio por error (otra persona, una foto equivocada...).
+ * A diferencia de la baja, no se puede deshacer: se borran el archivo y el
+ * registro. La bitacora conserva quien lo hizo y los datos del documento.
+ */
+export function ModalEliminarDocumento({
+  documento,
+  alCerrar,
+  alGuardar,
+}: {
+  documento: DocumentoDeLista;
+  alCerrar: () => void;
+  alGuardar: (aviso: string) => void;
+}) {
+  const [ocupado, setOcupado] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function confirmar() {
+    setOcupado(true);
+    setError(null);
+    try {
+      await eliminarDocumento(documento.id);
+      alGuardar(`Se eliminó definitivamente el documento «${documento.titulo}».`);
+    } catch (e) {
+      setError(textoDelError(e));
+      setOcupado(false);
+    }
+  }
+
+  return (
+    <Modal
+      titulo="Eliminar documento"
+      icono="basura"
+      descripcion={`¿Está seguro de que desea eliminar el archivo «${documento.titulo}» del expediente?`}
+      alCerrar={alCerrar}
+      alEnviar={() => void confirmar()}
+      ocupado={ocupado}
+      textoConfirmar="Sí, eliminar"
+      peligro
+    >
+      {error && <Mensaje tipo="error">{error}</Mensaje>}
+      <Mensaje tipo="advert" icono="alerta">
+        <p style={{ margin: 0 }}>
+          <b>Esta acción no se puede deshacer.</b> Se borra el archivo ({documento.nombreArchivo}) y deja de aparecer en el expediente, también para Recursos
+          Humanos. Si solo quiere ocultarlo y poder recuperarlo después, use «Dar de baja».
+        </p>
+      </Mensaje>
     </Modal>
   );
 }

@@ -129,7 +129,8 @@ export function Calendario() {
     cambiar({ mes: '', resaltar: '' });
   }
   const modoPara = (s: SolicitudDeLista): 'propia' | 'jefatura' | 'rrhh' =>
-    s.aprobador?.id === usuario?.id && s.estado === 'pendiente' && s.funcionario.id !== usuario?.funcionarioId
+    // La jefatura ve como jefatura las de su equipo: aprueba las pendientes y puede cancelar vacaciones aprobadas (21/10).
+    s.aprobador?.id === usuario?.id && (s.estado === 'pendiente' || s.estado === 'aprobada') && s.funcionario.id !== usuario?.funcionarioId
       ? 'jefatura'
       : s.funcionario.id === usuario?.funcionarioId
         ? 'propia'

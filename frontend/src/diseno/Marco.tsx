@@ -87,6 +87,21 @@ function MarcoInterno() {
   // Al cambiar de pagina se cierra el menu del celular.
   useEffect(() => setMenuMovilAbierto(false), [ubicacion.pathname]);
 
+  /*
+   * Al pasar a pantalla ancha (>= 1024 px, donde el menu queda fijo a la
+   * izquierda) se cierra el menu del celular. Sin esto, si la persona lo abria
+   * con la ventana angosta, la agrandaba y despues la volvia a achicar, el velo
+   * oscuro reaparecia encima de todo y la pagina parecia trabada (21/10).
+   */
+  useEffect(() => {
+    if (!menuMovilAbierto) return;
+    const ancha = window.matchMedia('(min-width: 1024px)');
+    const alCambiar = () => ancha.matches && setMenuMovilAbierto(false);
+    alCambiar();
+    ancha.addEventListener('change', alCambiar);
+    return () => ancha.removeEventListener('change', alCambiar);
+  }, [menuMovilAbierto]);
+
   // Tecla Escape cierra el menu del celular.
   useEffect(() => {
     if (!menuMovilAbierto) return;

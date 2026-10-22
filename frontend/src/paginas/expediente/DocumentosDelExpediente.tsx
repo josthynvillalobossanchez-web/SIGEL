@@ -4,7 +4,7 @@
  *   - Lista paginada de los documentos de la persona, con buscador, filtro
  *     por tipo y (solo Recursos Humanos) filtro Vigentes / Dados de baja.
  *   - Ver = ventana con visor (PDF o imagen); Descargar; Editar titulo o
- *     tipo; Dar de baja y Restaurar. Nada se borra.
+ *     tipo; Dar de baja y Restaurar; Eliminar definitivamente (21/10, solo lo subido a mano).
  *   - Quien puede cada cosa lo decide el backend (documento.acciones): la
  *     persona edita y da de baja lo que ELLA subio; Recursos Humanos, todo;
  *     los que genera SINERGIA solo se ven. Cuando no se puede, el boton
@@ -27,11 +27,11 @@ import { useBusquedaDiferida } from '../../utilidades/useBusquedaDiferida';
 import { useConsulta } from '../../utilidades/useConsulta';
 import { useParametrosEnUrl } from '../../utilidades/parametrosEnUrl';
 import { descargarDocumento } from './descargar';
-import { ModalBajaDeDocumento, ModalEditarDocumento, ModalRestaurarDocumento } from './ModalesDeDocumento';
+import { ModalBajaDeDocumento, ModalEditarDocumento, ModalEliminarDocumento, ModalRestaurarDocumento } from './ModalesDeDocumento';
 import { VisorDeDocumento } from './VisorDeDocumento';
 
 type Ventana =
-  | { tipo: 'ver' | 'editar' | 'baja' | 'restaurar'; documento: DocumentoDeLista }
+  | { tipo: 'ver' | 'editar' | 'baja' | 'restaurar' | 'eliminar'; documento: DocumentoDeLista }
   | null;
 
 const FILTROS_DE_ESTADO: { valor: EstadoDeDocumentos; texto: string }[] = [
@@ -240,6 +240,17 @@ export function DocumentosDelExpediente({ funcionarioId, propio }: { funcionario
                         alHacerClic={() => setVentana({ tipo: 'restaurar', documento: d })}
                       />
                     )}
+                    {/* Eliminar para siempre (21/10): solo se muestra a quien puede, para no llenar la fila de botones bloqueados. */}
+                    {d.acciones.puedeEliminar && (
+                      <BotonIcono
+                        icono="basura"
+                        peligro
+                        texto="Eliminar definitivamente (no se puede deshacer)"
+                        sobre={d.titulo}
+                        bloqueadoPor={null}
+                        alHacerClic={() => setVentana({ tipo: 'eliminar', documento: d })}
+                      />
+                    )}
                   </td>
                 </tr>
               ))}
@@ -259,6 +270,7 @@ export function DocumentosDelExpediente({ funcionarioId, propio }: { funcionario
         <ModalBajaDeDocumento documento={ventana.documento} esPropio={propio} alCerrar={() => setVentana(null)} alGuardar={alTerminar} />
       )}
       {ventana?.tipo === 'restaurar' && <ModalRestaurarDocumento documento={ventana.documento} alCerrar={() => setVentana(null)} alGuardar={alTerminar} />}
+      {ventana?.tipo === 'eliminar' && <ModalEliminarDocumento documento={ventana.documento} alCerrar={() => setVentana(null)} alGuardar={alTerminar} />}
     </>
   );
 }

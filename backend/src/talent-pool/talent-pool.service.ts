@@ -395,6 +395,16 @@ export class TalentPoolService implements OnModuleInit {
     if (filtros.aniosExperiencia) donde.mesesExperiencia = { gte: filtros.aniosExperiencia * 12 };
     if (filtros.conCurriculum === 'si') donde.cvRutaArchivo = { not: null };
     if (filtros.conCurriculum === 'no') donde.cvRutaArchivo = null;
+    // Ultimo envio entre dos fechas (21/10): un dia AAAA-MM-DD cuenta completo, hora de Costa Rica.
+    if (filtros.enviadoDesde || filtros.enviadoHasta) {
+      if (filtros.enviadoDesde && filtros.enviadoHasta && filtros.enviadoDesde > filtros.enviadoHasta) {
+        throw new BadRequestException({ codigo: 'FECHA_NO_VALIDA', message: 'La fecha «desde» no puede ser posterior a «hasta».' });
+      }
+      donde.fechaActualizacion = {
+        ...(filtros.enviadoDesde ? { gte: new Date(`${filtros.enviadoDesde}T00:00:00.000-06:00`) } : {}),
+        ...(filtros.enviadoHasta ? { lte: new Date(`${filtros.enviadoHasta}T23:59:59.999-06:00`) } : {}),
+      };
+    }
     if (filtros.busqueda) {
       const palabras = filtros.busqueda.split(/\s+/).filter(Boolean).slice(0, 6);
       for (const p of palabras) {

@@ -220,8 +220,8 @@ function VistaDeExpediente({ funcionarioId }: { funcionarioId?: string }) {
         <DocumentosDelExpediente funcionarioId={f.id} propio={propio} />
         <p className="nota-pagina">
           {propio
-            ? 'Usted sube documentos a su expediente y da de baja solo los que usted subió. Nada se borra: Recursos Humanos puede restaurarlos.'
-            : 'Recursos Humanos puede dar de baja cualquier documento. Nada se borra: se da de baja y se puede restaurar.'}
+            ? 'Usted sube documentos a su expediente y da de baja o elimina solo los que usted subió. Lo dado de baja Recursos Humanos lo puede restaurar; lo eliminado no se recupera.'
+            : 'Recursos Humanos puede dar de baja cualquier documento (se puede restaurar) o eliminar para siempre uno subido a mano por error. Lo que generó SINERGIA o respalda un trámite solo se da de baja.'}
         </p>
       </PanelDePestana>
 

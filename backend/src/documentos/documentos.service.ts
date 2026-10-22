@@ -28,6 +28,9 @@ const PERMISO_EDITAR_PROPIO = 'documentos.editarPropio';
 const PERMISO_BAJA = 'documentos.darDeBaja';
 const PERMISO_BAJA_PROPIO = 'documentos.darDeBajaPropio';
 const PERMISO_RESTAURAR = 'documentos.restaurar';
+/** Eliminar para siempre (21/10): RRHH cualquier documento subido a mano; la persona, lo que ella subio. */
+const PERMISO_ELIMINAR = 'documentos.eliminar';
+const PERMISO_ELIMINAR_PROPIO = 'documentos.eliminarPropio';
 
 /** Un documento tal como lo ve quien consulta el expediente. */
 export interface DocumentoDeLista {
@@ -58,6 +61,9 @@ export interface DocumentoDeLista {
     motivoSinBaja: string | null;
     puedeRestaurar: boolean;
     motivoSinRestaurar: string | null;
+    /** Eliminar definitivamente (21/10): borra el archivo y el registro; queda solo el rastro en la bitacora. */
+    puedeEliminar: boolean;
+    motivoSinEliminar: string | null;
   };
 }
 
@@ -100,6 +106,8 @@ const SELECCION = {
   funcionarioId: true,
   tipoDocumento: { select: { id: true, nombre: true } },
   funcionario: { select: { usuario: { select: { id: true } } } },
+  // Si respalda un tramite (justificante, constancia, boleta, certificado), no se elimina: se da de baja.
+  _count: { select: { comoJustificante: true, comoGenerado: true, comoBoleta: true, comoCertificado: true } },
   usuarioRegistro: { select: { correo: true, funcionario: { select: { nombre: true, primerApellido: true, segundoApellido: true } } } },
   usuarioBaja: { select: { correo: true, funcionario: { select: { nombre: true, primerApellido: true, segundoApellido: true } } } },
 } as const;
@@ -124,6 +132,11 @@ type Cliente = Prisma.TransactionClient | PrismaService;
  *   - Baja logica, nunca borrado fisico. La persona da de baja solo lo que
  *     ella subio; RRHH cualquiera; RRHH restaura. Lo que la persona dio de
  *     baja desaparece por completo para ella.
+ *   - Eliminar definitivamente (21/10, pedido de RRHH y Joseph, para lo que se
+ *     subio por error): RRHH cualquier documento subido a mano; la persona solo
+ *     lo que ella misma subio a su expediente. No se elimina lo que genero
+ *     SINERGIA ni lo que respalda un tramite. Se borran el archivo y el
+ *     registro; la bitacora conserva quien, cuando y los datos del documento.
  *   - Ver y descargar un documento queda SIEMPRE en la bitacora (T-4).
  */
 @Injectable()
@@ -668,6 +681,68 @@ export class DocumentosService {
     return this.puedeVerBajas(quienActua) ? this.consultarUno(documentoId, quienActua) : { id: documentoId, vigente: false };
   }
 
+  /**
+   * Eliminar para siempre (21/10). Borra el registro y el archivo cifrado. La
+   * bitacora guarda quien, cuando y los datos del documento (titulo, tipo,
+   * nombre, tamano y hash), nunca el contenido.
+   */
+  eliminar(documentoId: string, quienActua: UsuarioAutenticado, direccionIp?: string): Promise<{ id: string; eliminado: true }> {
+    return this.vigilando({ documentoId, intento: 'eliminar un documento', accion: 'eliminar' }, quienActua, direccionIp, () =>
+      this.eliminarDirecto(documentoId, quienActua, direccionIp),
+    );
+  }
+
+  private async eliminarDirecto(documentoId: string, quienActua: UsuarioAutenticado, direccionIp?: string): Promise<{ id: string; eliminado: true }> {
+    let ruta = '';
+    let titulo = '';
+    let funcionarioId = '';
+    await this.prisma.$transaction(async (tx) => {
+      const actual = await this.cargar(tx, documentoId, quienActua);
+      const acciones = this.calcularAcciones(actual, quienActua);
+      if (!acciones.puedeEliminar) {
+        throw new ConflictException({ codigo: 'ELIMINACION_NO_PERMITIDA', message: acciones.motivoSinEliminar ?? 'No puede eliminar este documento.' });
+      }
+      const extra = await tx.documento.findUniqueOrThrow({ where: { id: documentoId }, select: { rutaArchivo: true, hashContenido: true } });
+      ruta = extra.rutaArchivo;
+      titulo = actual.titulo;
+      funcionarioId = actual.funcionarioId;
+      await tx.documento.delete({ where: { id: documentoId } });
+      await this.bitacora.registrar(
+        {
+          usuarioId: quienActua.id,
+          entidad: 'documento',
+          registroAfectadoId: documentoId,
+          funcionarioAfectadoId: actual.funcionarioId,
+          accion: 'eliminar',
+          direccionIp,
+          datosAnteriores: {
+            titulo: actual.titulo,
+            tipo: actual.tipoDocumento.nombre,
+            nombreArchivo: actual.nombreArchivo,
+            tamanoBytes: actual.tamanoBytes,
+            hashContenido: extra.hashContenido,
+            fechaRegistro: actual.fechaRegistro.toISOString(),
+            vigente: actual.vigente,
+          },
+          descripcion: `Eliminó definitivamente el documento «${actual.titulo}» (${actual.tipoDocumento.nombre}, ${actual.nombreArchivo}).`,
+        },
+        tx,
+      );
+    });
+    // El archivo se borra despues de confirmar en la base: si fallara, queda un .enc sin registro (ilegible sin
+    // la llave) y se anota en los registros; nunca queda un registro apuntando a un archivo que ya no existe.
+    await this.almacen.eliminarDocumento(ruta);
+    await this.notificaciones.avisarCambioDeExpediente({
+      funcionarioId,
+      quienActua,
+      que: `eliminó definitivamente el documento «${titulo}»`,
+      entidad: 'documento',
+      registroId: documentoId,
+      pestana: 'documentos',
+    });
+    return { id: documentoId, eliminado: true };
+  }
+
   restaurar(documentoId: string, quienActua: UsuarioAutenticado, direccionIp?: string): Promise<DocumentoDeLista> {
     return this.vigilando({ documentoId, intento: 'restaurar un documento', accion: 'modificar' }, quienActua, direccionIp, () =>
       this.restaurarDirecto(documentoId, quienActua, direccionIp),
@@ -736,7 +811,7 @@ export class DocumentosService {
    * "no existe" (404) no se anotan: no hay nada que proteger y llenarian
    * la bitacora de ruido. Si anotar falla, se deja el error original.
    */
-  private static readonly CODIGOS_DENEGADOS = new Set(['EXPEDIENTE_AJENO', 'DOCUMENTO_NO_EDITABLE', 'BAJA_NO_PERMITIDA']);
+  private static readonly CODIGOS_DENEGADOS = new Set(['EXPEDIENTE_AJENO', 'DOCUMENTO_NO_EDITABLE', 'BAJA_NO_PERMITIDA', 'ELIMINACION_NO_PERMITIDA']);
 
   private async vigilando<T>(
     contexto: { funcionarioId?: string; documentoId?: string; intento: string; accion?: 'consultar' | 'descargar' | 'crear' | 'modificar' | 'eliminar' },
@@ -883,6 +958,17 @@ export class DocumentosService {
     if (fila.vigente) motivoSinRestaurar = 'El documento está vigente.';
     else if (!tiene(PERMISO_RESTAURAR)) motivoSinRestaurar = 'Solo Recursos Humanos puede restaurar documentos.';
 
+    const c = fila._count;
+    const ligadoATramite = c.comoJustificante + c.comoGenerado + c.comoBoleta + c.comoCertificado > 0;
+    let motivoSinEliminar: string | null = null;
+    if (fila.generadoPorSistema) motivoSinEliminar = 'Lo generó SINERGIA: no se puede eliminar.';
+    else if (ligadoATramite) motivoSinEliminar = 'Respalda un trámite (solicitud, incapacidad o capacitación): no se elimina, se puede dar de baja.';
+    else if (!(tiene(PERMISO_ELIMINAR) || (tiene(PERMISO_ELIMINAR_PROPIO) && esDuenio && loSubioQuienConsulta))) {
+      motivoSinEliminar = esDuenio
+        ? 'Lo subió otra persona (por ejemplo Recursos Humanos): usted solo puede eliminar lo que subió usted.'
+        : 'No tiene permiso para eliminar documentos.';
+    }
+
     return {
       puedeEditar: motivoSinEditar === null,
       motivoSinEditar,
@@ -890,6 +976,8 @@ export class DocumentosService {
       motivoSinBaja,
       puedeRestaurar: motivoSinRestaurar === null,
       motivoSinRestaurar,
+      puedeEliminar: motivoSinEliminar === null,
+      motivoSinEliminar,
     };
   }
 

@@ -427,7 +427,9 @@ model documento {
   /// RRHH o el propio funcionario. Nulo si lo genero el sistema.
   usuarioRegistroId  String?   @db.Char(36)
 
-  /// Baja logica. No existe borrado fisico: eso es lo que sostiene la trazabilidad.
+  /// Baja logica (lo normal: se puede restaurar). Desde el 21/10 RRHH, el SA o
+  /// quien subio su propio documento pueden ademas eliminarlo para siempre (solo
+  /// los subidos a mano y no ligados a un tramite); la bitacora conserva sus datos.
   vigente       Boolean   @default(true)
   /// Quien dio de baja el documento. Si coincide con el usuario del funcionario
   /// dueno del expediente, la baja la hizo el propio funcionario
@@ -512,6 +514,8 @@ model solicitud {
   usuarioResolucionId  String?          @db.Char(36)
   /// Obligatorio al rechazar.
   motivoRechazo        String?          @db.VarChar(500)
+  /// Obligatorio al cancelar una solicitud que ya estaba aprobada (21/10/2026).
+  motivoCancelacion    String?          @db.VarChar(500)
 
   justificanteDocumentoId String?       @db.Char(36)
   documentoGeneradoId     String?       @db.Char(36)

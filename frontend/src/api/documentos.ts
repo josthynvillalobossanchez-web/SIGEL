@@ -43,6 +43,9 @@ export interface DocumentoDeLista {
     motivoSinBaja: string | null;
     puedeRestaurar: boolean;
     motivoSinRestaurar: string | null;
+    /** Eliminar definitivamente (21/10). */
+    puedeEliminar: boolean;
+    motivoSinEliminar: string | null;
   };
 }
 
@@ -97,6 +100,11 @@ export function darDeBajaDocumento(id: string, motivo?: string) {
 /** POST /documentos/:id/restauracion (documentos.restaurar). */
 export function restaurarDocumento(id: string) {
   return pedirAlServidor<DocumentoDeLista>('POST', `/documentos/${encodeURIComponent(id)}/restauracion`, { cuerpo: {} });
+}
+
+/** DELETE /documentos/:id: elimina para siempre el registro y el archivo (21/10). */
+export function eliminarDocumento(id: string) {
+  return pedirAlServidor<{ id: string; eliminado: true }>('DELETE', `/documentos/${encodeURIComponent(id)}`);
 }
 
 /**

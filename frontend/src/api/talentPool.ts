@@ -129,6 +129,9 @@ export interface FiltrosDeCandidatos {
   habilidades?: string;
   aniosExperiencia?: number;
   conCurriculum?: 'si' | 'no';
+  /** Ultimo envio del formulario, AAAA-MM-DD (ambas inclusive). */
+  enviadoDesde?: string;
+  enviadoHasta?: string;
   orden?: 'recientes' | 'nombre';
   pagina?: number;
   tamano?: number;

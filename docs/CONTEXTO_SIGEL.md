@@ -1119,3 +1119,27 @@ son de revisión con Joseph**. Si pide otra semana, seguir ese mismo formato.
   19/10 en la noche, por AnyDesk.
 - `npm audit` en 0 en los dos proyectos: Prisma 7.10.1 (arrastra mariadb, mysql2 y deepmerge-ts
   corregidos) y nodemailer 10.1.2 (único cambio que rompe: pide Node 20 o más; se usa Node 24).
+
+### Decisiones del 21/10/2026 (Joseph y RRHH, por medio de Josthyn)
+
+- **Despliegue solo en la intranet** (Joseph): `https://150.151.153.7:8443`, sin publicar a internet.
+  Instalación nativa en `C:\SINERGIA` (Windows Server 2016 no corre Docker): MySQL 8.4 propio en
+  3307 con TLS, SINERGIA en 8443 con HTTPS propio. No se toca el Apache (443) ni el MySQL80 (3306).
+- **Ventana que se "trababa" al cambiar el tamaño:** con el menú de celular abierto, al ensanchar y
+  volver a angostar reaparecía el velo oscuro. Ahora el menú de celular se cierra solo al pasar a
+  escritorio (≥ 1024 px).
+- **Cancelar vacaciones aprobadas:** solo vacaciones. Pueden la persona o su jefatura (quien la aprobó
+  o la jefatura actual, con permiso de aprobar), **antes de que empiecen** y con **motivo obligatorio**
+  (5–500 caracteres, columna `solicitud.motivoCancelacion`). Se devuelven los días (movimiento de
+  devolución), la constancia queda dada de baja y se avisa a la jefatura, a RRHH y, si canceló la
+  jefatura, a la persona. Los demás trámites aprobados siguen como antes (solo quien se los aprobó a sí
+  mismo). Una pendiente se sigue cancelando sin motivo, solo por la persona.
+- **Talent Pool, filtro por fecha:** "Enviado desde / Hasta" sobre la **fecha del último envío**
+  (`fechaActualizacion`), en hora de Costa Rica.
+- **Eliminar documentos del expediente para siempre:** con ventana de confirmación ("¿Está seguro de
+  que desea eliminar el archivo «…» del expediente?"). Pueden RRHH y el SA (`documentos.eliminar`) y la
+  persona con lo que ella misma subió (`documentos.eliminarPropio`, en Solicitante, Aprobador y
+  Consulta). Solo documentos **subidos a mano**: lo que generó SINERGIA o respalda un trámite
+  (justificante, boleta, certificado) solo se da de baja. Se borran el archivo cifrado y la fila; la
+  bitácora guarda quién, cuándo y los datos del documento (título, tipo, nombre, tamaño, hash). Esto
+  cambia la regla anterior de "no existe borrado físico" (Ficha 42) solo para este caso.

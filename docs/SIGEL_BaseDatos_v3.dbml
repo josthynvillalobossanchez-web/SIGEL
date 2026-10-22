@@ -376,7 +376,7 @@ Table documento {
   fechaDocumento date
   fechaRegistro datetime [not null, default: `now()`]
   usuarioRegistroId char(36) [ref: > usuario.id, note: 'RRHH o el propio funcionario. Nulo si lo genero el sistema.']
-  vigente boolean [not null, default: true, note: 'Baja logica. Ficha 42: ocultar un documento subido por error sin eliminar el archivo ni el registro. No existe borrado fisico.']
+  vigente boolean [not null, default: true, note: 'Baja logica. Ficha 42: ocultar un documento subido por error sin eliminar el archivo ni el registro. Desde el 21/10 los subidos a mano (no generados ni ligados a un tramite) tambien se pueden eliminar para siempre: RRHH/SA o quien subio su propio documento; queda en la bitacora.']
   usuarioBajaId char(36) [ref: > usuario.id, note: 'Quien lo dio de baja. Si coincide con el usuario del funcionario dueno del expediente, la baja la hizo el propio funcionario (permiso documentos.darDeBajaPropio): se le oculta por completo a el y RRHH lo ve como dado de baja por el funcionario. La fecha sale de bitacoraCambio.']
   motivoBaja varchar(255) [note: 'Motivo corto, opcional (archivo equivocado, documento duplicado...)']
   indexes {
@@ -435,6 +435,7 @@ Table solicitud {
   fechaResolucion datetime
   usuarioResolucionId char(36) [ref: > usuario.id, note: 'Quien aprobo, rechazo o cancelo']
   motivoRechazo varchar(500) [note: 'Obligatorio al rechazar. RN-02, HU 29 CA03.']
+  motivoCancelacion varchar(500) [note: 'Obligatorio al cancelar una ya aprobada (21/10): solo vacaciones, la persona o su jefatura, antes de que empiecen.']
 
   justificanteDocumentoId char(36) [ref: > documento.id, note: 'Adjunto del solicitante']
   documentoGeneradoId char(36) [ref: > documento.id, note: 'PDF que SINERGIA asocia al expediente al cerrar el proceso. HU 26, RF-DOC-05.']

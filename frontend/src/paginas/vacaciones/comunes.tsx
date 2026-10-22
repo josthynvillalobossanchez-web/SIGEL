@@ -160,24 +160,34 @@ export function DetalleDeSolicitud({ solicitud: inicial, modo, alCerrar, alCambi
     }
   }
 
-  // Pendiente sin abrir: cualquiera. Aprobada: solo quien se la aprobo a si mismo (tope) y antes de que empiece.
+  // Pendiente sin abrir: quien la hizo. Aprobada, antes de que empiece y con motivo: vacaciones, la persona
+  // o su jefatura (21/10); otros tramites, solo quien se la aprobo a si mismo (tope). El backend lo vuelve a revisar.
   // Un tramite que es un derecho (licencia) no se cancela (decision 10/10).
-  const cancelaAprobada = modo === 'propia' && s.tipo.requiereAprobacion && s.estado === 'aprobada' && s.autoaprobada && s.fechaInicio > hoyEnCostaRica();
+  const cancelaAprobada =
+    s.tipo.requiereAprobacion &&
+    s.estado === 'aprobada' &&
+    s.fechaInicio > hoyEnCostaRica() &&
+    ((s.tipo.descuentaVacaciones && (modo === 'propia' || modo === 'jefatura')) || (modo === 'propia' && s.autoaprobada));
   const puedeCancelar = s.tipo.requiereAprobacion && ((modo === 'propia' && pendiente && !s.leidaPorAprobador) || cancelaAprobada);
   const alcanceDelCalendario = modo === 'jefatura' ? 'equipo' : modo === 'rrhh' ? 'todos' : 'propio';
   const motivoValido = motivo.trim().length >= 5;
 
   const pie = cancelando ? (
     <>
-      <button className="btn btn-secundario" type="button" onClick={() => { setCancelando(false); setEntiendo(false); }} disabled={ocupado} data-ayuda="No cancelar: la solicitud queda como está">
+      <button className="btn btn-secundario" type="button" onClick={() => { setCancelando(false); setEntiendo(false); setMotivo(''); }} disabled={ocupado} data-ayuda="No cancelar: la solicitud queda como está">
         No, volver
       </button>
       <button
         className="btn btn-peligro"
         type="button"
-        disabled={ocupado || (cancelaAprobada && !entiendo)}
-        data-ayuda={cancelaAprobada && !entiendo ? 'Primero marque que entiende que no se puede deshacer' : 'Cancelar la solicitud definitivamente'}
-        onClick={() => void ejecutar(() => cancelarSolicitud(s.id), cancelaAprobada && s.tipo.descuentaVacaciones ? `Solicitud cancelada: ${s.cantidadDias ?? 0} día(s) volvieron a su saldo.` : 'Solicitud cancelada.')}
+        disabled={ocupado || (cancelaAprobada && (!entiendo || !motivoValido))}
+        data-ayuda={cancelaAprobada && !motivoValido ? 'Escriba el motivo (al menos 5 caracteres)' : cancelaAprobada && !entiendo ? 'Primero marque que entiende que no se puede deshacer' : 'Cancelar la solicitud definitivamente'}
+        onClick={() =>
+          void ejecutar(
+            () => cancelarSolicitud(s.id, cancelaAprobada ? motivo.trim() : undefined),
+            cancelaAprobada && s.tipo.descuentaVacaciones ? `Solicitud cancelada: ${s.cantidadDias ?? 0} día(s) volvieron al saldo${modo === 'propia' ? '' : ` de ${s.funcionario.nombre.split(' ')[0]}`}.` : 'Solicitud cancelada.',
+          )
+        }
       >
         Sí, cancelar solicitud
       </button>
@@ -319,6 +329,12 @@ export function DetalleDeSolicitud({ solicitud: inicial, modo, alCerrar, alCambi
               <dd>{s.motivoRechazo}</dd>
             </div>
           )}
+          {s.motivoCancelacion && (
+            <div>
+              <dt>Motivo de la cancelación</dt>
+              <dd>{s.motivoCancelacion}</dd>
+            </div>
+          )}
         </dl>
 
         {hayDocumentos && !cancelando && !rechazando && (
@@ -365,8 +381,23 @@ export function DetalleDeSolicitud({ solicitud: inicial, modo, alCerrar, alCambi
             {cancelaAprobada ? (
               <>
                 <p>
-                  Ya estaba aprobada. Al cancelarla {s.tipo.descuentaVacaciones ? <>{s.cantidadDias === 1 ? 'el ' : 'los '}<b>{s.cantidadDias === 1 ? '1 día hábil vuelve' : `${s.cantidadDias} días hábiles vuelven`} a su saldo</b></> : 'se libera esa fecha'} y la solicitud queda cancelada. <b>No se puede deshacer</b>: si después quiere esas fechas, tendrá que hacer una solicitud nueva.
+                  Ya estaba aprobada. Al cancelarla {s.tipo.descuentaVacaciones ? <>{s.cantidadDias === 1 ? 'el ' : 'los '}<b>{s.cantidadDias === 1 ? '1 día hábil vuelve' : `${s.cantidadDias} días hábiles vuelven`} al saldo{modo === 'propia' ? '' : ` de ${s.funcionario.nombre.split(' ')[0]}`}</b></> : 'se libera esa fecha'} y la solicitud queda cancelada. <b>No se puede deshacer</b>: si después {modo === 'propia' ? 'quiere' : 'se necesitan'} esas fechas, habrá que hacer una solicitud nueva.
+                  {' '}Se avisa {modo === 'propia' ? 'a su jefatura' : `a ${s.funcionario.nombre.split(' ')[0]}`} y a Recursos Humanos.
                 </p>
+                <div className="campo">
+                  <label htmlFor="motivo-cancelacion">
+                    Motivo de la cancelación <span className="obligatorio">*</span>
+                  </label>
+                  <textarea
+                    id="motivo-cancelacion"
+                    value={motivo}
+                    maxLength={500}
+                    rows={2}
+                    onChange={(e) => setMotivo(e.target.value)}
+                    placeholder={modo === 'propia' ? 'Por ejemplo: prefiero tomarlas en otra fecha.' : 'Por ejemplo: el trabajo pendiente no se terminó a tiempo.'}
+                  />
+                  <span className="ayuda">Mínimo 5 caracteres. Lo verán la persona, su jefatura y Recursos Humanos.</span>
+                </div>
                 <label className="casilla">
                   <input type="checkbox" checked={entiendo} onChange={(e) => setEntiendo(e.target.checked)} /> Entiendo que la cancelación no se puede deshacer.
                 </label>

@@ -66,9 +66,12 @@ export function TalentPool() {
   const habilidades = (parametros.get('habilidades') ?? '').split(',').filter(Boolean);
   const anios = parametros.get('anios') ?? '';
   const conCv = (parametros.get('cv') ?? '') as 'si' | 'no' | '';
+  // Fecha del ultimo envio del formulario (21/10): p. ej. los curriculums que llegaron del 3 al 5 de octubre.
+  const enviadoDesde = parametros.get('desde') ?? '';
+  const enviadoHasta = parametros.get('hasta') ?? '';
   const orden = parametros.get('orden') === 'nombre' ? 'nombre' : 'recientes';
   const pagina = Math.max(1, Number(parametros.get('pagina')) || 1);
-  const hayFiltros = Boolean(busqueda || profesionId || nivel || habilidades.length || anios || conCv);
+  const hayFiltros = Boolean(busqueda || profesionId || nivel || habilidades.length || anios || conCv || enviadoDesde || enviadoHasta);
   const [texto, setTexto] = useBusquedaDiferida(busqueda, (t) => cambiar({ busqueda: t }));
 
   const opciones = useConsulta(consultarOpcionesDeTalentPool, []).datos;
@@ -83,11 +86,13 @@ export function TalentPool() {
         habilidades: habilidades.length ? habilidades.join(',') : undefined,
         aniosExperiencia: anios ? Number(anios) : undefined,
         conCurriculum: conCv || undefined,
+        enviadoDesde: enviadoDesde || undefined,
+        enviadoHasta: enviadoHasta || undefined,
         orden,
         pagina,
         tamano: 12,
       }),
-    [estado, busqueda, profesionId, nivel, habilidades.join(','), anios, conCv, orden, pagina],
+    [estado, busqueda, profesionId, nivel, habilidades.join(','), anios, conCv, enviadoDesde, enviadoHasta, orden, pagina],
   );
   const [abierto, setAbierto] = useState<string | null>(null);
   const [verHabilidades, setVerHabilidades] = useState(false);
@@ -202,6 +207,14 @@ export function TalentPool() {
             <option value="no">Sin currículum</option>
           </select>
         </label>
+        <label className="filtro-select filtro-fecha">
+          <span>Enviado desde</span>
+          <input type="date" value={enviadoDesde} max={enviadoHasta || undefined} onChange={(e) => cambiar({ desde: e.target.value })} aria-label="Candidatos que enviaron el formulario desde esta fecha" />
+        </label>
+        <label className="filtro-select filtro-fecha">
+          <span>Hasta</span>
+          <input type="date" value={enviadoHasta} min={enviadoDesde || undefined} onChange={(e) => cambiar({ hasta: e.target.value })} aria-label="Candidatos que enviaron el formulario hasta esta fecha" />
+        </label>
         <label className="filtro-select">
           <span className="sr">Orden</span>
           <select value={orden} onChange={(e) => cambiar({ orden: e.target.value === 'nombre' ? 'nombre' : '' })}>
@@ -215,7 +228,7 @@ export function TalentPool() {
             className="btn-texto"
             onClick={() => {
               setTexto('');
-              cambiar({ busqueda: '', profesion: '', nivel: '', habilidades: '', anios: '', cv: '' });
+              cambiar({ busqueda: '', profesion: '', nivel: '', habilidades: '', anios: '', cv: '', desde: '', hasta: '' });
             }}
             data-ayuda="Quitar todos los filtros y la búsqueda"
           >

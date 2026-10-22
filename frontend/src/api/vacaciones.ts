@@ -34,6 +34,8 @@ export interface SolicitudDeLista {
   cantidadDias: number | null;
   motivo: string | null;
   motivoRechazo: string | null;
+  /** Motivo de cancelar una solicitud ya aprobada (21/10). */
+  motivoCancelacion: string | null;
   fechaResolucion: string | null;
   tieneConstancia: boolean;
   /** Documento de la constancia en el expediente (se abre con /documentos/:id/archivo). */
@@ -197,7 +199,8 @@ export const consultarTodasLasSolicitudes = (filtros: FiltrosDeSolicitudes) =>
 export const aprobarSolicitud = (id: string) => pedirAlServidor<SolicitudDeLista>('POST', `/solicitudes/${ruta(id)}/aprobar`);
 export const rechazarSolicitud = (id: string, motivo: string) =>
   pedirAlServidor<SolicitudDeLista>('POST', `/solicitudes/${ruta(id)}/rechazar`, { cuerpo: { motivo } });
-export const cancelarSolicitud = (id: string) => pedirAlServidor<SolicitudDeLista>('POST', `/solicitudes/${ruta(id)}/cancelar`);
+export const cancelarSolicitud = (id: string, motivo?: string) =>
+  pedirAlServidor<SolicitudDeLista>('POST', `/solicitudes/${ruta(id)}/cancelar`, { cuerpo: motivo ? { motivo } : {} });
 
 export const consultarCalendario = (desde: string, hasta: string, alcance: AlcanceDeCalendario, departamentoId?: string) =>
   pedirAlServidor<CalendarioDeSolicitudes>('GET', '/solicitudes/calendario', { parametros: { desde, hasta, alcance, departamentoId } });

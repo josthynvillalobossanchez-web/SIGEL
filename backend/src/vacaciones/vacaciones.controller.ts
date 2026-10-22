@@ -11,6 +11,7 @@ import {
   ConsultarSolicitudesDto,
   CrearSolicitudDto,
   RechazarSolicitudDto,
+  CancelarSolicitudDto,
 } from './dto/solicitudes.dto.js';
 import { AjustarSaldoDto, ConsultarMovimientosDto } from './dto/vacaciones.dto.js';
 import { SolicitudesService, type SolicitudDeLista } from './solicitudes.service.js';
@@ -177,16 +178,21 @@ export class SolicitudesController {
     return this.solicitudes.rechazar(id, datos, quienActua, direccionIp);
   }
 
-  /** POST /api/solicitudes/:id/cancelar. Solo quien la hizo y solo si la jefatura no la ha abierto. */
+  /**
+   * POST /api/solicitudes/:id/cancelar { motivo? }.
+   * Pendiente: quien la hizo, si la jefatura no la ha abierto. Vacaciones
+   * aprobadas: la persona o su jefatura, antes de que empiecen y con motivo (21/10).
+   */
   @RequierePermisos('solicitudes.crear')
   @Post(':id/cancelar')
   @HttpCode(HttpStatus.OK)
   cancelar(
     @Param('id', uuidValido('solicitud')) id: string,
+    @Body() datos: CancelarSolicitudDto,
     @UsuarioActual() quienActua: UsuarioAutenticado,
     @DireccionIp() direccionIp: string | undefined,
   ): Promise<SolicitudDeLista> {
-    return this.solicitudes.cancelar(id, quienActua, direccionIp);
+    return this.solicitudes.cancelar(id, quienActua, direccionIp, datos.motivo);
   }
 }
 

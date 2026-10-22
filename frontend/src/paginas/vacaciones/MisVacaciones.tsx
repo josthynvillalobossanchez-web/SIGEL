@@ -51,15 +51,18 @@ export function MisVacaciones() {
     (r: { incapacidad?: Incapacidad; solicitud?: SolicitudDeLista }) => (r.incapacidad ? setIncapacidadAbierta(r.incapacidad) : r.solicitud && setAbierta(r.solicitud)),
   );
   const [aviso, setAviso] = useState<string | null>(null);
+  const consultaProximas = useConsulta(() => consultarMisSolicitudes({ desde: hoyEnCostaRica(), tamano: 3 }), []);
+  const proximas = consultaProximas.datos;
 
   function alCambiar(mensaje: string) {
     setAbierta(null);
     setAviso(mensaje);
     saldo.recargar();
     lista.recargar();
+    // 21/10: "Lo proximo" tambien (antes seguia mostrando como aprobada una solicitud recien cancelada).
+    consultaProximas.recargar();
   }
 
-  const proximas = useConsulta(() => consultarMisSolicitudes({ desde: hoyEnCostaRica(), tamano: 3 }), []).datos;
 
   return (
     <section className="pagina">

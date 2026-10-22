@@ -315,6 +315,18 @@ export class ConsultarCandidatosDto extends PaginacionDto {
   @IsIn(['si', 'no'], { message: 'Indique si debe tener curriculum.' })
   conCurriculum?: 'si' | 'no';
 
+  /**
+   * Fecha del ultimo envio del formulario (cuando se cargo el curriculum
+   * vigente), AAAA-MM-DD, ambas inclusive en hora de Costa Rica (21/10).
+   */
+  @IsOptional()
+  @Matches(/^\d{4}-\d{2}-\d{2}$/, { message: 'La fecha «desde» no es válida.' })
+  enviadoDesde?: string;
+
+  @IsOptional()
+  @Matches(/^\d{4}-\d{2}-\d{2}$/, { message: 'La fecha «hasta» no es válida.' })
+  enviadoHasta?: string;
+
   @IsOptional()
   @IsIn(['recientes', 'nombre'], { message: 'El orden indicado no existe.' })
   orden?: 'recientes' | 'nombre';

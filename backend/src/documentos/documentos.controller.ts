@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Patch, Post, Query, Res, StreamableFile, UploadedFile, UseInterceptors } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post, Query, Res, StreamableFile, UploadedFile, UseInterceptors } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import type { Response } from 'express';
 import { RequierePermisos, UsuarioActual } from '../autenticacion/decoradores.js';
@@ -126,6 +126,19 @@ export class DocumentosController {
     @DireccionIp() direccionIp: string | undefined,
   ): Promise<DocumentoDeLista | { id: string; vigente: false }> {
     return this.documentos.darDeBaja(id, datos, quienActua, direccionIp);
+  }
+
+  /**
+   * DELETE /api/documentos/:id  Eliminar para siempre (21/10). RRHH: cualquier documento subido a mano;
+   * la persona: lo que ella misma subio. El servicio revisa el permiso exacto.
+   */
+  @Delete(':id')
+  eliminar(
+    @Param('id', uuidValido('documento')) id: string,
+    @UsuarioActual() quienActua: UsuarioAutenticado,
+    @DireccionIp() direccionIp: string | undefined,
+  ): Promise<{ id: string; eliminado: true }> {
+    return this.documentos.eliminar(id, quienActua, direccionIp);
   }
 
   /** POST /api/documentos/:id/restauracion  Solo Recursos Humanos. */

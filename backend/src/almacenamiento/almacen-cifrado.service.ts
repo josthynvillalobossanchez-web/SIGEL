@@ -116,10 +116,20 @@ export class AlmacenCifradoService {
   /**
    * Borra un archivo para siempre. SOLO para el curriculum de un candidato del
    * Talent Pool cuando la persona reemplaza su registro o pide que se eliminen
-   * sus datos (Ley 8968). Los documentos del expediente NUNCA se borran.
+   * sus datos (Ley 8968). Los documentos del expediente solo con eliminarDocumento.
    */
   async eliminarDeCandidato(ruta: string): Promise<void> {
     if (!ruta.startsWith('candidatos/')) throw new Error('Solo se borran archivos de candidatos.');
+    await this.descartarRecienGuardado(ruta);
+  }
+
+  /**
+   * Borra para siempre el archivo de un documento del expediente que se
+   * elimino definitivamente (21/10: RRHH o la persona, para lo subido por
+   * error). Los dados de baja NO pasan por aqui: esos se conservan.
+   */
+  async eliminarDocumento(ruta: string): Promise<void> {
+    if (!ruta.startsWith('expedientes/')) throw new Error('Solo se eliminan archivos de documentos del expediente.');
     await this.descartarRecienGuardado(ruta);
   }
 

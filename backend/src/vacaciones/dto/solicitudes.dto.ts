@@ -51,6 +51,18 @@ export class RechazarSolicitudDto {
   motivo!: string;
 }
 
+/**
+ * Cancelar (21/10). El motivo es obligatorio cuando la solicitud ya estaba
+ * aprobada (el servicio lo exige); para una pendiente es opcional.
+ */
+export class CancelarSolicitudDto {
+  @IsOptional()
+  @Transform(recortar)
+  @IsString({ message: 'El motivo debe ser texto.' })
+  @Length(5, 500, { message: 'Explique el motivo de la cancelación (entre 5 y 500 caracteres).' })
+  motivo?: string;
+}
+
 /** Filtros comunes de las listas de solicitudes. */
 export class ConsultarSolicitudesDto extends PaginacionDto {
   @IsOptional()

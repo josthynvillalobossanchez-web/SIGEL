@@ -109,3 +109,20 @@ el correo solo se usa para la cuenta nueva); el mensaje de éxito en pantalla lo
   quiere, se decide aparte (ver COSAS_POR_CORREGIR).
 - La revisión periódica corre dentro del backend: 30 s después de arrancar y luego cada 6 horas
   (`AVISOS_REVISION_MINUTOS`, `AVISOS_PRIMERA_REVISION_SEGUNDOS`). No repite avisos.
+
+## 7. Cambios pedidos por RRHH (21/10/2026)
+
+| Cambio | Backend | Pantallas |
+|---|---|---|
+| Menú de celular que quedaba abierto al cambiar el tamaño | — | `diseno/Marco.tsx` |
+| Cancelar vacaciones aprobadas (persona o jefatura, con motivo) | migración `20261021000000_cancelar_aprobadas`; `solicitudes.service.ts`, DTO `CancelarSolicitudDto` | `vacaciones/comunes.tsx`, `calendario/Calendario.tsx`, `MisVacaciones.tsx` ("Lo próximo" se refresca) |
+| Talent Pool: filtro "Enviado desde / Hasta" | `talent-pool/dto.ts`, `talent-pool.service.ts` | `talentPool/TalentPool.tsx` |
+| Eliminar documentos para siempre | `DELETE /api/documentos/:id`; permisos `documentos.eliminar` y `documentos.eliminarPropio` (seed); `almacen-cifrado.service.ts` | `expediente/ModalesDeDocumento.tsx`, `DocumentosDelExpediente.tsx`, `Expediente.tsx` |
+
+**En el servidor** hay que correr `npx prisma migrate deploy`, `npx prisma generate` y `npm run db:seed`
+(agrega los dos permisos nuevos a los roles existentes sin tocar lo demás).
+
+**Pruebas:** `pruebas-rrhh-2110.mjs` (59 casos) y `ui-rrhh-2110.py` (18 pasos, con
+`preparar-ui-rrhh-2110.mjs`). Se ajustaron `pruebas-vacaciones.mjs`, `pruebas-ausencias.mjs`,
+`pruebas-notificaciones.mjs` y `ui-vacaciones.py` porque cancelar una aprobada ahora pide motivo. Todo en
+verde: 125 + 190 + 142 + 79 + 88 + 216 + 124 + 38 + 11 de API y 105 + 84 + 57 + 40 + 18 de navegador.

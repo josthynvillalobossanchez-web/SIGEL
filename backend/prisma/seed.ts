@@ -60,6 +60,8 @@ const PERMISOS: { clave: string; modulo: string; descripcion: string }[] = [
     descripcion: 'Dar de baja únicamente los documentos que subió la propia persona',
   },
   { clave: 'documentos.restaurar', modulo: 'documentos', descripcion: 'Restaurar un documento dado de baja' },
+  { clave: 'documentos.eliminar', modulo: 'documentos', descripcion: 'Eliminar definitivamente cualquier documento subido a mano (no los generados ni los de un trámite)' },
+  { clave: 'documentos.eliminarPropio', modulo: 'documentos', descripcion: 'Eliminar definitivamente los documentos que uno mismo subió a su expediente' },
   { clave: 'tiposDocumento.editar', modulo: 'tiposDocumento', descripcion: 'Administrar el catálogo de tipos de documento' },
   { clave: 'usuarios.ver', modulo: 'usuarios', descripcion: 'Consultar las cuentas de usuario' },
   { clave: 'usuarios.crear', modulo: 'usuarios', descripcion: 'Crear cuentas de usuario' },
@@ -125,6 +127,7 @@ const AUTOSERVICIO = [
   'documentos.descargar',
   'documentos.editarPropio',
   'documentos.darDeBajaPropio',
+  'documentos.eliminarPropio',
   'notificaciones.ver',
 ];
 
@@ -151,6 +154,8 @@ const ROLES: { nombre: string; descripcion: string; permisos: string[] | 'todos'
       'documentos.darDeBaja',
       'documentos.darDeBajaPropio',
       'documentos.restaurar',
+      'documentos.eliminar',
+      'documentos.eliminarPropio',
       'tiposDocumento.editar',
       'usuarios.ver',
       'usuarios.crear',
