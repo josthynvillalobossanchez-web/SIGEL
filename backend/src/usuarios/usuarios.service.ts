@@ -24,6 +24,7 @@ import type { CrearUsuarioDto, RolAsignadoDto } from './dto/crear-usuario.dto.js
 import type { AjustarPermisoDto } from './dto/ajustar-permiso.dto.js';
 import type { AjustarVariosPermisosDto } from './dto/ajustar-varios-permisos.dto.js';
 import type { EditarUsuarioDto } from './dto/editar-usuario.dto.js';
+import { direccionDeSinergia, type ContenidoDeCorreo } from '../correo/plantilla.js';
 
 /* ------------------------------------------------------------------ */
 /* Ayudantes de fechas (solo de este archivo)                          */
@@ -512,18 +513,18 @@ export class UsuariosService {
       await this.correo.enviar({
         para: cuenta.correo,
         asunto: 'SINERGIA - Su cuenta de acceso',
-        cuerpo: [
-          'Buen día,',
-          '',
-          'Recursos Humanos creó su cuenta en SINERGIA, el Sistema Integrado de Nómina, Expediente, Recursos y Gestión de Incapacidades y Ausencias.',
-          '',
-          `Correo de ingreso:     ${cuenta.correo}`,
-          `Contraseña temporal:   ${cuenta.contrasenaTemporal}`,
-          '',
-          'La primera vez que ingrese, el sistema le pedirá cambiar esta contraseña por una propia.',
-          '',
-          'Municipalidad de Palmares',
-        ].join('\n'),
+        contenido: {
+          titulo: 'Su cuenta de SINERGIA está lista',
+          parrafos: [
+            'Recursos Humanos creó su cuenta en SINERGIA, el Sistema Integrado de Nómina, Expediente, Recursos y Gestión de Incapacidades y Ausencias.',
+          ],
+          datos: [
+            { etiqueta: 'Correo de ingreso', valor: cuenta.correo },
+            { etiqueta: 'Contraseña temporal', valor: cuenta.contrasenaTemporal, clave: true },
+          ],
+          despues: ['La primera vez que ingrese, el sistema le pedirá cambiar esta contraseña por una propia.'],
+          boton: { texto: 'Ingresar a SINERGIA', enlace: direccionDeSinergia() },
+        },
       });
     } catch (error) {
       this.registro.error(
@@ -1446,23 +1447,21 @@ export class UsuariosService {
    * cambio ya esta hecho; queda constancia en el registro del servidor.
    */
   private async avisarCambioDeCorreo(anterior: string, nuevo: string): Promise<void> {
-    const cuerpo = [
-      'Buen día,',
-      '',
-      'El correo de ingreso de su cuenta en SINERGIA cambio:',
-      '',
-      `Correo anterior:  ${anterior}`,
-      `Correo nuevo:     ${nuevo}`,
-      '',
-      'A partir de ahora debe ingresar con el correo nuevo. Su contraseña no cambió.',
-      'Si usted no solicitó este cambio, comuníquese de inmediato con Recursos Humanos.',
-      '',
-      'Municipalidad de Palmares',
-    ].join('\n');
+    const contenido: ContenidoDeCorreo = {
+      titulo: 'Cambió su correo de ingreso',
+      parrafos: ['El correo con el que ingresa a SINERGIA cambió:'],
+      datos: [
+        { etiqueta: 'Correo anterior', valor: anterior },
+        { etiqueta: 'Correo nuevo', valor: nuevo },
+      ],
+      despues: ['A partir de ahora debe ingresar con el correo nuevo. Su contraseña no cambió.'],
+      aviso: 'Si usted no solicitó este cambio, comuníquese de inmediato con Recursos Humanos.',
+      boton: { texto: 'Ingresar a SINERGIA', enlace: direccionDeSinergia() },
+    };
 
     for (const para of [anterior, nuevo]) {
       try {
-        await this.correo.enviar({ para, asunto: 'SINERGIA - Cambio en su correo de ingreso', cuerpo });
+        await this.correo.enviar({ para, asunto: 'SINERGIA - Cambio en su correo de ingreso', contenido });
       } catch (error) {
         this.registro.error(
           'No se pudo enviar el aviso de cambio de correo',

@@ -1,11 +1,14 @@
 import { Injectable, Logger, type OnModuleInit } from '@nestjs/common';
+import { readFile } from 'node:fs/promises';
+import { join } from 'node:path';
 import nodemailer, { type Transporter } from 'nodemailer';
+import { aHtml, aTexto, IMAGENES_DEL_CORREO, type ContenidoDeCorreo } from './plantilla.js';
 
-/** Un correo que el sistema quiere enviar. */
+/** Un correo que el sistema quiere enviar. Sale en HTML (con logos) y en texto plano. */
 export interface MensajeDeCorreo {
   para: string;
   asunto: string;
-  cuerpo: string;
+  contenido: ContenidoDeCorreo;
 }
 
 /**
@@ -37,6 +40,8 @@ export class CorreoService implements OnModuleInit {
   private readonly transporte = (process.env.CORREO_TRANSPORTE ?? 'consola').trim();
   private smtp: Transporter | null = null;
   private remitente = '';
+  /** Logos incrustados; se leen una vez. null = no estan (el correo sale sin logos). */
+  private logos: Promise<{ filename: string; content: Buffer; cid: string; contentType: string }[] | null> | null = null;
 
   /**
    * Al arrancar, con smtp, se arma la conexion y se prueba contra el
@@ -87,6 +92,7 @@ export class CorreoService implements OnModuleInit {
   }
 
   async enviar(mensaje: MensajeDeCorreo): Promise<void> {
+    const texto = aTexto(mensaje.contenido);
     if (!this.smtp) {
       // Solo a la CONSOLA, nunca a los archivos de registros: el mensaje trae
       // la contrasena temporal o el codigo de recuperacion (ver comun/registros.ts).
@@ -97,7 +103,7 @@ export class CorreoService implements OnModuleInit {
           `Para:   ${mensaje.para}`,
           `Asunto: ${mensaje.asunto}`,
           '',
-          mensaje.cuerpo,
+          texto,
           '----------------------------------------------------',
           '',
         ].join('\n'),
@@ -107,7 +113,15 @@ export class CorreoService implements OnModuleInit {
     }
 
     try {
-      await this.smtp.sendMail({ from: this.remitente, to: mensaje.para, subject: mensaje.asunto, text: mensaje.cuerpo });
+      const logos = await this.leerLogos();
+      await this.smtp.sendMail({
+        from: this.remitente,
+        to: mensaje.para,
+        subject: mensaje.asunto,
+        text: texto,
+        html: aHtml(mensaje.contenido, logos !== null),
+        attachments: logos ?? [],
+      });
       // Solo destinatario y asunto: el cuerpo puede traer contrasenas o codigos.
       this.registro.log(`Correo enviado a ${mensaje.para}: "${mensaje.asunto}".`);
     } catch (error) {
@@ -115,6 +129,22 @@ export class CorreoService implements OnModuleInit {
       // un error limpio, sin el cuerpo del mensaje.
       throw new Error(`No se pudo enviar el correo a ${mensaje.para}: ${motivo(error)}`);
     }
+  }
+
+  /** Los logos de backend/contenido (los mismos de la constancia en PDF). */
+  private leerLogos() {
+    this.logos ??= (async () => {
+      const carpeta = process.env.RUTA_CONTENIDO ?? join(process.cwd(), 'contenido');
+      try {
+        return await Promise.all(
+          IMAGENES_DEL_CORREO.map(async ({ cid, archivo }) => ({ filename: archivo, content: await readFile(join(carpeta, archivo)), cid, contentType: 'image/png' })),
+        );
+      } catch {
+        this.registro.warn(`No se encontraron los logos del correo en ${carpeta}: los correos salen sin logos.`);
+        return null;
+      }
+    })();
+    return this.logos;
   }
 }
 

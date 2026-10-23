@@ -326,16 +326,13 @@ export class AutenticacionService {
       await this.correo.enviar({
         para: usuario.correo,
         asunto: 'SINERGIA - Código para recuperar su contraseña',
-        cuerpo: [
-          'Buen día,',
-          '',
-          `Su código para recuperar la contraseña de SINERGIA es: ${codigo}`,
-          '',
-          `El código vence en ${MINUTOS_VIGENCIA_CODIGO} minutos y solo se puede usar una vez.`,
-          'Si usted no solicitó este cambio, ignore este mensaje: su contraseña sigue igual.',
-          '',
-          'Municipalidad de Palmares',
-        ].join('\n'),
+        contenido: {
+          titulo: 'Recupere su contraseña',
+          parrafos: ['Recibimos una solicitud para recuperar la contraseña de su cuenta en SINERGIA. Escriba este código en la pantalla de recuperación:'],
+          codigo,
+          despues: [`El código vence en ${MINUTOS_VIGENCIA_CODIGO} minutos y solo se puede usar una vez.`],
+          aviso: 'Si usted no solicitó este cambio, ignore este mensaje: su contraseña sigue igual.',
+        },
       });
     } catch (error) {
       this.registro.error(`No se pudo enviar el código de recuperación al usuario ${usuario.id}`, error instanceof Error ? error.message : String(error));

@@ -492,9 +492,11 @@
 }
 
 /* Solicitud resaltada (llegando con "Ver en calendario") */
-[data-resaltada="si"] { outline: 3px solid var(--texto); outline-offset: 1px; z-index: 2; animation: latido 1.4s ease-in-out 3; }
+/* 22/10: sin "tr": antes tambien pintaba un borde negro parpadeante en la fila recien
+   editada de Catalogos y Tipos de documento (esas usan el tinte de ajustes.css). */
+[data-resaltada="si"]:not(tr) { outline: 3px solid var(--texto); outline-offset: 1px; z-index: 2; animation: latido 1.4s ease-in-out 3; }
 @keyframes latido { 50% { outline-color: transparent; } }
-@media (prefers-reduced-motion: reduce) { [data-resaltada="si"] { animation: none; } }
+@media (prefers-reduced-motion: reduce) { [data-resaltada="si"]:not(tr) { animation: none; } }
 
 /* Vista "Lista" del calendario */
 .cal-lista { display: grid; gap: 16px; }
