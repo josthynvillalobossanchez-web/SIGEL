@@ -22,7 +22,8 @@
   cursor: pointer;
 }
 .on {
-  border: 2px solid var(--ink);
+  background: var(--primary-tint);
+  border: 2px solid var(--primary);
   padding: 7px 15px;
 }
 .late {

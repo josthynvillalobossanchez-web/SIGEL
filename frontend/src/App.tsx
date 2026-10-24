@@ -328,17 +328,17 @@ export function App() {
                   </ConPermisos>
                 }
               />
+              {/* ARCA (cobro de las piscinas): dentro del Marco desde el 24/10, con el mismo diseño del sistema. */}
+              <Route
+                path="/cobro/*"
+                element={
+                  <Suspense fallback={<div role="status">Cargando…</div>}>
+                    <ArcaApp />
+                  </Suspense>
+                }
+              />
               <Route path="*" element={<PaginaNoEncontrada />} />
             </Route>
-            {/* ARCA trae su propio diseño y menú: va fuera del Marco del sistema, pero con la misma sesión. */}
-            <Route
-              path="/cobro/*"
-              element={
-                <Suspense fallback={<div role="status" style={{ padding: 32 }}>Cargando…</div>}>
-                  <ArcaApp />
-                </Suspense>
-              }
-            />
           </Route>
         </Routes>
       </SesionProveedor>

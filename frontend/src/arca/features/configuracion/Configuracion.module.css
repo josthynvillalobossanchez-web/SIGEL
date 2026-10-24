@@ -1,6 +1,6 @@
 .nav {
   display: flex;
-  border: 1px solid var(--ink);
+  border: 1px solid var(--border-strong);
   border-radius: var(--radius);
   overflow: hidden;
   width: fit-content;
@@ -16,11 +16,11 @@
   color: var(--ink);
 }
 .nav button + button {
-  border-left: 1px solid var(--ink);
+  border-left: 1px solid var(--border-strong);
 }
 .nav button[aria-pressed='true'] {
-  background: var(--ink);
-  color: #fff;
+  background: var(--primary-tint);
+  color: var(--primary-on-light);
 }
 
 .fieldset {
@@ -30,11 +30,10 @@
 }
 .legend {
   padding: 0;
+  margin-bottom: var(--space-2);
   font-size: var(--fs-label);
   font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  margin-bottom: var(--space-2);
+  color: var(--ink);
 }
 .formats {
   display: grid;
@@ -57,7 +56,8 @@
   height: 18px;
 }
 .formatOn {
-  border: 2px solid var(--ink);
+  background: var(--primary-tint);
+  border: 2px solid var(--primary);
   padding: calc(var(--space-3) - 1px) calc(var(--space-4) - 1px);
 }
 .formatHelp {

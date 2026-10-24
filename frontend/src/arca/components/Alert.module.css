@@ -2,21 +2,18 @@
   display: flex;
   align-items: flex-start;
   gap: 8px;
-  padding: 8px 12px;
-  border: 1px solid;
-  border-radius: var(--radius);
-  font-size: var(--fs-help);
-  font-weight: 600;
+  padding: 10px 14px;
+  border-radius: var(--radius-lg);
+  font-size: 14px;
+  font-weight: 500;
 }
 .error {
   color: var(--accent);
-  border-color: var(--accent);
-  background: var(--surface);
+  background: var(--accent-bg);
 }
 .info {
-  color: var(--ink);
-  border-color: var(--ink);
-  background: var(--surface);
+  color: var(--info-fg-a);
+  background: var(--info-bg-a);
 }
 .icon {
   flex: none;

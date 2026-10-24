@@ -1,6 +1,6 @@
 .empty {
   border: 1px dashed var(--border);
-  border-radius: var(--radius);
+  border-radius: var(--radius-lg);
   padding: var(--space-8);
   text-align: center;
   color: var(--graphite);

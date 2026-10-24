@@ -7,8 +7,7 @@
   white-space: nowrap;
   font-size: var(--fs-label);
   font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
+  color: var(--ink);
 }
 .select {
   height: var(--target);
@@ -31,9 +30,11 @@
 .table th {
   padding: 8px;
   text-align: left;
-  font-size: var(--fs-label);
+  font-size: 11px;
+  font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.08em;
+  color: var(--graphite);
 }
 .table th:first-child,
 .table td:first-child {
@@ -42,9 +43,6 @@
 .table td {
   padding: 4px;
   border-top: 1px solid var(--border);
-}
-.table tbody tr:nth-child(even) {
-  background: var(--muted);
 }
 .right {
   text-align: right !important;

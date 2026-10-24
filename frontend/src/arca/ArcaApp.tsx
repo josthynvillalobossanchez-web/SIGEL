@@ -1,7 +1,3 @@
-import '@fontsource/inter/400.css';
-import '@fontsource/inter/500.css';
-import '@fontsource/inter/600.css';
-import '@fontsource/inter/700.css';
 import './styles/global.css';
 import { useEffect } from 'react';
 import { Navigate, Route, Routes } from 'react-router';
@@ -19,8 +15,9 @@ import { ShellLayout } from './layout/ShellLayout';
 import { useSession } from './store/session';
 
 /**
- * ARCA (cobro de las piscinas), montado en /cobro/* (23/10/2026). Conserva su
- * propio diseño y menú, como lo entregaron. Rutas relativas a /cobro.
+ * ARCA (cobro de las piscinas), montado en /cobro/* (23/10/2026). Desde el
+ * 24/10 va dentro del Marco del sistema y usa sus colores, letra y estilos
+ * (styles/tokens.css apunta a las variables de sigel.css). Rutas relativas a /cobro.
  * Ya no tiene login, cambio de contraseña ni gestión de usuarios: eso es del
  * sistema (Mi cuenta y Seguridad > Usuarios).
  */

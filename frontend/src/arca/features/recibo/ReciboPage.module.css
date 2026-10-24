@@ -1,6 +1,6 @@
 .segmented {
   display: flex;
-  border: 1px solid var(--ink);
+  border: 1px solid var(--border-strong);
   border-radius: var(--radius);
   overflow: hidden;
 }
@@ -14,11 +14,11 @@
   color: var(--ink);
 }
 .segmented button + button {
-  border-left: 1px solid var(--ink);
+  border-left: 1px solid var(--border-strong);
 }
 .segmented button.on {
-  background: var(--ink);
-  color: #fff;
+  background: var(--primary-tint);
+  color: var(--primary-on-light);
 }
 .canvas {
   background: var(--muted);

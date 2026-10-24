@@ -14,8 +14,6 @@
 }
 
 .arca-app {
-  min-height: 100vh;
-  background: var(--page);
   color: var(--ink);
   font-family: var(--font);
   font-size: var(--fs-body);
@@ -26,13 +24,14 @@
 :where(.arca-app) h1 {
   margin: 0;
   font-size: var(--fs-h1);
-  font-weight: 700;
-  line-height: 1.25;
+  font-weight: 800;
+  letter-spacing: -0.015em;
+  line-height: 1.2;
 }
 :where(.arca-app) h2 {
   margin: 0;
   font-size: var(--fs-h2);
-  font-weight: 600;
+  font-weight: 700;
 }
 :where(.arca-app) h3 {
   margin: 0;
@@ -41,10 +40,10 @@
 }
 
 :where(.arca-app) a {
-  color: var(--ink);
+  color: var(--primary-on-light);
 }
 :where(.arca-app) a:hover {
-  color: var(--accent);
+  color: var(--primary-hover);
 }
 
 :where(.arca-app) button,
@@ -55,10 +54,11 @@
   font-size: inherit;
 }
 
-/* Foco visible en todo control */
+/* Foco visible en todo control: el mismo anillo del sistema (sigel.css) */
 :where(.arca-app) :focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 2px;
+  outline: 2px solid var(--foco-borde);
+  outline-offset: 0;
+  box-shadow: 0 0 0 4px var(--foco);
 }
 /* En listas y navegación el foco va hacia adentro para no recortarse */
 :where(.arca-app) [data-focus-inset]:focus-visible {

@@ -32,10 +32,10 @@
   flex: none;
 }
 .dotOn {
-  background: var(--ink);
+  background: var(--ok-fg);
 }
 .dotOff {
-  border: 2px solid var(--ink);
+  border: 2px solid var(--graphite);
 }
 .cashLink {
   display: inline-flex;
@@ -59,9 +59,11 @@
 .track {
   height: 8px;
   background: var(--muted);
+  border-radius: 999px;
+  overflow: hidden;
   margin-top: var(--space-1);
 }
 .fill {
   height: 8px;
-  background: var(--ink);
+  background: var(--primary);
 }

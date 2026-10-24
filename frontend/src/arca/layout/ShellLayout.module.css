@@ -1,111 +1,26 @@
-.shell {
-  display: flex;
-  min-height: 100vh;
-  min-width: 1280px; /* escritorio de ventanilla */
-}
-
-.sidebar {
-  flex: none;
-  position: sticky;
-  top: 0;
-  height: 100vh;
-  display: flex;
-  flex-direction: column;
-  background: var(--graphite);
-  color: #fff;
-}
-.brand {
+/* Franja superior de las pantallas de cobro, con el aspecto de los avisos del sistema. */
+.strip {
   display: flex;
   align-items: center;
-  gap: 12px;
-  height: var(--bar-h);
-  padding: 16px;
-  border-bottom: 1px solid var(--border);
-}
-.logo {
-  height: 40px;
-  width: auto;
-  max-width: 120px;
-}
-.symbol {
-  height: 36px;
-  width: 36px;
-  margin: 0 auto;
-}
-.divider {
-  width: 1px;
-  align-self: stretch;
-  background: var(--border);
-}
-.brandName {
-  font-weight: 700;
-  letter-spacing: 0.24em;
-  font-size: 16px;
-}
-
-.nav {
-  flex: 1;
-  padding: 8px 0;
-  overflow: auto;
-}
-.navItem {
-  position: relative;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  height: var(--target);
-  padding: 0 16px;
-  color: #fff;
-  text-decoration: none;
-  font-weight: 400;
-}
-.navItem:hover {
-  background: var(--ink);
-  color: #fff;
-}
-.active {
-  background: var(--ink);
-  font-weight: 600;
-}
-.bar {
-  position: absolute;
-  left: 0;
-  top: 0;
-  bottom: 0;
-  width: 3px;
-  background: transparent;
-}
-.active .bar {
-  background: var(--accent);
-}
-.navLabel {
-  flex: 1;
-}
-
-.footer {
-  border-top: 1px solid var(--border);
-  padding: 16px;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-6);
+  margin-bottom: var(--space-6);
+  padding: 8px 14px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
   font-size: var(--fs-help);
+  color: var(--graphite);
 }
-.userName {
-  font-weight: 600;
-  font-size: var(--fs-body);
-}
-.passLink {
-  display: inline-block;
-  margin-top: 4px;
-  color: #fff;
-  font-size: var(--fs-label);
-}
-.passLink:hover {
-  color: #fff;
-  text-decoration: none;
-}
-.cashState {
-  margin: 8px 0;
-  display: flex;
+.cash {
+  display: inline-flex;
   align-items: center;
   gap: 8px;
+  font-weight: 600;
+  color: var(--ink);
+}
+.cashOpen {
+  color: var(--ok-fg);
 }
 .dotOn,
 .dotOff {
@@ -116,75 +31,25 @@
   flex: none;
 }
 .dotOn {
-  background: #fff;
+  background: var(--ok-fg);
 }
 .dotOff {
-  border: 2px solid #fff;
+  border: 2px solid var(--graphite);
 }
-.footerButtons {
-  display: flex;
-  gap: 8px;
-}
-.collapsedButtons {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-.footBtn,
-.iconBtn {
-  height: var(--target);
-  background: transparent;
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  color: #fff;
-  cursor: pointer;
-  display: flex;
+.keys {
+  display: inline-flex;
   align-items: center;
-  justify-content: center;
-  gap: 8px;
+  gap: 6px;
 }
-.footBtn {
-  flex: 1;
-  font-size: var(--fs-help);
+.keys kbd {
+  font: 600 11px var(--font);
+  padding: 1px 6px;
+  border: 1px solid var(--border-strong);
+  border-radius: 4px;
+  background: var(--page);
+  color: var(--ink);
 }
-.iconBtn {
-  width: var(--target);
-}
-.footBtn:hover,
-.iconBtn:hover {
-  background: var(--ink);
-}
-
-.main {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-}
-.header {
-  height: var(--bar-h);
-  display: flex;
-  align-items: center;
-  gap: var(--space-6);
-  padding: 0 var(--space-8);
-  background: var(--graphite);
-  color: #fff;
-  border-bottom: 1px solid var(--border);
-  font-size: var(--fs-help);
-}
-.crumb {
-  flex: 1;
-}
-.headerCash {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-.content {
-  flex: 1;
-  min-width: 0;
-  padding: var(--space-8);
-}
-.content:focus {
-  outline: none;
+.clock {
+  margin-left: auto;
+  font-variant-numeric: tabular-nums;
 }

@@ -1,3 +1,4 @@
+/* Botones con el mismo aspecto que .btn del sistema (sigel.css). */
 .btn {
   display: inline-flex;
   align-items: center;
@@ -5,10 +6,13 @@
   gap: 8px;
   min-height: var(--target);
   padding: 0 16px;
+  border: 1px solid transparent;
   border-radius: var(--radius);
+  font-size: 15px;
   font-weight: 600;
   cursor: pointer;
   white-space: nowrap;
+  transition: background 0.15s, border-color 0.15s;
 }
 .btn:disabled {
   opacity: 0.5;
@@ -17,43 +21,37 @@
 .block {
   width: 100%;
 }
-
 .primary {
-  background: var(--ink);
-  color: #fff;
-  border: 1px solid var(--ink);
+  background: var(--primary);
+  color: var(--primary-txt);
 }
 .primary:hover:not(:disabled) {
-  background: var(--graphite);
+  background: var(--primary-hover);
 }
-
 .secondary {
   background: var(--surface);
   color: var(--ink);
-  border: 1px solid var(--ink);
+  border-color: var(--border-strong);
 }
 .secondary:hover:not(:disabled) {
   background: var(--muted);
 }
-
 .danger {
-  background: var(--accent);
-  color: #fff;
-  border: 1px solid var(--accent);
+  background: transparent;
+  color: var(--accent);
+  border-color: var(--accent);
 }
 .danger:hover:not(:disabled) {
-  background: var(--ink);
-  border-color: var(--ink);
+  background: var(--accent-bg);
 }
-
 .link {
   background: transparent;
   border: 0;
   padding: 0 8px;
   text-decoration: underline;
-  color: var(--ink);
-  font-weight: 400;
+  color: var(--primary-on-light);
+  font-weight: 500;
 }
 .link:hover:not(:disabled) {
-  color: var(--accent);
+  color: var(--ink);
 }

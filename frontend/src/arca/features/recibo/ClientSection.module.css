@@ -16,8 +16,7 @@
   margin-bottom: 4px;
   font-size: var(--fs-label);
   font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
+  color: var(--ink);
 }
 .searchBox {
   position: relative;

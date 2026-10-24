@@ -42,6 +42,8 @@ export interface OpcionDeMenu {
   permisos: string[];
   /** Ademas, al menos UNO de estos (p. ej. la jefatura o RRHH). */
   algunoDe?: string[];
+  /** Solo cuenta como "esta seccion" en su propia direccion, no en las que empiezan igual (p. ej. /cobro). */
+  exacta?: boolean;
   /** Otras direcciones que cuentan como "esta seccion" (subsecciones fuera de su ruta). */
   tambienEn?: string[];
   /** Texto distinto si a la cuenta le falta un permiso (p. ej. la jefatura ve "Mi personal"). */
@@ -148,16 +150,71 @@ export const MENU: GrupoDeMenu[] = [
     ],
   },
   {
-    // ARCA (23/10/2026): cobro de las piscinas. Abre su propia pantalla, con su diseño.
+    // ARCA (cobro de las piscinas). Desde el 24/10 sus pantallas van dentro del
+    // Marco y cada una es una opcion de este grupo. Los roles de ARCA salen de
+    // los permisos: cobro.cajero (todos), cobro.supervisor (reportes) y
+    // cobro.administrar (configuracion), igual que en el backend.
     titulo: 'Cobro',
     opciones: [
       {
-        texto: 'Cobro de piscinas',
+        texto: 'Panel de cobro',
         ruta: '/cobro',
-        icono: 'lista',
+        exacta: true,
+        icono: 'inicio',
         permisos: [],
         algunoDe: ['cobro.cajero', 'cobro.supervisor', 'cobro.administrar'],
-        descripcion: 'Cajas, recibos, anulaciones, clientes y reportes de ingresos de las piscinas.',
+        descripcion: 'Resumen del día: caja, recibos emitidos e ingresos por forma de pago.',
+      },
+      {
+        texto: 'Recibos',
+        ruta: '/cobro/recibos',
+        icono: 'documento',
+        permisos: [],
+        algunoDe: ['cobro.cajero', 'cobro.supervisor', 'cobro.administrar'],
+        descripcion: 'Cobrar con un recibo nuevo, buscar los emitidos y reimprimirlos.',
+        subopciones: [
+          { texto: 'Nuevo recibo', ruta: '/cobro/recibos/nuevo', permisos: [] },
+          { texto: 'Vista del recibo', patron: /^\/cobro\/recibos\/\d+$/, permisos: [] },
+        ],
+      },
+      {
+        texto: 'Anulaciones',
+        ruta: '/cobro/anulaciones',
+        icono: 'desactivar',
+        permisos: [],
+        algunoDe: ['cobro.cajero', 'cobro.supervisor', 'cobro.administrar'],
+        descripcion: 'Anular un recibo de las últimas 48 horas, con la autorización de un supervisor.',
+      },
+      {
+        texto: 'Clientes',
+        ruta: '/cobro/clientes',
+        icono: 'personas',
+        permisos: [],
+        algunoDe: ['cobro.cajero', 'cobro.supervisor', 'cobro.administrar'],
+        descripcion: 'Contribuyentes registrados para identificarlos en los recibos.',
+      },
+      {
+        texto: 'Caja',
+        ruta: '/cobro/caja',
+        icono: 'tarjetas',
+        permisos: [],
+        algunoDe: ['cobro.cajero', 'cobro.supervisor', 'cobro.administrar'],
+        descripcion: 'Abrir la caja con su fondo y cerrarla con el arqueo por denominación.',
+      },
+      {
+        texto: 'Reportes',
+        ruta: '/cobro/reportes',
+        icono: 'lista',
+        permisos: [],
+        algunoDe: ['cobro.supervisor', 'cobro.administrar'],
+        descripcion: 'Ingresos por período, concepto o cajero, con exportación a PDF y Excel.',
+      },
+      {
+        texto: 'Configuración',
+        ruta: '/cobro/configuracion',
+        icono: 'llave',
+        permisos: ['cobro.administrar'],
+        descripcion: 'Tarifas, datos del recibo, formato de impresión y cajas.',
       },
     ],
   },

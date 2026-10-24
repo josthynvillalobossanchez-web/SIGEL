@@ -67,11 +67,11 @@
   min-height: var(--target);
   text-decoration: underline;
   cursor: pointer;
-  color: var(--ink);
+  color: var(--primary-on-light);
   font-size: var(--fs-help);
 }
 .linkBtn:hover {
-  color: var(--accent);
+  color: var(--ink);
 }
 .linkBtnDanger {
   composes: linkBtn;

@@ -7,7 +7,7 @@
 }
 .segmented {
   display: flex;
-  border: 1px solid var(--ink);
+  border: 1px solid var(--border-strong);
   border-radius: var(--radius);
   overflow: hidden;
 }
@@ -21,11 +21,11 @@
   color: var(--ink);
 }
 .segmented button + button {
-  border-left: 1px solid var(--ink);
+  border-left: 1px solid var(--border-strong);
 }
 .segmented button.on {
-  background: var(--ink);
-  color: #fff;
+  background: var(--primary-tint);
+  color: var(--primary-on-light);
 }
 .date {
   width: 140px;
@@ -47,11 +47,13 @@
   display: block;
   height: 16px;
   background: var(--muted);
+  border-radius: 999px;
+  overflow: hidden;
 }
 .fill {
   display: block;
   height: 16px;
-  background: var(--ink);
+  background: var(--primary);
 }
 .amount {
   text-align: right;
@@ -70,5 +72,5 @@
 .progressFill {
   height: 4px;
   width: 100%;
-  background: var(--ink);
+  background: var(--primary);
 }

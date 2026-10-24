@@ -1,14 +1,33 @@
-/* Tokens de diseño – paleta Municipalidad de Palmares. Sin sombras: la separación es con bordes de 1 px. */
-:root {
-  --ink: #0a0c11; /* botón primario, texto, barras */
-  --graphite: #1d2327; /* sidebar, header superior, texto secundario */
-  --surface: #ffffff; /* tarjetas, inputs */
-  --page: #fafafa; /* fondo de página */
-  --muted: #f0f0f1; /* zebra, hover, fondos de insignia/barras */
-  --border: #abadb3;
-  --accent: #d30505; /* foco, errores, anulaciones, barra activa */
+/*
+ * Tokens de ARCA (24/10/2026): ya no tienen colores propios. Cada uno apunta
+ * a la variable equivalente del sistema (estilos/sigel.css), asi las pantallas
+ * del cobro usan la misma paleta, letra y bordes que el resto, y siguen solas
+ * el tema oscuro. Se definen sobre .arca-app para no tocar nada fuera de ARCA.
+ */
+.arca-app {
+  --ink: var(--texto); /* texto principal */
+  --graphite: var(--texto-sec); /* texto secundario, ayudas */
+  --surface: var(--card); /* tarjetas, inputs */
+  --page: var(--superficie); /* fondo de pagina */
+  --muted: var(--neutro-bg); /* hover, fondos suaves */
+  --border: var(--borde);
+  --border-strong: var(--borde-fuerte); /* bordes de campos y botones secundarios */
+  --accent: var(--error-fg); /* errores, anulaciones, faltantes */
+  --accent-bg: var(--error-bg);
 
-  --font: 'Inter', 'Public Sans', system-ui, sans-serif;
+  /* Accion principal: el verde oliva del sistema */
+  --primary: var(--accion);
+  --primary-hover: var(--accion-hover);
+  --primary-txt: var(--accion-txt);
+  --primary-tint: var(--accion-tinte);
+  --primary-on-light: var(--accion-sobre-claro);
+
+  --ok-bg: var(--exito-bg);
+  --ok-fg: var(--exito-fg);
+  --info-bg-a: var(--info-bg);
+  --info-fg-a: var(--info-fg);
+
+  --font: var(--fuente);
 
   --space-1: 4px;
   --space-2: 8px;
@@ -18,18 +37,16 @@
   --space-8: 32px;
   --space-12: 48px;
 
-  --radius: 4px;
-  --radius-sm: 2px;
+  --radius: var(--radio-md);
+  --radius-sm: 4px;
+  --radius-lg: var(--radio-lg);
 
-  --fs-h1: 28px;
-  --fs-h2: 20px;
+  --fs-h1: 24px;
+  --fs-h2: 18px;
   --fs-h3: 16px;
   --fs-body: 15px;
   --fs-help: 13px;
-  --fs-label: 12px;
+  --fs-label: 13px;
 
-  --target: 44px; /* objetivo de clic mínimo */
-  --sidebar-w: 256px;
-  --sidebar-w-collapsed: 72px;
-  --bar-h: 72px;
+  --target: 42px; /* alto de botones y campos, como en el resto del sistema */
 }

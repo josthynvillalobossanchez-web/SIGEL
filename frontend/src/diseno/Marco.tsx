@@ -34,7 +34,7 @@ import { MENU, puedeVerOpcion, textoDeOpcion, type OpcionDeMenu } from './menu';
 import { inicialesDesdeCorreo } from '../utilidades/texto';
 import logoMunicipalidad from '../recursos/logo-oscuro.png';
 // 23/10: la rama de las piscinas se llama ARCA; el simbolo es el de la Municipalidad.
-import simboloSinergia from '../recursos/logo-claro.png';
+import simboloArca from '../recursos/arca-simbolo.svg';
 
 const CLAVE_LATERAL = 'sinergia-lateral';
 
@@ -49,6 +49,7 @@ function lateralGuardadoOculto(): boolean {
 /** La direccion pertenece a esta seccion (su ruta, sus subpaginas o sus "tambienEn"). */
 function esDeLaSeccion(opcion: OpcionDeMenu, ruta: string): boolean {
   if (opcion.ruta === '/') return false;
+  if (opcion.exacta) return ruta === opcion.ruta;
   return [opcion.ruta, ...(opcion.tambienEn ?? [])].some((r) => ruta === r || ruta.startsWith(`${r}/`));
 }
 
@@ -155,11 +156,11 @@ function MarcoInterno() {
 
         <div className="marca">
           <span className="marca-simbolo">
-            <img src={simboloSinergia} alt="" />
+            <img src={simboloArca} alt="" />
           </span>
           <div className="marca-txt">
             <b>ARCA</b>
-            <small>Gestión de personal</small>
+            <small>Personal y cobro</small>
           </div>
           <img className="marca-muni" src={logoMunicipalidad} alt="Municipalidad de Palmares" data-ayuda="Municipalidad de Palmares" />
         </div>
