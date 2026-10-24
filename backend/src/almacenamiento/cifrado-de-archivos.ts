@@ -62,7 +62,7 @@ export function cifrar(contenido: Buffer, llave: Buffer, versionLlave: number, c
 /** Lee de la cabecera con cual version de llave se cifro el archivo. */
 export function versionDeLlaveDe(paquete: Buffer): number {
   if (paquete.length < LARGO_CABECERA + LARGO_ETIQUETA || !paquete.subarray(0, 4).equals(MARCA)) {
-    throw new ErrorDeCifrado('El archivo no tiene el formato cifrado de SINERGIA.');
+    throw new ErrorDeCifrado('El archivo no tiene el formato cifrado de ARCA.');
   }
   if (paquete.readUInt8(4) !== VERSION_DE_FORMATO) {
     throw new ErrorDeCifrado(`Formato de archivo cifrado no reconocido (${paquete.readUInt8(4)}).`);

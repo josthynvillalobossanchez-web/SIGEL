@@ -104,7 +104,7 @@ export function Inicio() {
             {saludo()}
             {f ? `, ${f.nombre}` : ''}
           </h1>
-          <p>Sistema Integrado de Nómina, Expediente, Recursos y Gestión de Incapacidades y Ausencias de la Municipalidad de Palmares.</p>
+          <p>Cobro y gestión de personal de las piscinas municipales de Palmares.</p>
         </div>
       </div>
 

@@ -1,0 +1,69 @@
+.add {
+  display: flex;
+  gap: var(--space-2);
+  align-items: center;
+}
+.addLabel {
+  white-space: nowrap;
+  font-size: var(--fs-label);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.select {
+  height: var(--target);
+  width: 280px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  padding: 0 8px;
+}
+.catalogError {
+  margin: 0 0 var(--space-3);
+  color: var(--accent);
+  font-weight: 600;
+  font-size: var(--fs-help);
+}
+.table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.table th {
+  padding: 8px;
+  text-align: left;
+  font-size: var(--fs-label);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.table th:first-child,
+.table td:first-child {
+  padding-left: 0;
+}
+.table td {
+  padding: 4px;
+  border-top: 1px solid var(--border);
+}
+.table tbody tr:nth-child(even) {
+  background: var(--muted);
+}
+.right {
+  text-align: right !important;
+}
+.name {
+  padding: 8px 8px 8px 0 !important;
+}
+.amount {
+  padding: 8px !important;
+  font-weight: 600;
+}
+.remove {
+  width: var(--target);
+  height: var(--target);
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  color: var(--graphite);
+}
+.remove:hover {
+  color: var(--accent);
+}

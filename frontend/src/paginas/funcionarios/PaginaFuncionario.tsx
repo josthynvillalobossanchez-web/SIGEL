@@ -318,7 +318,7 @@ function FormularioDeFuncionario({ opciones, detalle }: { opciones: OpcionesDeFo
           {
             titulo: 'Cuenta de acceso',
             sub: 'Opcional',
-            descripcion: 'Si la persona va a usar SINERGIA, se le puede crear la cuenta ahora mismo: funcionario y cuenta se guardan juntos, o ninguno.',
+            descripcion: 'Si la persona va a usar ARCA, se le puede crear la cuenta ahora mismo: funcionario y cuenta se guardan juntos, o ninguno.',
           },
         ]),
     {

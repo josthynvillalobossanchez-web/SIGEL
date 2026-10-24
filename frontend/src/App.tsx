@@ -38,6 +38,7 @@
  * (con <ConPermisos> si pide permisos) y agregarla a src/diseno/menu.ts con
  * los MISMOS permisos.
  */
+import { lazy, Suspense } from 'react';
 import { BrowserRouter, Navigate, Route, Routes, useLocation, useParams } from 'react-router';
 import { SesionProveedor } from './sesion/SesionProveedor';
 import { ConPermisos, RutaDePrimerIngreso, RutaProtegida, RutaSinSesion } from './sesion/Guardias';
@@ -45,6 +46,9 @@ import { IniciarSesion } from './paginas/acceso/IniciarSesion';
 import { RecuperarContrasena } from './paginas/acceso/RecuperarContrasena';
 import { PrimerIngreso } from './paginas/acceso/PrimerIngreso';
 import { Marco } from './diseno/Marco';
+
+// ARCA (cobro de las piscinas, 23/10/2026): se carga aparte, solo al entrar a /cobro.
+const ArcaApp = lazy(() => import('./arca/ArcaApp'));
 import { Inicio } from './paginas/Inicio';
 import { ListaDeUsuarios } from './paginas/usuarios/ListaDeUsuarios';
 import { PaginaCrearUsuario, PaginaEditarUsuario } from './paginas/usuarios/PaginaUsuario';
@@ -326,6 +330,15 @@ export function App() {
               />
               <Route path="*" element={<PaginaNoEncontrada />} />
             </Route>
+            {/* ARCA trae su propio diseño y menú: va fuera del Marco del sistema, pero con la misma sesión. */}
+            <Route
+              path="/cobro/*"
+              element={
+                <Suspense fallback={<div role="status" style={{ padding: 32 }}>Cargando…</div>}>
+                  <ArcaApp />
+                </Suspense>
+              }
+            />
           </Route>
         </Routes>
       </SesionProveedor>

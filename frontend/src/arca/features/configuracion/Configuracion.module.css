@@ -1,0 +1,119 @@
+.nav {
+  display: flex;
+  border: 1px solid var(--ink);
+  border-radius: var(--radius);
+  overflow: hidden;
+  width: fit-content;
+  margin-bottom: var(--space-6);
+}
+.nav button {
+  height: var(--target);
+  padding: 0 var(--space-4);
+  border: 0;
+  font-weight: 600;
+  cursor: pointer;
+  background: var(--surface);
+  color: var(--ink);
+}
+.nav button + button {
+  border-left: 1px solid var(--ink);
+}
+.nav button[aria-pressed='true'] {
+  background: var(--ink);
+  color: #fff;
+}
+
+.fieldset {
+  border: 0;
+  margin: 0;
+  padding: 0;
+}
+.legend {
+  padding: 0;
+  font-size: var(--fs-label);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: var(--space-2);
+}
+.formats {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-4);
+}
+.format {
+  display: flex;
+  gap: var(--space-3);
+  align-items: flex-start;
+  min-height: 64px;
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  cursor: pointer;
+}
+.format input {
+  margin-top: 4px;
+  width: 18px;
+  height: 18px;
+}
+.formatOn {
+  border: 2px solid var(--ink);
+  padding: calc(var(--space-3) - 1px) calc(var(--space-4) - 1px);
+}
+.formatHelp {
+  display: block;
+  font-size: var(--fs-help);
+  color: var(--graphite);
+}
+.check {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: var(--target);
+  margin-top: var(--space-3);
+}
+.check input {
+  width: 20px;
+  height: 20px;
+}
+.note {
+  display: flex;
+  gap: var(--space-3);
+  margin-top: var(--space-4);
+  padding: var(--space-3) var(--space-4);
+  background: var(--page);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  font-size: var(--fs-help);
+}
+.note p {
+  margin: 0;
+}
+.pool {
+  margin: 0 0 var(--space-4);
+}
+.testTicket {
+  width: 302px;
+  padding: 16px 14px;
+  background: #fff;
+  color: #000;
+  font-size: 12px;
+}
+.testLetter {
+  width: 720px;
+  padding: 56px;
+  background: #fff;
+  color: #000;
+  font-size: 14px;
+}
+.inline {
+  display: flex;
+  gap: var(--space-2);
+  align-items: flex-end;
+  flex-wrap: wrap;
+  margin-top: var(--space-4);
+}
+.note svg {
+  flex: none;
+  margin-top: 2px;
+}

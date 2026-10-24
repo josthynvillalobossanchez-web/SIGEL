@@ -33,7 +33,8 @@ import { Campana } from '../componentes/Campana';
 import { MENU, puedeVerOpcion, textoDeOpcion, type OpcionDeMenu } from './menu';
 import { inicialesDesdeCorreo } from '../utilidades/texto';
 import logoMunicipalidad from '../recursos/logo-oscuro.png';
-import simboloSinergia from '../recursos/sinergia-simbolo.png';
+// 23/10: la rama de las piscinas se llama ARCA; el simbolo es el de la Municipalidad.
+import simboloSinergia from '../recursos/logo-claro.png';
 
 const CLAVE_LATERAL = 'sinergia-lateral';
 
@@ -157,7 +158,7 @@ function MarcoInterno() {
             <img src={simboloSinergia} alt="" />
           </span>
           <div className="marca-txt">
-            <b>SINERGIA</b>
+            <b>ARCA</b>
             <small>Gestión de personal</small>
           </div>
           <img className="marca-muni" src={logoMunicipalidad} alt="Municipalidad de Palmares" data-ayuda="Municipalidad de Palmares" />
@@ -270,9 +271,6 @@ function MarcoInterno() {
             );
           })}
 
-          <p style={{ marginTop: 'auto', padding: 12, fontSize: 11.5, color: 'var(--texto-sec)', lineHeight: 1.5 }}>
-            El Talent Pool llega en el Sprint 3.
-          </p>
         </nav>
 
         <main className="contenido" id="contenido" tabIndex={-1}>

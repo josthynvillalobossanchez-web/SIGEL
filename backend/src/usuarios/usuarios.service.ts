@@ -511,11 +511,11 @@ export class UsuariosService {
     try {
       await this.correo.enviar({
         para: cuenta.correo,
-        asunto: 'SINERGIA - Su cuenta de acceso',
+        asunto: 'ARCA - Su cuenta de acceso',
         cuerpo: [
           'Buen día,',
           '',
-          'Recursos Humanos creó su cuenta en SINERGIA, el Sistema Integrado de Nómina, Expediente, Recursos y Gestión de Incapacidades y Ausencias.',
+          'Recursos Humanos creó su cuenta en ARCA, el sistema de cobro y gestión de personal de las piscinas municipales de Palmares.',
           '',
           `Correo de ingreso:     ${cuenta.correo}`,
           `Contraseña temporal:   ${cuenta.contrasenaTemporal}`,
@@ -1449,7 +1449,7 @@ export class UsuariosService {
     const cuerpo = [
       'Buen día,',
       '',
-      'El correo de ingreso de su cuenta en SINERGIA cambio:',
+      'El correo de ingreso de su cuenta en ARCA cambio:',
       '',
       `Correo anterior:  ${anterior}`,
       `Correo nuevo:     ${nuevo}`,
@@ -1462,7 +1462,7 @@ export class UsuariosService {
 
     for (const para of [anterior, nuevo]) {
       try {
-        await this.correo.enviar({ para, asunto: 'SINERGIA - Cambio en su correo de ingreso', cuerpo });
+        await this.correo.enviar({ para, asunto: 'ARCA - Cambio en su correo de ingreso', cuerpo });
       } catch (error) {
         this.registro.error(
           'No se pudo enviar el aviso de cambio de correo',

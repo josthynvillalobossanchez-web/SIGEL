@@ -103,6 +103,10 @@ const PERMISOS: { clave: string; modulo: string; descripcion: string }[] = [
     modulo: 'notificaciones',
     descripcion: 'Recibir los avisos dirigidos a Recursos Humanos (solicitudes, incapacidades, cambios en expedientes)',
   },
+  // ARCA: cobro de las piscinas (23/10/2026). Equivalen a los roles que traia ARCA.
+  { clave: 'cobro.cajero', modulo: 'cobro', descripcion: 'Cobrar: abrir y cerrar su caja, emitir recibos, consultar recibos y clientes' },
+  { clave: 'cobro.supervisor', modulo: 'cobro', descripcion: 'Supervisar el cobro: reportes de ingresos, arqueos y autorizar anulaciones de recibos' },
+  { clave: 'cobro.administrar', modulo: 'cobro', descripcion: 'Configurar el cobro: piscinas, cajas, tarifas, datos del recibo y bitácora de ARCA' },
 ];
 
 // ---------------------------------------------------------------------
@@ -158,6 +162,9 @@ const ROLES: { nombre: string; descripcion: string; permisos: string[] | 'todos'
       'horasExtra.registrar',
       'notificaciones.ver',
       'notificaciones.rrhh',
+      'cobro.cajero',
+      'cobro.supervisor',
+      'cobro.administrar',
     ],
   },
   {
@@ -176,6 +183,23 @@ const ROLES: { nombre: string; descripcion: string; permisos: string[] | 'todos'
     nombre: 'Consulta',
     descripcion: 'Solo lectura de funcionarios y usuarios, sin ningún permiso de escritura (abre solo su propio expediente). Auditoría Interna.',
     permisos: ['funcionarios.ver', 'funcionarios.verTodos', 'expediente.ver', 'documentos.descargar', 'usuarios.ver', 'notificaciones.ver'],
+  },
+  // ARCA (23/10/2026). Se suman a los de la persona: un cajero que tambien es
+  // funcionario lleva Solicitante + Cajero.
+  {
+    nombre: 'Cajero',
+    descripcion: 'Cobra en las piscinas: abre y cierra su caja, emite recibos y consulta clientes.',
+    permisos: ['cobro.cajero'],
+  },
+  {
+    nombre: 'Supervisor de caja',
+    descripcion: 'Lo del cajero, más reportes de ingresos, arqueos y autorizar anulaciones.',
+    permisos: ['cobro.cajero', 'cobro.supervisor'],
+  },
+  {
+    nombre: 'Administrador de cobro',
+    descripcion: 'Configura el cobro de las piscinas: piscinas, cajas, tarifas y datos del recibo.',
+    permisos: ['cobro.cajero', 'cobro.supervisor', 'cobro.administrar'],
   },
 ];
 
@@ -390,8 +414,11 @@ async function main(): Promise<void> {
   if (existente) {
     console.log(`  Super Administrador: ya existe (${correo}), no se toca su contraseña.`);
   } else {
-    const generada = !process.env.SEED_ADMIN_CONTRASENA;
-    const contrasena = process.env.SEED_ADMIN_CONTRASENA ?? randomBytes(9).toString('base64url');
+    // Vacia o ausente = se genera una al azar. (Con "??" una variable vacia en el
+    // .env dejaba la cuenta con contrasena vacia: corregido el 20/10/2026.)
+    const indicada = process.env.SEED_ADMIN_CONTRASENA?.trim();
+    const generada = !indicada;
+    const contrasena = indicada || randomBytes(9).toString('base64url');
     // Cuenta y rol en una sola operacion: si el seed se interrumpe, no queda
     // una cuenta de Super Administrador sin rol (que ademas el seed ya no
     // repararia, porque al volver a correr ve que la cuenta "ya existe").

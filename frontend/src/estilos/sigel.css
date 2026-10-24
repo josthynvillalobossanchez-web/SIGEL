@@ -242,18 +242,20 @@ button{font:inherit;color:inherit}
   color:var(--accion-sobre-claro);font-weight:600}
 
 /* Tabla de documentos */
+/* 23/10: ":where(:not(.arca-app *))" deja fuera las pantallas de ARCA, que traen su propio
+   estilo de tablas; no cambia la especificidad de estas reglas. */
 .tabla-envoltura{overflow-x:auto;border:1px solid var(--borde);border-radius:var(--radio-lg);
   background:var(--card)}
-table{width:100%;border-collapse:collapse;font-size:15px;min-width:640px}
-thead th{text-align:left;font-size:11px;font-weight:700;letter-spacing:.08em;
+table:where(:not(.arca-app *)){width:100%;border-collapse:collapse;font-size:15px;min-width:640px}
+thead:where(:not(.arca-app *)) th{text-align:left;font-size:11px;font-weight:700;letter-spacing:.08em;
   text-transform:uppercase;color:var(--texto-sec);padding:10px 16px;
   border-bottom:1px solid var(--borde);white-space:nowrap;background:var(--card)}
-tbody td{padding:11px 16px;border-bottom:1px solid var(--borde);vertical-align:middle}
-tbody tr:last-child td{border-bottom:0}
-tbody tr{transition:background .12s}
-tbody tr:hover{background:var(--neutro-bg)}
-tbody tr[data-vigente="no"]{color:var(--texto-desh)}
-tbody tr[data-vigente="no"] .doc-nombre{text-decoration:line-through;
+tbody:where(:not(.arca-app *)) td{padding:11px 16px;border-bottom:1px solid var(--borde);vertical-align:middle}
+tbody:where(:not(.arca-app *)) tr:last-child td{border-bottom:0}
+tbody:where(:not(.arca-app *)) tr{transition:background .12s}
+tbody:where(:not(.arca-app *)) tr:hover{background:var(--neutro-bg)}
+tbody:where(:not(.arca-app *)) tr[data-vigente="no"]{color:var(--texto-desh)}
+tbody:where(:not(.arca-app *)) tr[data-vigente="no"] .doc-nombre{text-decoration:line-through;
   text-decoration-color:var(--texto-desh)}
 .doc{display:flex;gap:12px;align-items:flex-start;min-width:0}
 .doc-ico{width:34px;height:34px;border-radius:var(--radio-md);display:grid;place-items:center;
@@ -334,16 +336,16 @@ tbody tr[data-vigente="no"] .doc-nombre{text-decoration:line-through;
   #btnNotif{display:none}
 
   /* La tabla se vuelve tarjetas: en móvil el desplazamiento lateral se pierde */
-  table,thead,tbody,tr,td{display:block}
-  table{min-width:0}
-  thead{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+  table:where(:not(.arca-app *)),thead:where(:not(.arca-app *)),tbody:where(:not(.arca-app *)),tr:where(:not(.arca-app *)),td:where(:not(.arca-app *)){display:block}
+  table:where(:not(.arca-app *)){min-width:0}
+  thead:where(:not(.arca-app *)){position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
   .tabla-envoltura{border:0;background:transparent;overflow:visible}
-  tbody tr{background:var(--card);border:1px solid var(--borde);border-radius:var(--radio-lg);
+  tbody:where(:not(.arca-app *)) tr{background:var(--card);border:1px solid var(--borde);border-radius:var(--radio-lg);
     padding:14px;margin-bottom:12px}
-  tbody tr:hover{background:var(--card)}
-  tbody td{border-bottom:0;padding:0}
-  tbody td+td{margin-top:10px}
-  td[data-etiqueta]::before{content:attr(data-etiqueta);display:block;font-size:11px;
+  tbody:where(:not(.arca-app *)) tr:hover{background:var(--card)}
+  tbody:where(:not(.arca-app *)) td{border-bottom:0;padding:0}
+  tbody:where(:not(.arca-app *)) td+td{margin-top:10px}
+  td:where(:not(.arca-app *))[data-etiqueta]::before{content:attr(data-etiqueta);display:block;font-size:11px;
     font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--texto-sec);
     margin-bottom:3px}
   .acciones{text-align:left;padding-top:10px;

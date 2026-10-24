@@ -1,0 +1,86 @@
+/* Piezas de maquetación compartidas por varias pantallas. */
+.grid2 {
+  display: grid;
+  gap: var(--space-6);
+  align-items: start;
+}
+.stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+  min-width: 0;
+}
+.toolbar {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+.formGrid {
+  display: grid;
+  gap: var(--space-4);
+  align-items: start;
+}
+.actions {
+  display: flex;
+  gap: var(--space-2);
+  align-items: center;
+  margin-top: var(--space-4);
+}
+.muted {
+  color: var(--graphite);
+  font-size: var(--fs-help);
+}
+.right {
+  text-align: right;
+}
+.strong {
+  font-weight: 600;
+}
+.mt16 {
+  margin-top: var(--space-4);
+}
+.mt8 {
+  margin-top: var(--space-2);
+}
+.pager {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  margin-top: var(--space-4);
+  font-size: var(--fs-help);
+  color: var(--graphite);
+}
+.pagerButtons {
+  display: flex;
+  gap: var(--space-2);
+}
+.danger {
+  color: var(--accent);
+  font-weight: 600;
+}
+.linkBtn {
+  background: none;
+  border: 0;
+  padding: 0 8px;
+  min-height: var(--target);
+  text-decoration: underline;
+  cursor: pointer;
+  color: var(--ink);
+  font-size: var(--fs-help);
+}
+.linkBtn:hover {
+  color: var(--accent);
+}
+.linkBtnDanger {
+  composes: linkBtn;
+  color: var(--accent);
+  font-weight: 600;
+}
+.rowActions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+}

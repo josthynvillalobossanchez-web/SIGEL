@@ -1,0 +1,15 @@
+.kbd {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 0 6px;
+  font: 600 12px var(--font);
+  background: var(--surface);
+  color: var(--ink);
+}
+.inverse {
+  background: transparent;
+  color: #fff;
+  border-color: #fff;
+  padding: 0 8px;
+  font-size: 13px;
+}

@@ -1,0 +1,62 @@
+.row {
+  display: flex;
+  justify-content: space-between;
+  padding: 4px 0;
+}
+.totalBox {
+  border-top: 1px solid var(--ink);
+  margin-top: var(--space-2);
+  padding-top: var(--space-3);
+}
+.totalLabel {
+  font-size: var(--fs-label);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  text-align: right;
+}
+.total {
+  font-size: 36px;
+  font-weight: 700;
+  text-align: right;
+  line-height: 1.2;
+}
+.help {
+  margin: 0 0 var(--space-3);
+  font-size: var(--fs-help);
+  color: var(--graphite);
+}
+.payRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-2);
+  border-bottom: 1px solid var(--muted);
+}
+.method {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+.cashBox {
+  margin-top: var(--space-3);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.cashLabel {
+  font-size: var(--fs-label);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.change {
+  display: flex;
+  justify-content: space-between;
+  margin-top: var(--space-3);
+  font-size: var(--fs-h2);
+  font-weight: 600;
+}
+.alert {
+  margin-top: var(--space-2);
+}

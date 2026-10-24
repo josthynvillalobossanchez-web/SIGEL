@@ -1,0 +1,74 @@
+.controls {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--space-4);
+  margin-bottom: var(--space-6);
+  flex-wrap: wrap;
+}
+.segmented {
+  display: flex;
+  border: 1px solid var(--ink);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+.segmented button {
+  height: var(--target);
+  padding: 0 var(--space-4);
+  border: 0;
+  font-weight: 600;
+  cursor: pointer;
+  background: var(--surface);
+  color: var(--ink);
+}
+.segmented button + button {
+  border-left: 1px solid var(--ink);
+}
+.segmented button.on {
+  background: var(--ink);
+  color: #fff;
+}
+.date {
+  width: 140px;
+}
+.bars {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.barRow {
+  display: grid;
+  grid-template-columns: 240px 1fr 220px;
+  gap: var(--space-4);
+  align-items: center;
+  padding: var(--space-2) 0;
+  border-top: 1px solid var(--muted);
+}
+.track {
+  display: block;
+  height: 16px;
+  background: var(--muted);
+}
+.fill {
+  display: block;
+  height: 16px;
+  background: var(--ink);
+}
+.amount {
+  text-align: right;
+  font-weight: 600;
+}
+.progress {
+  margin-bottom: var(--space-4);
+  font-size: var(--fs-help);
+}
+.progressTrack {
+  height: 4px;
+  background: var(--muted);
+  margin-top: var(--space-1);
+  overflow: hidden;
+}
+.progressFill {
+  height: 4px;
+  width: 100%;
+  background: var(--ink);
+}

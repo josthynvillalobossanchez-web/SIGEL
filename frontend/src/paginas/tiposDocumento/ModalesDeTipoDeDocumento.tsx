@@ -146,7 +146,7 @@ export function ModalTipoDeDocumento({
       {error && <Mensaje tipo="error">{error}</Mensaje>}
       {deSistema && (
         <Mensaje tipo="info">
-          Este documento lo genera SINERGIA en PDF: aquí solo se puede cambiar su nombre. No se puede inactivar.
+          Este documento lo genera ARCA en PDF: aquí solo se puede cambiar su nombre. No se puede inactivar.
         </Mensaje>
       )}
       {deTramite && (

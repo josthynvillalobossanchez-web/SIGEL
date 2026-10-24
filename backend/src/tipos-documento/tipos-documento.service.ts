@@ -122,13 +122,13 @@ export class TiposDocumentoService {
       if (actual.generadoPorSistema && (datos.descripcion !== undefined || datos.formatos !== undefined)) {
         throw new BadRequestException({
           codigo: 'TIPO_DE_SISTEMA',
-          message: 'Los tipos que genera SINERGIA solo se pueden renombrar: su descripción y formatos dependen del proceso que los produce.',
+          message: 'Los tipos que genera ARCA solo se pueden renombrar: su descripción y formatos dependen del proceso que los produce.',
         });
       }
       if (esDeTramite(actual.nombre) && datos.nombre !== undefined && datos.nombre !== actual.nombre) {
         throw new BadRequestException({
           codigo: 'TIPO_DE_TRAMITE',
-          message: `El tipo «${actual.nombre}» lo usa un trámite de SINERGIA: no se puede renombrar (sí sus formatos y descripción).`,
+          message: `El tipo «${actual.nombre}» lo usa un trámite de ARCA: no se puede renombrar (sí sus formatos y descripción).`,
         });
       }
       const nombre = datos.nombre ?? actual.nombre;
@@ -178,13 +178,13 @@ export class TiposDocumentoService {
       if (actual.generadoPorSistema && !activo) {
         throw new BadRequestException({
           codigo: 'TIPO_DE_SISTEMA',
-          message: 'Los tipos que genera SINERGIA no se pueden inactivar: los procesos automáticos dependen de ellos.',
+          message: 'Los tipos que genera ARCA no se pueden inactivar: los procesos automáticos dependen de ellos.',
         });
       }
       if (esDeTramite(actual.nombre) && !activo) {
         throw new BadRequestException({
           codigo: 'TIPO_DE_TRAMITE',
-          message: `El tipo «${actual.nombre}» lo usa un trámite de SINERGIA: no se puede inactivar.`,
+          message: `El tipo «${actual.nombre}» lo usa un trámite de ARCA: no se puede inactivar.`,
         });
       }
       if (actual.activo === activo) {

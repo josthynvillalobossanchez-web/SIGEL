@@ -9,7 +9,6 @@ import type { ReactNode } from 'react';
 import { BotonTema } from './BotonTema';
 import logoClaro from '../recursos/logo-claro.png';
 import logoOscuro from '../recursos/logo-oscuro.png';
-import simboloSinergia from '../recursos/sinergia-simbolo.png';
 
 interface PropiedadesDePantallaDeAcceso {
   /** Texto pequeno debajo de "SINERGIA" (p. ej. "Primer ingreso"). */
@@ -29,10 +28,11 @@ export function PantallaDeAcceso({ subtitulo, children, pie }: PropiedadesDePant
       <main className="acceso-caja">
         <div className="acceso-marca">
           <span className="acceso-simbolo">
-            <img src={simboloSinergia} alt="" />
+            {/* 23/10: la rama de las piscinas se llama ARCA; el simbolo es el de la Municipalidad. */}
+            <img src={logoClaro} alt="" />
           </span>
           <div className="nom">
-            <b>SINERGIA</b>
+            <b>ARCA</b>
             <span>{subtitulo}</span>
           </div>
         </div>

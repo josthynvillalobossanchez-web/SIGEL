@@ -1,0 +1,24 @@
+.alert {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 8px 12px;
+  border: 1px solid;
+  border-radius: var(--radius);
+  font-size: var(--fs-help);
+  font-weight: 600;
+}
+.error {
+  color: var(--accent);
+  border-color: var(--accent);
+  background: var(--surface);
+}
+.info {
+  color: var(--ink);
+  border-color: var(--ink);
+  background: var(--surface);
+}
+.icon {
+  flex: none;
+  margin-top: 2px;
+}

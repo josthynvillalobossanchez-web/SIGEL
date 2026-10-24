@@ -324,7 +324,7 @@ export function DetalleDeSolicitud({ solicitud: inicial, modo, alCerrar, alCambi
         {hayDocumentos && !cancelando && !rechazando && (
           <div className="detalle-documentos" role="group" aria-label="Documentos de la solicitud">
             {veConstancia && s.constanciaId && (
-              <button type="button" className="btn btn-secundario btn-chico" onClick={() => setViendo('constancia')} data-ayuda="Ver la constancia en PDF que generó SINERGIA al aprobarse">
+              <button type="button" className="btn btn-secundario btn-chico" onClick={() => setViendo('constancia')} data-ayuda="Ver la constancia en PDF que generó ARCA al aprobarse">
                 <Icono nombre="documento" /> Constancia (PDF)
               </button>
             )}

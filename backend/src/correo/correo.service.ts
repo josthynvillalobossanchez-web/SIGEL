@@ -59,7 +59,7 @@ export class CorreoService implements OnModuleInit {
     const contrasena = variable('CORREO_CONTRASENA');
     if (!Number.isInteger(puerto) || puerto <= 0) throw new Error('CORREO_PUERTO debe ser un número (465 para Gmail).');
     // Nombre visible + la misma cuenta: Gmail cambia el remitente si no es la cuenta que envia.
-    const nombre = process.env.CORREO_NOMBRE_REMITENTE?.trim() || 'SINERGIA - Municipalidad de Palmares';
+    const nombre = process.env.CORREO_NOMBRE_REMITENTE?.trim() || 'ARCA - Municipalidad de Palmares';
     this.remitente = `"${nombre.replace(/"/g, '')}" <${usuario}>`;
 
     this.smtp = nodemailer.createTransport({

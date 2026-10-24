@@ -1,0 +1,67 @@
+.cards {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-6);
+  margin-bottom: var(--space-6);
+}
+.cardLabel {
+  font-size: var(--fs-label);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.big {
+  font-size: 36px;
+  font-weight: 700;
+  margin-top: var(--space-2);
+  line-height: 1.2;
+}
+.cashState {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-top: var(--space-3);
+  font-size: var(--fs-h2);
+  font-weight: 600;
+}
+.dotOn,
+.dotOff {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  flex: none;
+}
+.dotOn {
+  background: var(--ink);
+}
+.dotOff {
+  border: 2px solid var(--ink);
+}
+.cashLink {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--target);
+}
+.lower {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 2fr);
+  gap: var(--space-6);
+  align-items: start;
+}
+.method {
+  padding: var(--space-2) 0;
+  border-top: 1px solid var(--muted);
+}
+.methodRow {
+  display: flex;
+  justify-content: space-between;
+}
+.track {
+  height: 8px;
+  background: var(--muted);
+  margin-top: var(--space-1);
+}
+.fill {
+  height: 8px;
+  background: var(--ink);
+}

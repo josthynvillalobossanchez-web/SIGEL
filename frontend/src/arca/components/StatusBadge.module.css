@@ -1,0 +1,21 @@
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0 8px;
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 22px;
+  border: 1px solid;
+}
+.paid {
+  background: var(--ink);
+  color: #fff;
+  border-color: var(--ink);
+}
+.voided {
+  background: var(--surface);
+  color: var(--accent);
+  border-color: var(--accent);
+}

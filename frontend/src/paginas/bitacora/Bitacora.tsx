@@ -28,7 +28,7 @@ import { useBusquedaDiferida } from '../../utilidades/useBusquedaDiferida';
 import { useConsulta } from '../../utilidades/useConsulta';
 
 const quienLoHizo = (m: MovimientoDeBitacora) =>
-  m.usuario ? (m.usuario.funcionario ? `${m.usuario.funcionario.nombre} ${m.usuario.funcionario.primerApellido}` : m.usuario.correo) : 'SINERGIA (automático)';
+  m.usuario ? (m.usuario.funcionario ? `${m.usuario.funcionario.nombre} ${m.usuario.funcionario.primerApellido}` : m.usuario.correo) : 'ARCA (automático)';
 const personaAfectada = (m: MovimientoDeBitacora) =>
   m.funcionarioAfectado ? [m.funcionarioAfectado.nombre, m.funcionarioAfectado.primerApellido, m.funcionarioAfectado.segundoApellido].filter(Boolean).join(' ') : null;
 
@@ -79,7 +79,7 @@ export function Bitacora() {
         <div>
           <h1>Bitácora de auditoría</h1>
           <p>
-            Lo que se hizo en SINERGIA: quién, qué, sobre qué y cuándo, con el antes y el después de cada cambio. Es de solo lectura: ningún
+            Lo que se hizo en ARCA: quién, qué, sobre qué y cuándo, con el antes y el después de cada cambio. Es de solo lectura: ningún
             registro se puede editar ni borrar.
           </p>
         </div>
@@ -159,7 +159,7 @@ export function Bitacora() {
         <div className="vacio">
           <Icono nombre="lista" tamano={34} />
           <h3>{hayFiltros ? 'Ningún movimiento coincide con esos filtros' : 'La bitácora está vacía'}</h3>
-          <p>{hayFiltros ? 'Pruebe con otro filtro o quítelos.' : 'Aquí aparecerá cada cambio que se haga en SINERGIA.'}</p>
+          <p>{hayFiltros ? 'Pruebe con otro filtro o quítelos.' : 'Aquí aparecerá cada cambio que se haga en ARCA.'}</p>
         </div>
       )}
 

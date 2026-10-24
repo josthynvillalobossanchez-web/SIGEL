@@ -44,6 +44,7 @@ const NOMBRES_DE_MODULO: Record<string, string> = {
   expediente: 'Expediente',
   documentos: 'Documentos',
   tiposDocumento: 'Tipos de documento',
+  cobro: 'Cobro (ARCA)',
   usuarios: 'Usuarios',
   roles: 'Roles',
   permisos: 'Permisos',

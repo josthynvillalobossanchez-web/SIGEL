@@ -433,7 +433,7 @@ function FormularioDeUsuario({ cuenta }: { cuenta?: DetalleDeCuenta }) {
       {creada && (
         <ModalExito titulo="Usuario creado con éxito" alAceptar={() => navegar(LISTA)}>
           <p>
-            <b>{nombre}</b> ya tiene cuenta en SINERGIA con el correo <b>{creada.correo}</b>.
+            <b>{nombre}</b> ya tiene cuenta en ARCA con el correo <b>{creada.correo}</b>.
           </p>
           <p className="nota-modal" style={{ margin: '10px 0 6px' }}>
             Roles:{' '}

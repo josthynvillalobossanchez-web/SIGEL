@@ -325,11 +325,11 @@ export class AutenticacionService {
     try {
       await this.correo.enviar({
         para: usuario.correo,
-        asunto: 'SINERGIA - Código para recuperar su contraseña',
+        asunto: 'ARCA - Código para recuperar su contraseña',
         cuerpo: [
           'Buen día,',
           '',
-          `Su código para recuperar la contraseña de SINERGIA es: ${codigo}`,
+          `Su código para recuperar la contraseña de ARCA es: ${codigo}`,
           '',
           `El código vence en ${MINUTOS_VIGENCIA_CODIGO} minutos y solo se puede usar una vez.`,
           'Si usted no solicitó este cambio, ignore este mensaje: su contraseña sigue igual.',

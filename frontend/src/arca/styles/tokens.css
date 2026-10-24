@@ -1,0 +1,35 @@
+/* Tokens de diseño – paleta Municipalidad de Palmares. Sin sombras: la separación es con bordes de 1 px. */
+:root {
+  --ink: #0a0c11; /* botón primario, texto, barras */
+  --graphite: #1d2327; /* sidebar, header superior, texto secundario */
+  --surface: #ffffff; /* tarjetas, inputs */
+  --page: #fafafa; /* fondo de página */
+  --muted: #f0f0f1; /* zebra, hover, fondos de insignia/barras */
+  --border: #abadb3;
+  --accent: #d30505; /* foco, errores, anulaciones, barra activa */
+
+  --font: 'Inter', 'Public Sans', system-ui, sans-serif;
+
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-12: 48px;
+
+  --radius: 4px;
+  --radius-sm: 2px;
+
+  --fs-h1: 28px;
+  --fs-h2: 20px;
+  --fs-h3: 16px;
+  --fs-body: 15px;
+  --fs-help: 13px;
+  --fs-label: 12px;
+
+  --target: 44px; /* objetivo de clic mínimo */
+  --sidebar-w: 256px;
+  --sidebar-w-collapsed: 72px;
+  --bar-h: 72px;
+}

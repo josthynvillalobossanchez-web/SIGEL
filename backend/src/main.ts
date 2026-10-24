@@ -1,5 +1,5 @@
 import 'reflect-metadata';
-import { Logger, ValidationPipe } from '@nestjs/common';
+import { Logger } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import type { NestExpressApplication } from '@nestjs/platform-express';
 import cookieParser from 'cookie-parser';
@@ -9,6 +9,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { AppModule } from './app.module.js';
 import { FiltroDeExcepciones } from './comun/filtros/excepciones.filter.js';
+import { ValidacionConCampos } from './comun/pipes/validacion.pipe.js';
 import { RegistrosDeSinergia } from './comun/registros.js';
 
 /*
@@ -56,7 +57,7 @@ async function arrancar(): Promise<void> {
 
   // Validacion de DTO en el backend: nunca se confia en el cliente.
   app.useGlobalPipes(
-    new ValidationPipe({
+    new ValidacionConCampos({
       whitelist: true, // descarta los campos que no estan en el DTO
       forbidNonWhitelisted: true, // y avisa si llegan campos de mas
       transform: true,
@@ -72,7 +73,7 @@ async function arrancar(): Promise<void> {
   const puerto = Number(process.env.PUERTO ?? 3000);
   await app.listen(puerto);
   const protocolo = process.env.CERTIFICADO_HTTPS ? 'https' : 'http';
-  const aviso = new Logger('SINERGIA');
+  const aviso = new Logger('ARCA');
   aviso.log(`API escuchando en ${protocolo}://localhost:${puerto}/api`);
   if (interfaz) aviso.log(`Interfaz servida desde ${interfaz}`);
   aviso.log(`Registros en ${registros.ruta}`);

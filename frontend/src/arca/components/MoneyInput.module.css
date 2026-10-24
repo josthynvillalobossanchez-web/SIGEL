@@ -1,0 +1,17 @@
+.input {
+  width: 100%;
+  padding: 0 8px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--ink);
+  text-align: right;
+}
+.large {
+  padding: 0 12px;
+  font-size: var(--fs-h2);
+  font-weight: 600;
+}
+.input[aria-invalid='true'] {
+  border-color: var(--accent);
+}

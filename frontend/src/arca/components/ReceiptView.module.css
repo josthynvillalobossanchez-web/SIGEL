@@ -1,0 +1,231 @@
+/* Recibo impreso: solo blanco y negro. Tiquete 302 px (80 mm), carta 720 px. */
+.ticket,
+.letter {
+  position: relative;
+  background: #fff;
+  color: #000;
+  overflow: hidden;
+}
+
+.row {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+}
+.center {
+  display: flex;
+  justify-content: center;
+  padding-bottom: 8px;
+}
+.right {
+  text-align: right;
+}
+.strong {
+  font-weight: 600;
+}
+.grow {
+  flex: 1;
+}
+.mb4 {
+  margin-bottom: 4px;
+}
+.small {
+  font-size: 12px;
+}
+.eyebrow {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+}
+
+.stampWrap {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+.stampTicket {
+  transform: rotate(-30deg);
+  font-size: 48px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  border: 4px solid #000;
+  padding: 0 12px;
+  opacity: 0.85;
+}
+.stampLetter {
+  transform: rotate(-30deg);
+  font-size: 140px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  border: 8px solid #000;
+  padding: 0 32px;
+  opacity: 0.2;
+}
+
+.red {
+  /* Vista previa en la pantalla de anulación: sello rojo rotado −12° */
+  transform: rotate(-12deg);
+  color: var(--accent);
+  border-color: var(--accent);
+  font-size: 44px;
+  border-width: 4px;
+  opacity: 1;
+}
+
+.voidNote {
+  margin-top: 8px;
+  font-size: 11px;
+  border: 1px solid #000;
+  padding: 4px 6px;
+}
+
+/* ---- Tiquete ---- */
+.ticket {
+  width: 302px;
+  padding: 16px 14px;
+  font-size: 12px;
+  line-height: 1.4;
+}
+.ticketLogo {
+  height: 44px;
+  width: auto;
+}
+.ticketMunicipal {
+  text-align: center;
+  font-size: 11px;
+}
+.dash {
+  border: 0;
+  border-top: 1px dashed #000;
+  margin: 8px 0;
+}
+.ticketTitle {
+  text-align: center;
+  font-weight: 700;
+  font-size: 14px;
+}
+.ticketNumber {
+  text-align: center;
+  font-size: 16px;
+  font-weight: 700;
+}
+.client {
+  margin-top: 4px;
+}
+.ticketLine {
+  margin-bottom: 4px;
+}
+.ticketTotal {
+  display: flex;
+  justify-content: space-between;
+  font-size: 20px;
+  font-weight: 700;
+  margin-top: 6px;
+}
+.legalTicket {
+  text-align: center;
+  font-weight: 700;
+  font-size: 11px;
+  border: 1px solid #000;
+  padding: 4px;
+}
+.footTicket {
+  text-align: center;
+  font-size: 10px;
+  margin-top: 8px;
+}
+
+/* ---- Carta ---- */
+.letter {
+  width: 720px;
+  min-height: 932px;
+  padding: 56px;
+  font-size: 14px;
+  display: flex;
+  flex-direction: column;
+}
+.letterHead {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding-bottom: 20px;
+  border-bottom: 2px solid #000;
+}
+.letterLogo {
+  height: 72px;
+  width: auto;
+}
+.letterNumber {
+  font-size: 28px;
+  font-weight: 700;
+}
+.parties {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  margin: 24px 0;
+  padding: 16px 0;
+  border-top: 1px solid #000;
+  border-bottom: 1px solid #000;
+}
+.letterTable {
+  width: 100%;
+  border-collapse: collapse;
+}
+.letterTable th {
+  padding: 6px 0;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-align: left;
+  border-bottom: 1px solid #000;
+}
+.letterTable th.right {
+  text-align: right;
+}
+.letterTable td {
+  padding: 8px 0;
+  border-bottom: 1px solid #000;
+}
+.letterBottom {
+  display: flex;
+  justify-content: space-between;
+  gap: 32px;
+  margin-top: 24px;
+}
+.totals {
+  width: 280px;
+}
+.letterTotal {
+  border-top: 2px solid #000;
+  margin-top: 8px;
+  padding-top: 8px;
+  text-align: right;
+}
+.letterTotalValue {
+  font-size: 36px;
+  font-weight: 700;
+  line-height: 1.1;
+}
+.signature {
+  width: 240px;
+  margin-top: 48px;
+  border-top: 1px solid #000;
+  padding-top: 4px;
+  font-size: 12px;
+}
+.legalLetter {
+  margin-top: 24px;
+  border: 1px solid #000;
+  padding: 8px;
+  text-align: center;
+  font-weight: 700;
+}
+.footLetter {
+  margin-top: 8px;
+  font-size: 10px;
+  text-align: center;
+  letter-spacing: 0.1em;
+}

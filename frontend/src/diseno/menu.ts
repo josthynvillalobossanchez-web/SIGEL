@@ -148,6 +148,20 @@ export const MENU: GrupoDeMenu[] = [
     ],
   },
   {
+    // ARCA (23/10/2026): cobro de las piscinas. Abre su propia pantalla, con su diseño.
+    titulo: 'Cobro',
+    opciones: [
+      {
+        texto: 'Cobro de piscinas',
+        ruta: '/cobro',
+        icono: 'lista',
+        permisos: [],
+        algunoDe: ['cobro.cajero', 'cobro.supervisor', 'cobro.administrar'],
+        descripcion: 'Cajas, recibos, anulaciones, clientes y reportes de ingresos de las piscinas.',
+      },
+    ],
+  },
+  {
     titulo: 'Seguridad',
     opciones: [
       {
@@ -179,7 +193,7 @@ export const MENU: GrupoDeMenu[] = [
         ruta: '/bitacora',
         icono: 'lista',
         permisos: ['bitacora.ver'],
-        descripcion: 'Quién hizo qué en SINERGIA y cuándo, con el antes y el después de cada cambio. Solo lectura.',
+        descripcion: 'Quién hizo qué en ARCA y cuándo, con el antes y el después de cada cambio. Solo lectura.',
       },
     ],
   },

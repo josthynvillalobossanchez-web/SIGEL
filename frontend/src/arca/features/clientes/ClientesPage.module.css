@@ -1,0 +1,25 @@
+.layout {
+  grid-template-columns: minmax(0, 1fr) 480px;
+}
+.search {
+  max-width: 420px;
+}
+.facts {
+  display: grid;
+  grid-template-columns: 100px 1fr;
+  gap: var(--space-1) var(--space-4);
+  margin: var(--space-4) 0;
+}
+.facts dt {
+  font-size: var(--fs-label);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding-top: 3px;
+}
+.facts dd {
+  margin: 0;
+}
+.histTitle {
+  margin: var(--space-4) 0 var(--space-2);
+}

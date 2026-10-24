@@ -205,7 +205,7 @@ export function DocumentosDelExpediente({ funcionarioId, propio }: { funcionario
                   </td>
                   <td data-etiqueta="Subido por">
                     {d.generadoPorSistema ? (
-                      <span className="chip chip-info">Generado por SINERGIA</span>
+                      <span className="chip chip-info">Generado por ARCA</span>
                     ) : d.subidoPorElFuncionario ? (
                       'La propia persona'
                     ) : (

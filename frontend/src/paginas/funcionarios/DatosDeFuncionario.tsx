@@ -86,7 +86,7 @@ export function DatosLaboralesVista({ f, compacto }: { f: DetalleDeFuncionario; 
           <Dato titulo="Motivo de salida" valor={f.motivoSalida} />
         </>
       )}
-      <Dato titulo="Registrado en SINERGIA" valor={formatearFecha(f.fechaRegistro)} num />
+      <Dato titulo="Registrado en ARCA" valor={formatearFecha(f.fechaRegistro)} num />
     </dl>
   );
 }

@@ -1,0 +1,131 @@
+@import './tokens.css';
+
+/*
+ * Estilos generales de ARCA (23/10/2026: acotados a .arca-app para no cambiar
+ * el resto del sistema; antes iban sobre body, h1, a, etc.). Con :where() la
+ * especificidad queda igual que antes, asi los estilos de cada componente
+ * siguen ganando. Las variables de tokens.css no chocan con las del sistema.
+ */
+.arca-app,
+.arca-app *,
+.arca-app *::before,
+.arca-app *::after {
+  box-sizing: border-box;
+}
+
+.arca-app {
+  min-height: 100vh;
+  background: var(--page);
+  color: var(--ink);
+  font-family: var(--font);
+  font-size: var(--fs-body);
+  line-height: 1.5;
+  font-variant-numeric: tabular-nums;
+}
+
+:where(.arca-app) h1 {
+  margin: 0;
+  font-size: var(--fs-h1);
+  font-weight: 700;
+  line-height: 1.25;
+}
+:where(.arca-app) h2 {
+  margin: 0;
+  font-size: var(--fs-h2);
+  font-weight: 600;
+}
+:where(.arca-app) h3 {
+  margin: 0;
+  font-size: var(--fs-h3);
+  font-weight: 600;
+}
+
+:where(.arca-app) a {
+  color: var(--ink);
+}
+:where(.arca-app) a:hover {
+  color: var(--accent);
+}
+
+:where(.arca-app) button,
+:where(.arca-app) input,
+:where(.arca-app) select,
+:where(.arca-app) textarea {
+  font-family: inherit;
+  font-size: inherit;
+}
+
+/* Foco visible en todo control */
+:where(.arca-app) :focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+/* En listas y navegación el foco va hacia adentro para no recortarse */
+:where(.arca-app) [data-focus-inset]:focus-visible {
+  outline-offset: -2px;
+}
+
+/* Texto solo para lectores de pantalla */
+.arca-app .sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Enlace "saltar al contenido" */
+.arca-app .skip-link {
+  position: absolute;
+  left: -9999px;
+  top: 8px;
+  z-index: 100;
+  background: var(--ink);
+  color: #fff;
+  padding: 8px 16px;
+  border-radius: var(--radius);
+}
+.arca-app .skip-link:focus {
+  left: 8px;
+}
+
+/* Recibo montado fuera de pantalla: solo existe al imprimir */
+.arca-app .print-only {
+  display: none;
+}
+
+/* Impresión: solo el recibo, en blanco y negro (solo en las pantallas de ARCA) */
+@media print {
+  @page {
+    margin: 0;
+  }
+  body:has(.arca-app) {
+    background: #fff;
+  }
+  body:has(.arca-app) * {
+    visibility: hidden !important;
+  }
+  .arca-app .print-area,
+  .arca-app .print-area * {
+    visibility: visible !important;
+  }
+  .arca-app .print-area {
+    position: absolute !important;
+    left: 0;
+    top: 0;
+    margin: 0 !important;
+    border: 0 !important;
+    background: #fff !important;
+    color: #000 !important;
+  }
+  .arca-app .print-only {
+    display: block !important;
+  }
+  .arca-app .no-print {
+    display: none !important;
+  }
+}

@@ -144,7 +144,7 @@ export function TiposDeDocumento() {
                     {t.generadoPorSistema && (
                       <>
                         {' '}
-                        <span className="chip chip-info">Lo genera SINERGIA</span>
+                        <span className="chip chip-info">Lo genera ARCA</span>
                       </>
                     )}
                     {t.deTramite && (
@@ -169,7 +169,7 @@ export function TiposDeDocumento() {
                   <td className="acciones">
                     <BotonIcono
                       icono="editar"
-                      texto={t.generadoPorSistema ? 'Editar nombre (lo genera SINERGIA)' : 'Editar tipo de documento'}
+                      texto={t.generadoPorSistema ? 'Editar nombre (lo genera ARCA)' : 'Editar tipo de documento'}
                       sobre={t.nombre}
                       alHacerClic={() => setVentana({ tipo: 'editar', elemento: t })}
                     />
@@ -179,7 +179,7 @@ export function TiposDeDocumento() {
                         peligro
                         texto="Inactivar tipo (deja de poder elegirse)"
                         sobre={t.nombre}
-                        bloqueadoPor={t.generadoPorSistema ? 'lo genera SINERGIA y no se puede inactivar.' : t.deTramite ? 'lo usa un trámite de SINERGIA y no se puede inactivar.' : null}
+                        bloqueadoPor={t.generadoPorSistema ? 'lo genera ARCA y no se puede inactivar.' : t.deTramite ? 'lo usa un trámite de ARCA y no se puede inactivar.' : null}
                         alHacerClic={() => setVentana({ tipo: 'estado', elemento: t })}
                       />
                     ) : (

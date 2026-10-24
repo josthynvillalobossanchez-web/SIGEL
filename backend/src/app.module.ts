@@ -18,6 +18,7 @@ import { MiCuentaModule } from './mi-cuenta/mi-cuenta.module.js';
 import { UsuariosModule } from './usuarios/usuarios.module.js';
 import { VacacionesModule } from './vacaciones/vacaciones.module.js';
 import { AusenciasModule } from './ausencias/ausencias.module.js';
+import { ArcaModule } from './arca/arca.module.js';
 import { SaludController } from './salud/salud.controller.js';
 
 @Module({
@@ -47,6 +48,8 @@ import { SaludController } from './salud/salud.controller.js';
     DocumentosModule,
     VacacionesModule,
     AusenciasModule,
+    // ARCA: cobro de las piscinas municipales (23/10/2026). Cuelga de /api/v1.
+    ArcaModule,
   ],
   controllers: [SaludController],
   providers: [

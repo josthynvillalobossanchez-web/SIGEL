@@ -214,7 +214,7 @@ export class ExpedientesService {
         ...base,
         tipo: 'documentoAgregado',
         titulo: titulo ? `Documento agregado: «${titulo}»` : 'Documento agregado',
-        detalle: despues.generadoPorSistema ? 'Lo generó SINERGIA.' : texto(despues.tipo),
+        detalle: despues.generadoPorSistema ? 'Lo generó ARCA.' : texto(despues.tipo),
       };
     }
     if (!verBajas) return null;

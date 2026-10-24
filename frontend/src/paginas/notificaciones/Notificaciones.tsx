@@ -151,7 +151,7 @@ export function Notificaciones() {
                   <span className="notif-punto" aria-hidden="true" />
                   <span className="notif-texto">
                     <span className="notif-cab">
-                      <span className="chip chip-neutro">{PROCESO[n.clave] ?? 'SINERGIA'}</span>
+                      <span className="chip chip-neutro">{PROCESO[n.clave] ?? 'ARCA'}</span>
                       <small title={formatearFechaHora(n.fechaCreacion)}>{cuandoFue(n.fechaCreacion)}</small>
                     </span>
                     <b>

@@ -368,7 +368,7 @@ export class DocumentosService {
     if (!tipo?.generadoPorSistema) {
       throw new BadRequestException({
         codigo: 'TIPO_NO_ES_DE_SISTEMA',
-        message: 'Solo se pueden registrar automáticamente documentos de tipos que genera SINERGIA.',
+        message: 'Solo se pueden registrar automáticamente documentos de tipos que genera ARCA.',
       });
     }
     await this.verificarFuncionario(this.prisma, datos.funcionarioId);
@@ -415,7 +415,7 @@ export class DocumentosService {
             funcionarioAfectadoId: datos.funcionarioId,
             accion: 'crear',
             datosNuevos: { titulo: datos.titulo, tipo: tipo.nombre, generadoPorSistema: true },
-            descripcion: `SINERGIA generó el documento «${datos.titulo}» (${tipo.nombre}) y lo asoció al expediente.`,
+            descripcion: `ARCA generó el documento «${datos.titulo}» (${tipo.nombre}) y lo asoció al expediente.`,
           },
           tx,
         );
@@ -818,7 +818,7 @@ export class DocumentosService {
     if (tipo.generadoPorSistema) {
       throw new BadRequestException({
         codigo: 'TIPO_GENERADO_POR_SISTEMA',
-        message: `El tipo «${tipo.nombre}» lo genera SINERGIA automáticamente: no se sube a mano.`,
+        message: `El tipo «${tipo.nombre}» lo genera ARCA automáticamente: no se sube a mano.`,
       });
     }
     if (esDeTramite(tipo.nombre)) {
@@ -861,7 +861,7 @@ export class DocumentosService {
     const loPuedeTocarComoPropio = esDuenio && loSubioQuienConsulta && !fila.generadoPorSistema;
 
     let motivoSinEditar: string | null = null;
-    if (fila.generadoPorSistema) motivoSinEditar = 'Lo generó SINERGIA: solo se puede ver.';
+    if (fila.generadoPorSistema) motivoSinEditar = 'Lo generó ARCA: solo se puede ver.';
     else if (!fila.vigente) motivoSinEditar = 'Está dado de baja: primero hay que restaurarlo.';
     else if (!(tiene(PERMISO_EDITAR) || (tiene(PERMISO_EDITAR_PROPIO) && loPuedeTocarComoPropio))) {
       motivoSinEditar = esDuenio
@@ -873,7 +873,7 @@ export class DocumentosService {
     if (!fila.vigente) motivoSinBaja = 'Ya está dado de baja.';
     else if (!(tiene(PERMISO_BAJA) || (tiene(PERMISO_BAJA_PROPIO) && loPuedeTocarComoPropio))) {
       motivoSinBaja = fila.generadoPorSistema
-        ? 'Lo generó SINERGIA: solo Recursos Humanos puede darlo de baja.'
+        ? 'Lo generó ARCA: solo Recursos Humanos puede darlo de baja.'
         : esDuenio
           ? 'Lo subió otra persona (por ejemplo Recursos Humanos): usted solo puede dar de baja lo que subió usted.'
           : 'No tiene permiso para dar de baja documentos.';

@@ -1,0 +1,12 @@
+.filters {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr)) auto;
+  gap: var(--space-4);
+  align-items: end;
+}
+.filterBtn {
+  align-self: end;
+}
+.clientRow {
+  grid-column: 1 / -1;
+}

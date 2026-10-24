@@ -1,0 +1,109 @@
+.optional {
+  font-size: var(--fs-help);
+  font-weight: 400;
+  color: var(--graphite);
+}
+.searchRow {
+  display: flex;
+  gap: var(--space-2);
+  align-items: flex-end;
+}
+.grow {
+  flex: 1;
+}
+.searchLabel {
+  display: block;
+  margin-bottom: 4px;
+  font-size: var(--fs-label);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.searchBox {
+  position: relative;
+}
+.searchIcon {
+  position: absolute;
+  left: 12px;
+  top: 13px;
+  color: var(--graphite);
+  pointer-events: none;
+}
+.searchInput {
+  width: 100%;
+  height: var(--target);
+  padding: 0 12px 0 40px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+.top8 {
+  margin-top: var(--space-2);
+}
+.noResults {
+  margin: var(--space-2) 0 0;
+  font-size: var(--fs-help);
+  color: var(--graphite);
+}
+.results {
+  list-style: none;
+  margin: var(--space-2) 0 0;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+.result {
+  display: flex;
+  width: 100%;
+  flex-direction: column;
+  align-items: flex-start;
+  min-height: 48px;
+  padding: 8px 16px;
+  background: var(--surface);
+  border: 0;
+  border-bottom: 1px solid var(--muted);
+  cursor: pointer;
+  text-align: left;
+}
+.result span {
+  font-size: var(--fs-help);
+  color: var(--graphite);
+}
+.result:hover {
+  background: var(--muted);
+}
+.chosen {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-4);
+}
+.chosenName {
+  font-size: var(--fs-h2);
+  font-weight: 600;
+}
+.chosenMeta {
+  font-size: var(--fs-help);
+  color: var(--graphite);
+}
+.newForm {
+  margin-top: var(--space-4);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: var(--space-4);
+  background: var(--page);
+}
+.newTitle {
+  margin-bottom: var(--space-3);
+}
+.newGrid {
+  display: grid;
+  grid-template-columns: 160px 1fr 1fr;
+  gap: var(--space-4);
+  align-items: start;
+}
+.newActions {
+  display: flex;
+  gap: var(--space-2);
+  margin-top: var(--space-4);
+}

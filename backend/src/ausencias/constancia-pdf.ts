@@ -74,8 +74,8 @@ export async function generarConstanciaPdf(d: DatosDeConstancia): Promise<Buffer
   const esVacaciones = d.clave === 'vacaciones';
   pdf.setTitle(`Constancia de ${d.nombreDelTipo.toLowerCase()} ${d.consecutivo}`);
   pdf.setAuthor('Municipalidad de Palmares');
-  pdf.setCreator('SINERGIA');
-  pdf.setProducer('SINERGIA');
+  pdf.setCreator('ARCA');
+  pdf.setProducer('ARCA');
   const pagina: PDFPage = pdf.addPage([612, 792]); // carta
   const normal = await pdf.embedFont(StandardFonts.Helvetica);
   const negrita = await pdf.embedFont(StandardFonts.HelveticaBold);
@@ -164,7 +164,7 @@ export async function generarConstanciaPdf(d: DatosDeConstancia): Promise<Buffer
   // --- Pie: generado por SINERGIA y codigo de verificacion ---
   const codigo = createHash('sha256').update(`${d.consecutivo}|${d.cedula}|${d.desde}|${d.hasta}|${d.aprobadaEl}`).digest('hex').slice(0, 12).toUpperCase();
   pagina.drawLine({ start: { x: margen, y: 92 }, end: { x: 612 - margen, y: 92 }, thickness: 0.6, color: rgb(0.8, 0.82, 0.85) });
-  pagina.drawText(`Documento generado automáticamente por SINERGIA. No requiere firma: ${d.requiereAprobacion ? 'la aprobación' : 'el registro'} quedó en el sistema.`, {
+  pagina.drawText(`Documento generado automáticamente por ARCA. No requiere firma: ${d.requiereAprobacion ? 'la aprobación' : 'el registro'} quedó en el sistema.`, {
     x: margen,
     y: 76,
     size: 8.5,

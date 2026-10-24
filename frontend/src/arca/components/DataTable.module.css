@@ -1,0 +1,40 @@
+.wrap {
+  overflow-x: auto;
+}
+.table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.table th {
+  padding: 8px;
+  font-size: var(--fs-label);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+}
+.table th:first-child,
+.table td:first-child {
+  padding-left: 0;
+}
+.table td:first-child {
+  white-space: nowrap;
+}
+.table td {
+  padding: 10px 8px;
+  border-top: 1px solid var(--border);
+  vertical-align: middle;
+}
+.table tbody tr:nth-child(even) {
+  background: var(--muted);
+}
+.clickable {
+  cursor: pointer;
+}
+.clickable:hover,
+.selected {
+  background: var(--muted) !important;
+}
+.selected td:first-child {
+  box-shadow: inset 3px 0 0 var(--ink);
+}

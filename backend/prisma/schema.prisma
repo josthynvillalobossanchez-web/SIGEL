@@ -143,6 +143,12 @@ model usuario {
   notificaciones       notificacion[]
 
   @@index([estado])
+
+  // ARCA (cobro de las piscinas)
+  arcaSesionesDeCaja         CashboxSession[] @relation("arcaSesionesDelCajero")
+  arcaRecibos                Receipt[]        @relation("arcaRecibosDelCajero")
+  arcaAnulacionesPedidas     ReceiptVoid[]    @relation("arcaAnulacionesPedidas")
+  arcaAnulacionesAutorizadas ReceiptVoid[]    @relation("arcaAnulacionesAutorizadas")
 }
 
 /// Una sesion abierta. Su id viaja dentro del token (campo jti): el guard
@@ -741,4 +747,298 @@ model notificacion {
 
   @@index([usuarioDestinoId, leida, fechaCreacion], map: "idxNotificacionBandeja")
   @@index([clave, registroId, referencia], map: "idxNotificacionEvento")
+}
+
+// =====================================================================
+// ARCA: cobro de las piscinas municipales (integrado el 23/10/2026).
+// Modelos traidos del proyecto ARCA casi sin cambios (nombres en ingles y
+// tablas en snake_case, como los escribieron). Diferencias: no tiene
+// usuarios propios; el cajero y quien pide o autoriza una anulacion son
+// cuentas del sistema (usuario). Migracion: 20261023000000_arca_cobro.
+// Fechas en UTC (DATETIME(6)); dinero en DECIMAL(14,2).
+// =====================================================================
+
+enum Shift {
+  MANANA
+  TARDE
+  NOCHE
+}
+
+enum ReceiptStatus {
+  PAGADO
+  ANULADO
+}
+
+enum PaymentMethod {
+  EFECTIVO
+  TARJETA
+  SINPE_MOVIL
+  TRANSFERENCIA
+}
+
+enum VoidReason {
+  ERROR_MONTO
+  CLIENTE_EQUIVOCADO
+  CONCEPTO_EQUIVOCADO
+  PAGO_DUPLICADO
+  OTRO
+}
+
+enum ClientIdType {
+  FISICA
+  JURIDICA
+  DIMEX
+}
+
+enum ConceptType {
+  ENTRADA
+  SUSCRIPCION
+  SERVICIO
+}
+
+enum Periodicity {
+  POR_USO
+  MENSUAL
+}
+
+model Pool {
+  id        Int      @id @default(autoincrement())
+  code      String   @unique @db.VarChar(20)
+  name      String   @db.VarChar(120)
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now()) @map("created_at") @db.DateTime(6)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.DateTime(6)
+
+  cashboxes Cashbox[]
+  receipts  Receipt[]
+
+  @@map("pool")
+}
+
+model Cashbox {
+  id        Int      @id @default(autoincrement())
+  code      String   @unique @db.VarChar(20)
+  name      String   @db.VarChar(120)
+  poolId    Int      @map("pool_id")
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now()) @map("created_at") @db.DateTime(6)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.DateTime(6)
+
+  pool     Pool              @relation(fields: [poolId], references: [id], onDelete: Restrict)
+  sessions CashboxSession[]
+  receipts Receipt[]
+  sequence ReceiptSequence?
+
+  @@map("cashbox")
+}
+
+// open_key (columna generada + UNIQUE) la crea la migración: garantiza una sola sesión abierta por caja.
+model CashboxSession {
+  id            Int       @id @default(autoincrement())
+  cashboxId     Int       @map("cashbox_id")
+  cashierId     String    @map("cashier_id") @db.Char(36)
+  shift         Shift
+  openedAt      DateTime  @map("opened_at") @db.DateTime(6)
+  openingFloat  Decimal   @map("opening_float") @db.Decimal(14, 2)
+  closedAt      DateTime? @map("closed_at") @db.DateTime(6)
+  countedCash   Decimal?  @map("counted_cash") @db.Decimal(14, 2)
+  expectedCash  Decimal?  @map("expected_cash") @db.Decimal(14, 2)
+  difference    Decimal?  @db.Decimal(14, 2)
+  justification String?   @db.VarChar(500)
+  closingNumber String?   @unique @map("closing_number") @db.VarChar(40)
+  createdAt     DateTime  @default(now()) @map("created_at") @db.DateTime(6)
+  updatedAt     DateTime  @updatedAt @map("updated_at") @db.DateTime(6)
+
+  cashbox  Cashbox     @relation(fields: [cashboxId], references: [id], onDelete: Restrict, onUpdate: Restrict) // open_key (columna generada) impide ON UPDATE CASCADE
+  cashier  usuario     @relation("arcaSesionesDelCajero", fields: [cashierId], references: [id], onDelete: Restrict)
+  counts   CashCount[]
+  receipts Receipt[]
+
+  @@map("cashbox_session")
+}
+
+// denomination = 0 representa "Cheques / otros" (se registra pero no suma al efectivo).
+model CashCount {
+  id           Int      @id @default(autoincrement())
+  sessionId    Int      @map("session_id")
+  denomination Int
+  quantity     Int
+  createdAt    DateTime @default(now()) @map("created_at") @db.DateTime(6)
+
+  session CashboxSession @relation(fields: [sessionId], references: [id], onDelete: Restrict)
+
+  @@map("cash_count")
+}
+
+model Client {
+  id        Int          @id @default(autoincrement())
+  idType    ClientIdType @map("id_type")
+  idNumber  String       @map("id_number") @db.VarChar(9)
+  fullName  String       @map("full_name") @db.VarChar(150)
+  phone     String?      @db.VarChar(30)
+  email     String?      @db.VarChar(150)
+  address   String?      @db.VarChar(250)
+  active    Boolean      @default(true)
+  createdAt DateTime     @default(now()) @map("created_at") @db.DateTime(6)
+  updatedAt DateTime     @updatedAt @map("updated_at") @db.DateTime(6)
+
+  receipts Receipt[]
+
+  @@unique([idType, idNumber], map: "uq_client_identity")
+  @@index([idNumber], map: "ix_client_id_number")
+  @@index([fullName], map: "ix_client_full_name")
+  @@map("client")
+}
+
+model Concept {
+  id          Int         @id @default(autoincrement())
+  code        String      @unique @db.VarChar(20)
+  name        String      @db.VarChar(150)
+  type        ConceptType
+  periodicity Periodicity
+  price       Decimal     @db.Decimal(14, 2)
+  active      Boolean     @default(true)
+  createdAt   DateTime    @default(now()) @map("created_at") @db.DateTime(6)
+  updatedAt   DateTime    @updatedAt @map("updated_at") @db.DateTime(6)
+
+  priceHistory ConceptPriceHistory[]
+  lines        ReceiptLine[]
+
+  @@map("concept")
+}
+
+model ConceptPriceHistory {
+  id        Int      @id @default(autoincrement())
+  conceptId Int      @map("concept_id")
+  price     Decimal  @db.Decimal(14, 2)
+  validFrom DateTime @map("valid_from") @db.DateTime(6)
+  changedBy String   @map("changed_by") @db.VarChar(60)
+  createdAt DateTime @default(now()) @map("created_at") @db.DateTime(6)
+
+  concept Concept @relation(fields: [conceptId], references: [id], onDelete: Restrict)
+
+  @@map("concept_price_history")
+}
+
+// Inmutable por diseño: nunca se edita ni se elimina, solo cambia de estado al anularse.
+model Receipt {
+  id           Int           @id @default(autoincrement())
+  number       String        @unique @db.VarChar(40)
+  sessionId    Int           @map("session_id")
+  cashboxId    Int           @map("cashbox_id")
+  cashierId    String        @map("cashier_id") @db.Char(36)
+  clientId     Int?          @map("client_id")
+  poolId       Int           @map("pool_id")
+  shift        Shift
+  issuedAt     DateTime      @map("issued_at") @db.DateTime(6)
+  status       ReceiptStatus @default(PAGADO)
+  subtotal     Decimal       @db.Decimal(14, 2)
+  discounts    Decimal       @db.Decimal(14, 2)
+  surcharges   Decimal       @db.Decimal(14, 2)
+  total        Decimal       @db.Decimal(14, 2)
+  cashDue      Decimal       @map("cash_due") @db.Decimal(14, 2)
+  cashReceived Decimal       @map("cash_received") @db.Decimal(14, 2)
+  changeAmount Decimal       @map("change_amount") @db.Decimal(14, 2)
+  createdAt    DateTime      @default(now()) @map("created_at") @db.DateTime(6)
+  updatedAt    DateTime      @updatedAt @map("updated_at") @db.DateTime(6)
+
+  session  CashboxSession  @relation(fields: [sessionId], references: [id], onDelete: Restrict)
+  cashbox  Cashbox         @relation(fields: [cashboxId], references: [id], onDelete: Restrict)
+  cashier  usuario         @relation("arcaRecibosDelCajero", fields: [cashierId], references: [id], onDelete: Restrict)
+  client   Client?         @relation(fields: [clientId], references: [id], onDelete: Restrict)
+  pool     Pool            @relation(fields: [poolId], references: [id], onDelete: Restrict)
+  lines    ReceiptLine[]
+  payments ReceiptPayment[]
+  voidInfo ReceiptVoid?
+
+  @@index([issuedAt], map: "ix_receipt_issued_at")
+  @@index([cashierId, issuedAt], map: "ix_receipt_cashier_issued")
+  @@index([clientId], map: "ix_receipt_client")
+  @@index([status], map: "ix_receipt_status")
+  @@index([sessionId], map: "ix_receipt_session")
+  @@map("receipt")
+}
+
+// Guarda copia del nombre y monto del concepto: las tarifas históricas no cambian recibos emitidos.
+model ReceiptLine {
+  id          Int      @id @default(autoincrement())
+  receiptId   Int      @map("receipt_id")
+  conceptId   Int      @map("concept_id")
+  conceptName String   @map("concept_name") @db.VarChar(150)
+  quantity    Int
+  unitAmount  Decimal  @map("unit_amount") @db.Decimal(14, 2)
+  discount    Decimal  @db.Decimal(14, 2)
+  surcharge   Decimal  @db.Decimal(14, 2)
+  lineTotal   Decimal  @map("line_total") @db.Decimal(14, 2)
+  createdAt   DateTime @default(now()) @map("created_at") @db.DateTime(6)
+
+  receipt Receipt @relation(fields: [receiptId], references: [id], onDelete: Restrict)
+  concept Concept @relation(fields: [conceptId], references: [id], onDelete: Restrict)
+
+  @@map("receipt_line")
+}
+
+model ReceiptPayment {
+  id        Int           @id @default(autoincrement())
+  receiptId Int           @map("receipt_id")
+  method    PaymentMethod
+  amount    Decimal       @db.Decimal(14, 2)
+  reference String?       @db.VarChar(60)
+  createdAt DateTime      @default(now()) @map("created_at") @db.DateTime(6)
+
+  receipt Receipt @relation(fields: [receiptId], references: [id], onDelete: Restrict)
+
+  @@map("receipt_payment")
+}
+
+model ReceiptVoid {
+  id           Int        @id @default(autoincrement())
+  receiptId    Int        @unique @map("receipt_id")
+  reason       VoidReason
+  detail       String     @db.VarChar(500)
+  requestedBy  String     @map("requested_by") @db.Char(36)
+  authorizedBy String     @map("authorized_by") @db.Char(36)
+  voidedAt     DateTime   @map("voided_at") @db.DateTime(6)
+  createdAt    DateTime   @default(now()) @map("created_at") @db.DateTime(6)
+
+  receipt             Receipt @relation(fields: [receiptId], references: [id], onDelete: Restrict)
+  requestedByUser     usuario @relation("arcaAnulacionesPedidas", fields: [requestedBy], references: [id], onDelete: Restrict)
+  authorizedByUser    usuario @relation("arcaAnulacionesAutorizadas", fields: [authorizedBy], references: [id], onDelete: Restrict)
+
+  @@map("receipt_void")
+}
+
+// Numeración consecutiva por caja: se bloquea con SELECT ... FOR UPDATE dentro de la transacción de cobro.
+model ReceiptSequence {
+  cashboxId Int @id @map("cashbox_id")
+  seqValue  Int @default(0) @map("seq_value")
+
+  cashbox Cashbox @relation(fields: [cashboxId], references: [id], onDelete: Restrict)
+
+  @@map("receipt_sequence")
+}
+
+// Append-only: el usuario de la aplicación solo debe tener SELECT e INSERT sobre esta tabla (ver README).
+model AuditLog {
+  id       Int      @id @default(autoincrement())
+  at       DateTime @db.DateTime(6)
+  username String?  @db.VarChar(60)
+  action   String   @db.VarChar(40)
+  entity   String?  @db.VarChar(40)
+  entityId String?  @map("entity_id") @db.VarChar(40)
+  detail   String?  @db.VarChar(1000)
+  ip       String?  @db.VarChar(60)
+
+  @@index([at], map: "ix_audit_at")
+  @@index([username], map: "ix_audit_user")
+  @@map("audit_log")
+}
+
+// Configuración editable desde el panel (clave/valor): datos municipales del recibo e impresión.
+model AppSetting {
+  key       String   @id @db.VarChar(60)
+  value     String   @db.VarChar(500)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.DateTime(6)
+
+  @@map("app_setting")
 }
