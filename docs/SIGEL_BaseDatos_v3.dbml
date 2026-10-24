@@ -475,14 +475,20 @@ Table diaNoLaborable {
 // Se vuelve tabla porque la regla de vacaciones puede cambiar por
 // normativa, y el requisito es que ese cambio NO obligue a tocar
 // codigo (HU 27 CA04).
+Enum accionAlTope {
+  avisar
+  vencer
+}
+
 Table regimenVacaciones {
   id char(36) [pk, note: 'UUID']
   nombre varchar(60) [not null, unique, note: 'general, anterior']
   descripcion varchar(255) [note: 'general: 15 dias los primeros 6 anios, 20 despues. anterior: 30 dias para trabajadores antiguos.']
   // [V3-2] El tope de acumulacion tambien es parametrico: si manana la
   // norma pasa a 1 o a 3 periodos, se cambia aqui.
-  periodosMaximosAcumulables smallint [not null, default: 2, note: '[V3-2] Norma vigente: 2 periodos. Lo que exceda vence y queda inutilizable.']
-  diasAvisoAntesDeVencer smallint [not null, default: 60, note: '[V3-2] Con cuanta anticipacion se avisa al funcionario y a RRHH que va a perder dias.']
+  periodosMaximosAcumulables smallint [not null, default: 2, note: '[V3-2] Norma vigente: 2 periodos. Que pasa con lo que exceda lo decide alSuperarElTope.']
+  diasAvisoAntesDeVencer smallint [not null, default: 30, note: '[V3-2] Con cuanta anticipacion se avisa a la persona, a su jefatura y a RRHH que va a pasar el tope (13/10: un mes; minimo 20).']
+  alSuperarElTope accionAlTope [not null, default: 'avisar', note: '13/10: avisar = se sigue acumulando y solo se avisa (por omision); vencer = lo que pase del tope se pierde. RRHH lo cambia en cualquier momento.']
   activo boolean [not null, default: true]
   Note: '[V3-1] Catalogo administrable. Un funcionario pertenece a un regimen, y cada regimen tiene sus tramos en reglaVacaciones y su propio tope de acumulacion.'
 }

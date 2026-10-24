@@ -208,13 +208,13 @@ const REGIMENES = [
     nombre: 'general',
     descripcion: '15 días hábiles los primeros 6 años de servicio y 20 días después.',
     periodosMaximosAcumulables: 2,
-    diasAvisoAntesDeVencer: 60,
+    diasAvisoAntesDeVencer: 30,
   },
   {
     nombre: 'anterior',
     descripcion: '30 días para los funcionarios amparados al régimen anterior.',
     periodosMaximosAcumulables: 2,
-    diasAvisoAntesDeVencer: 60,
+    diasAvisoAntesDeVencer: 30,
   },
 ];
 
@@ -353,10 +353,12 @@ async function main(): Promise<void> {
 
   // --- Regimenes de vacaciones ---
   for (const regimen of REGIMENES) {
+    // Si ya existe no se toca: el tope, el aviso y que pasa al superar el tope los
+    // decide RRHH en "Reglas de vacaciones" y el seed no debe deshacerlo.
     await prisma.regimenVacaciones.upsert({
       where: { nombre: regimen.nombre },
-      update: regimen,
-      create: regimen,
+      update: {},
+      create: { ...regimen, alSuperarElTope: 'avisar' },
     });
   }
   console.log(`  Regimenes de vacaciones: ${REGIMENES.length}`);
